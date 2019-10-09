@@ -74,6 +74,7 @@ const NewsList = ({ navigation }) => {
 
   return (
     <FlatList
+      style={{ backgroundColor: "black" }}
       data={stories}
       refreshControl={
         <RefreshControl
@@ -166,7 +167,7 @@ const NewsList = ({ navigation }) => {
 
 function formatTag(tag: IDoc, index: number) {
   if (tag.type === "text") {
-    return tag.content;
+    return entities.decode(tag.content);
   } else if (tag.name === "p") {
     return (
       <Text key={index}>
@@ -181,7 +182,7 @@ function formatTag(tag: IDoc, index: number) {
       <Text
         key={index}
         style={{ textDecorationLine: "underline" }}
-        onPress={() => Linking.openURL(tag.attrs.href)}
+        onPress={() => Linking.openURL(entities.decode(tag.attrs.href))}
       >
         {tag.children.map((childTag, i) => formatTag(childTag, i))}
       </Text>
@@ -208,7 +209,7 @@ interface IDoc {
 
 function parseHTML(comment: string): IDoc {
   const astRoot: IDoc[] = HTML.parse(
-    "<div>" + entities.decode(comment) + "</div>"
+    "<div>" + comment + "</div>"
   );
   return astRoot[0];
 }
@@ -249,9 +250,11 @@ function CommentWithChildren({ comment }: { comment: ItemT }) {
       >
         {formatHTMLContent(comment.text)}
       </Text>
-      {(comment.kids || []).filter(kid => !!kid.text).map(kid => (
-        <CommentWithChildren key={kid.id} comment={kid} />
-      ))}
+      {(comment.kids || [])
+        .filter(kid => !!kid.text)
+        .map(kid => (
+          <CommentWithChildren key={kid.id} comment={kid} />
+        ))}
     </View>
   );
 }
@@ -307,7 +310,7 @@ const CommentsList = ({ navigation }) => {
     return <Loader backgroundColor={d3.interpolateBlues(0.6)} />;
   }
 
-  const comments = data.hn.item.kids;
+  const comments = data.hn.item.kids.filter(kid => !!kid.text);
 
   return (
     <FlatList
