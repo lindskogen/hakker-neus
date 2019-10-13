@@ -1,10 +1,8 @@
 import * as React from "react";
 import { ScrollView, Text } from "react-native";
-import {
-  CommentWithChildren, formatHTMLContent,
-  parseHTML
-} from "../components/CommentWithChildren";
-import { formatTag } from "../html/formatTag";
+import HTML from "react-native-render-html";
+import { NavigationScreenProp } from "react-navigation";
+import { CommentWithChildren } from "../components/CommentWithChildren";
 
 const codeComment = `Actually, that&#x27;s right, forgot about that :P<p>The only remaining mystery then would be why they bothered encoding it like this:<p><pre><code>    0xxxxxxx
     110xxxxx  10xxxxxx        
@@ -20,22 +18,32 @@ Or even like this for maximum compactness:<p><pre><code>    0xxxxxxx
     110xxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx
     111xxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx</code></pre>`;
 
-const linkComment = `Intel and AMD CPUs do not share a common socket (or chipset) on server, desktop, or mobile platforms. I think the last shared socket was Socket 7 [0], released back in 1995.<p>0: <a href="https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Socket_7" rel="nofollow">https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Socket_7</a>`
+const linkComment = `&gt;&gt; they seem ... incompatible with such performance<p>Might answer your question [0]<p>[0] <a href=\"https:&#x2F;&#x2F;news.ycombinator.com&#x2F;item?id=2192629\" rel=\"nofollow\">https:&#x2F;&#x2F;news.ycombinator.com&#x2F;item?id=2192629</a>`;
 
-export const CommentsSink = () => {
+const multipleCodeComment = `Failed entirely to work on my first attempt with:<p><pre><code>    curl -XHEAD https:&#x2F;&#x2F;google.com\n</code></pre>\nIt is just flat out wrong on:<p><pre><code>    curl -X HEAD https:&#x2F;&#x2F;google.com\n</code></pre>\nIn that it does a GET request:<p><pre><code>    import requests\n    \n    response = requests.get(&#x27;https:&#x2F;&#x2F;google.com&#x2F;&#x27;)\n</code></pre>\nClever idea, but my first totally valid example failed (it does OPTIONS, GET, POST, PUT, PATCH successfully)`;
+
+export const CommentsSink: React.FC<{
+  navigation: NavigationScreenProp<{}, {}>;
+}> = ({ navigation }) => {
   const text = linkComment;
-  console.log(formatHTMLContent(text));
 
   return (
     <ScrollView style={{ flex: 1 }}>
       <CommentWithChildren
-        comment={{ text: text, by: { id: "testing" }, kids: [], timeISO: new Date().toISOString() }}
+        op={'testing'}
+        comment={{
+          id: 234,
+          type: "comment",
+          text: text,
+          by: { id: "testing" },
+          kids: [],
+          timeISO: new Date().toISOString()
+        }}
         depth={0}
+        navigation={navigation}
       />
       <Text style={{ color: "black" }}>{text}</Text>
-      <Text style={{ color: "black" }}>
-        {JSON.stringify(parseHTML(text).children, null, 2)}
-      </Text>
+      <HTML html={text} />
     </ScrollView>
   );
 };

@@ -1,8 +1,10 @@
-export interface IDoc {
+export interface HNComment {
+  id: number;
   type: string;
-  content?: string;
-  voidElement: boolean;
-  name: string;
-  attrs: {};
-  children: IDoc[];
+  by: {
+    id: string;
+  };
+  kids?: HNComment[];
+  text: string;
+  timeISO: string;
 }

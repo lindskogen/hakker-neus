@@ -1,37 +1,50 @@
 import * as d3 from "d3-scale-chromatic";
 import gql from "graphql-tag";
 import * as React from "react";
-import { FlatList, RefreshControl, Share, Text, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import Swipeable from "react-native-swipeable";
+import { NavigationScreenProp } from "react-navigation";
 import { useQuery } from "urql";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
 
-export const NewsList = ({ navigation }) => {
-    const [{ data, fetching }, executeQuery] = useQuery({
-        query: gql`
-            query Query {
-                hn {
-                    topStories {
-                        id
-                        descendants
-                        type
-                        title
-                        by {
-                            id
-                        }
-                        text
-                        url
-                        score
-                    }
-                }
+interface NewsListProps {
+  navigation: NavigationScreenProp<{}, {}>;
+}
+
+export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
+  const [{ data, fetching }, executeQuery] = useQuery({
+    query: gql`
+      query Query {
+        hn {
+          topStories {
+            id
+            descendants
+            type
+            title
+            by {
+              id
             }
-        `
-    });
+            text
+            url
+            score
+          }
+        }
+      }
+    `
+  });
 
   if (!data) {
-    return <Loader backgroundColor={d3.interpolateOranges(0.65)}/>;
+    return <Loader backgroundColor={d3.interpolateOranges(0.65)} />;
   }
 
   const stories = data.hn.topStories;
@@ -77,7 +90,7 @@ export const NewsList = ({ navigation }) => {
           onRightActionRelease={() =>
             navigation.navigate({
               routeName: "Comments",
-              params: { id: story.id }
+              params: { id: story.id, story }
             })
           }
           key={story.id}
@@ -101,25 +114,25 @@ export const NewsList = ({ navigation }) => {
             >
               <NewsListItemText>{story.title}</NewsListItemText>
             </TouchableOpacity>
-            <Text
-              style={{
-                position: "absolute",
-                right: 20,
-                bottom: 20,
-                fontSize: 50,
-                fontFamily: "Helvetica Neue",
-                color: "white",
-                opacity: 0.3,
-                textShadowColor: "rgba(0, 0, 0, 0.1)",
-                textShadowOffset: { height: 0, width: 0 },
-                textShadowRadius: 1
-              }}
-            >
-              {story.score}
-            </Text>
+            <Text style={styles.scoreText}>{story.score}</Text>
           </NewsListItem>
         </Swipeable>
       )}
     />
   );
 };
+
+const styles = StyleSheet.create({
+  scoreText: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    fontSize: 50,
+    fontFamily: "Helvetica Neue",
+    color: "white",
+    opacity: 0.3,
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { height: 0, width: 0 },
+    textShadowRadius: 1
+  }
+});
