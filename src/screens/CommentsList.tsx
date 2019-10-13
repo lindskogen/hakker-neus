@@ -3,6 +3,7 @@ import gql from "graphql-tag";
 import * as React from "react";
 import { FlatList, RefreshControl, View } from "react-native";
 import { useQuery } from "urql";
+import { HNComment } from "../common/types";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
@@ -76,7 +77,7 @@ export const CommentsList = ({ navigation }) => {
   return (
     <FlatList
       style={{ backgroundColor: "black" }}
-      data={[story, ...comments]}
+      data={comments as HNComment[]}
       refreshControl={
         <RefreshControl
           refreshing={fetching}
@@ -84,19 +85,18 @@ export const CommentsList = ({ navigation }) => {
           tintColor={"white"}
         />
       }
-      keyExtractor={item => item.id}
-      renderItem={({ item, index }) =>
-        index === 0 ? (
-          <CommentsListItemHeader navigation={navigation} story={story} />
-        ) : (
-          <CommentWithChildren
-            op={story.by.id}
-            comment={item}
-            depth={0}
-            navigation={navigation}
-          />
-        )
+      ListHeaderComponent={
+        <CommentsListItemHeader navigation={navigation} story={story} />
       }
+      keyExtractor={item => String(item.id)}
+      renderItem={({ item }) => (
+        <CommentWithChildren
+          op={story.by.id}
+          comment={item}
+          depth={0}
+          navigation={navigation}
+        />
+      )}
     />
   );
 };

@@ -2,18 +2,13 @@ import * as React from "react";
 import { SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
-import { createClient, Provider } from "urql";
+import { Provider } from "urql";
 import { padding } from "./src/common/vars";
+import { urqlClient } from "./src/lib/urql";
 import { BrowserScreen } from "./src/screens/Browser";
 import { CommentsList } from "./src/screens/CommentsList";
 import { CommentsSink } from "./src/screens/CommentsSink";
 import { NewsList } from "./src/screens/NewsList";
-
-const client = createClient({
-  url: "https://www.graphqlhub.com/graphql"
-});
-
-// TODO: parse <pre> id: 21212445
 
 const AppNavigator = createStackNavigator(
   {
@@ -42,7 +37,7 @@ const NavigationContainer = createAppContainer(AppNavigator);
 
 export default function AppWrapper() {
   return (
-    <Provider value={client}>
+    <Provider value={urqlClient}>
       <StatusBar barStyle={"light-content"} />
       <SafeAreaView style={{ flex: 1, padding, backgroundColor: "black" }}>
         <NavigationContainer />
