@@ -3,10 +3,18 @@ import gql from "graphql-tag";
 import { uniqBy } from "lodash-es";
 import * as React from "react";
 import { memo, useEffect, useReducer } from "react";
-import { FlatList, RefreshControl, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
-import { padding } from "../common/vars";
+import { backgroundDark, padding } from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
@@ -199,7 +207,7 @@ function ListItem({
       rightContent={
         <View
           style={{
-            backgroundColor: "#000",
+            backgroundColor: backgroundDark,
             flex: 1,
             justifyContent: "center",
             alignItems: "flex-start",
@@ -276,7 +284,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
 
   return (
     <FlatList
-      style={{ backgroundColor: "black" }}
+      style={{ backgroundColor: backgroundDark }}
       indicatorStyle={"white"}
       onEndReachedThreshold={0.2}
       data={stories}
@@ -290,7 +298,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
       ListFooterComponent={
         fetchingMore ? (
           <View style={{ padding }}>
-            <Loader backgroundColor={"black"} />
+            <Loader backgroundColor={backgroundDark} />
           </View>
         ) : null
       }

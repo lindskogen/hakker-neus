@@ -4,6 +4,7 @@ import { Platform, SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { Provider } from "urql";
+import { backgroundDark } from "./src/common/vars";
 import { urqlClient } from "./src/lib/urql";
 import { BrowserScreen } from "./src/screens/Browser";
 import { CommentsList } from "./src/screens/CommentsList";
@@ -30,7 +31,7 @@ const AppNavigator = createStackNavigator(
         vertical: 135
       }
     },
-    cardStyle: { backgroundColor: 'black'}
+    cardStyle: { backgroundColor: backgroundDark}
   }
 );
 
@@ -43,7 +44,7 @@ export default function AppWrapper() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: "black",
+          backgroundColor: backgroundDark,
           paddingTop: Platform.OS === "ios" ? 0 : Constants.statusBarHeight
         }}
       >

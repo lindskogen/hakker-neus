@@ -30,7 +30,7 @@ export const CommentsSink: React.FC<{
   return (
     <ScrollView style={{ flex: 1 }}>
       <CommentWithChildren
-        op={'testing'}
+        op={"testing"}
         comment={{
           id: 234,
           type: "comment",
@@ -42,7 +42,7 @@ export const CommentsSink: React.FC<{
         depth={0}
         navigation={navigation}
       />
-      <Text style={{ color: "black" }}>{text}</Text>
+      <Text>{text}</Text>
       <HTML html={text} />
     </ScrollView>
   );
