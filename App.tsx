@@ -3,7 +3,6 @@ import { SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { Provider } from "urql";
-import { padding } from "./src/common/vars";
 import { urqlClient } from "./src/lib/urql";
 import { BrowserScreen } from "./src/screens/Browser";
 import { CommentsList } from "./src/screens/CommentsList";
@@ -39,7 +38,7 @@ export default function AppWrapper() {
   return (
     <Provider value={urqlClient}>
       <StatusBar barStyle={"light-content"} />
-      <SafeAreaView style={{ flex: 1, padding, backgroundColor: "black" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
         <NavigationContainer />
       </SafeAreaView>
     </Provider>

@@ -26,6 +26,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "se.lindskogen.hakkerneues"
+    },
+    "android": {
+      "package": "se.lindskogen.hakkerneues"
     }
   }
 }
