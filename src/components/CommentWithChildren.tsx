@@ -58,17 +58,22 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         backgroundColor: d3.interpolateBlues(0.6)
       }}
     >
-      <View
-        style={{
-          padding,
-          paddingVertical: padding / 2,
-          borderLeftColor:
-            depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-          borderLeftWidth: 5
-        }}
+      <TouchableHighlight
+        underlayColor={d3.interpolateBlues(0.5)}
+        onPress={() => setIsCollapsed(state => !state)}
       >
-        <CommentHeader isOp={isOp} comment={comment} />
-      </View>
+        <View
+          style={{
+            padding,
+            paddingVertical: padding / 2,
+            borderLeftColor:
+              depth === 0 ? "transparent" : d3.schemeTableau10[depth],
+            borderLeftWidth: 5
+          }}
+        >
+          <CommentHeader isOp={isOp} comment={comment} />
+        </View>
+      </TouchableHighlight>
       <Collapsible collapsed={isCollapsed}>
         <TouchableHighlight
           underlayColor={d3.interpolateBlues(0.5)}
