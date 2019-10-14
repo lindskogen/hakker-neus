@@ -3,7 +3,8 @@ import qs from "query-string";
 
 import * as React from "react";
 import { useState } from "react";
-import { LayoutAnimation, TouchableHighlight, View } from "react-native";
+import { TouchableHighlight, View } from "react-native";
+import Collapsible from "react-native-collapsible";
 import { NavigationScreenProp } from "react-navigation";
 import { HNComment } from "../common/types";
 import { padding } from "../common/vars";
@@ -57,35 +58,36 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         backgroundColor: d3.interpolateBlues(0.6)
       }}
     >
-      <TouchableHighlight
-        underlayColor={d3.interpolateBlues(0.5)}
-        onPress={() => {
-          LayoutAnimation.configureNext({
-            duration: 700,
-            create: { type: "spring", springDamping: 1, property: "opacity" },
-            update: { type: "spring", springDamping: 1, property: "opacity" },
-            delete: { type: "spring", springDamping: 1, property: "opacity" }
-          });
-          setIsCollapsed(state => !state);
+      <View
+        style={{
+          padding,
+          paddingVertical: padding / 2,
+          borderLeftColor:
+            depth === 0 ? "transparent" : d3.schemeTableau10[depth],
+          borderLeftWidth: 5
         }}
       >
-        <View
-          style={{
-            padding,
-            paddingVertical: padding / 2,
-            borderLeftColor:
-              depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-            borderLeftWidth: 5
-          }}
+        <CommentHeader isOp={isOp} comment={comment} />
+      </View>
+      <Collapsible collapsed={isCollapsed}>
+        <TouchableHighlight
+          underlayColor={d3.interpolateBlues(0.5)}
+          onPress={() => setIsCollapsed(state => !state)}
         >
-          <CommentHeader isOp={isOp} comment={comment} />
-          {!isCollapsed && (
+          <View
+            style={{
+              padding,
+              paddingVertical: padding / 2,
+              borderLeftColor:
+                depth === 0 ? "transparent" : d3.schemeTableau10[depth],
+              borderLeftWidth: 5
+            }}
+          >
             <HTMLComment comment={comment} onLinkPress={handlePressLink} />
-          )}
-        </View>
-      </TouchableHighlight>
-      {!isCollapsed &&
-        (comment.kids || [])
+          </View>
+        </TouchableHighlight>
+
+        {(comment.kids || [])
           .filter(kid => !!kid.text)
           .map(kid => (
             <CommentWithChildren
@@ -96,6 +98,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
               navigation={navigation}
             />
           ))}
+      </Collapsible>
     </View>
   );
 };

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
-import { backgroundDark, padding } from "../common/vars";
+import { backgroundDark, fontFamily, padding } from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
@@ -217,7 +217,7 @@ function ListItem({
           <Text
             style={{
               fontSize: 50,
-              fontFamily: "Helvetica Neue",
+              fontFamily,
               color: "white",
               textShadowColor: "rgba(0, 0, 0, 0.1)",
               textShadowOffset: { height: 0, width: 0 },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     right: 20,
     bottom: 20,
     fontSize: 50,
-    fontFamily: "Helvetica Neue",
+    fontFamily,
     color: "white",
     opacity: 0.3,
     textShadowColor: "rgba(0, 0, 0, 0.1)",

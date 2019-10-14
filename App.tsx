@@ -31,7 +31,7 @@ const AppNavigator = createStackNavigator(
         vertical: 135
       }
     },
-    cardStyle: { backgroundColor: backgroundDark}
+    cardStyle: { backgroundColor: backgroundDark }
   }
 );
 

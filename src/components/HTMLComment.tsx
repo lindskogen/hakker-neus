@@ -2,7 +2,7 @@ import * as React from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import HTML from "react-native-render-html";
 import { HNComment } from "../common/types";
-import { padding } from "../common/vars";
+import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
 
 export const HTMLComment = ({
   comment,
@@ -16,7 +16,7 @@ export const HTMLComment = ({
     onLinkPress={(event, href) => onLinkPress(href)}
     baseFontStyle={{
       fontSize: 16,
-      fontFamily: "Helvetica Neue",
+      fontFamily,
       color: "white"
     }}
     tagsStyles={{
@@ -24,7 +24,7 @@ export const HTMLComment = ({
         color: "white"
       },
       code: {
-        fontFamily: Platform.OS === "android" ? "monospace" : "Menlo"
+        fontFamily: fontFamilyMonospaced
       }
     }}
     renderers={{

@@ -2,7 +2,7 @@ import { formatDistanceStrict, parseISO } from "date-fns";
 import * as React from "react";
 import { Text, View } from "react-native";
 import { HNComment } from "../common/types";
-import { padding } from "../common/vars";
+import { fontFamily, padding } from "../common/vars";
 
 export const CommentHeader = ({
   comment,
@@ -28,7 +28,7 @@ export const CommentHeader = ({
       <Text
         style={{
           fontSize: 10,
-          fontFamily: "Helvetica Neue",
+          fontFamily,
           color: "white"
         }}
       >
@@ -48,7 +48,7 @@ export const CommentHeader = ({
           <Text
             style={{
               fontSize: 8,
-              fontFamily: "Helvetica Neue",
+              fontFamily,
               color: "white",
               textTransform: "uppercase",
               fontWeight: "bold"
@@ -62,7 +62,7 @@ export const CommentHeader = ({
     <Text
       style={{
         fontSize: 10,
-        fontFamily: "Helvetica Neue",
+        fontFamily,
         color: "white"
       }}
     >
