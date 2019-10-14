@@ -3,21 +3,14 @@ import gql from "graphql-tag";
 import { uniqBy } from "lodash-es";
 import * as React from "react";
 import { memo, useEffect, useReducer } from "react";
-import {
-  FlatList,
-  RefreshControl,
-  Share,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { FlatList, RefreshControl, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
 import { padding } from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
+import { makeHNUrl } from "../lib/makeHNUrl";
 import { urqlClient } from "../lib/urql";
 
 interface NewsListProps {
@@ -75,8 +68,6 @@ type FetchingActions =
 const useNewsListQuery = () => {
   const [state, dispatch] = useReducer(
     (state: State, action: FetchingActions) => {
-      console.log(action.type);
-
       switch (action.type) {
         case "error":
           return {
@@ -127,8 +118,6 @@ const useNewsListQuery = () => {
   );
 
   useEffect(() => {
-    console.log("fetch");
-
     dispatch({ type: "start_fetch" });
     urqlClient
       .query(newsListQuery, {
@@ -147,7 +136,6 @@ const useNewsListQuery = () => {
   }, []);
 
   const refetch = () => {
-    console.log("refetch");
     dispatch({ type: "start_fetch" });
     urqlClient
       .query(newsListQuery, {
@@ -170,10 +158,6 @@ const useNewsListQuery = () => {
       return;
     }
     dispatch({ type: "start_fetch_more" });
-    console.log('start_fetch_more', {
-      limit: state.limit,
-      offset: state.offset
-    });
 
     urqlClient
       .query(newsListQuery, {
@@ -247,13 +231,23 @@ function ListItem({
         <TouchableOpacity
           style={{ flex: 1 }}
           onLongPress={() => {
-            Share.share({ title: story.title, url: story.url });
+            Share.share({
+              title: story.title,
+              url: story.url || makeHNUrl(story.id)
+            });
           }}
           onPress={() => {
-            navigation.navigate({
-              routeName: "Browser",
-              params: { url: story.url }
-            });
+            if (story.url) {
+              navigation.navigate({
+                routeName: "Browser",
+                params: { url: story.url }
+              });
+            } else {
+              navigation.navigate({
+                routeName: "Comments",
+                params: { id: story.id, story }
+              });
+            }
           }}
         >
           <NewsListItemText>{story.title}</NewsListItemText>

@@ -2,6 +2,7 @@ import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
 import { Share, TouchableOpacity } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
+import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentText } from "./CommentText";
 import { NewsListItem } from "./NewsListItem";
 import { NewsListItemText } from "./NewsListItemText";
@@ -20,14 +21,14 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
       style={{ flex: 1 }}
       onLongPress={() => {
         Share.share({
-          title: title,
-          url: "https://news.ycombinator.com/item?id=" + id
+          title,
+          url: makeHNUrl(id)
         });
       }}
       onPress={() => {
         navigation.navigate({
           routeName: "Browser",
-          params: { url: url }
+          params: { url }
         });
       }}
     >

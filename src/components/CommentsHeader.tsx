@@ -29,8 +29,7 @@ export const CommentHeader = ({
         style={{
           fontSize: 10,
           fontFamily: "Helvetica Neue",
-          color: "white",
-          textTransform: "uppercase"
+          color: "white"
         }}
       >
         {comment.by.id}

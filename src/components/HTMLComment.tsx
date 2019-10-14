@@ -1,12 +1,13 @@
 import * as React from "react";
 import { Platform, ScrollView, Text, View } from "react-native";
 import HTML from "react-native-render-html";
+import { HNComment } from "../common/types";
 import { padding } from "../common/vars";
 
 export const HTMLComment = ({
-                              comment,
-                              onLinkPress
-                            }: {
+  comment,
+  onLinkPress
+}: {
   comment: HNComment;
   onLinkPress: (href: string) => void;
 }) => (

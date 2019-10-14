@@ -1,5 +1,6 @@
+import Constants from "expo-constants";
 import * as React from "react";
-import { SafeAreaView, StatusBar } from "react-native";
+import { Platform, SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { Provider } from "urql";
@@ -28,7 +29,8 @@ const AppNavigator = createStackNavigator(
         horizontal: 135,
         vertical: 135
       }
-    }
+    },
+    cardStyle: { backgroundColor: 'black'}
   }
 );
 
@@ -38,7 +40,13 @@ export default function AppWrapper() {
   return (
     <Provider value={urqlClient}>
       <StatusBar barStyle={"light-content"} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: "black" }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "black",
+          paddingTop: Platform.OS === "ios" ? 0 : Constants.statusBarHeight
+        }}
+      >
         <NavigationContainer />
       </SafeAreaView>
     </Provider>
