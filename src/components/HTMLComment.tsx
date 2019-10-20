@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import HTML from "react-native-render-html";
 import { HNComment } from "../common/types";
 import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
@@ -34,24 +34,26 @@ export const HTMLComment = ({
         </View>
       ),
       pre: (htmlAttribs, children, convertedCSSStyles, passProps) => (
-        <ScrollView
-          key={passProps.key}
-          style={{ marginVertical: padding }}
-          horizontal={true}
-        >
-          {passProps.rawChildren[0].tagName === "code" ? (
-            <Text
-              style={{
-                ...passProps.baseFontStyle,
-                ...passProps.tagsStyles.code
-              }}
-            >
-              {passProps.rawChildren[0].parent!.children[0].children[0].data}
-            </Text>
-          ) : (
-            children
-          )}
-        </ScrollView>
+        <View onStartShouldSetResponder={() => true}>
+          <ScrollView
+            key={passProps.key}
+            style={{ marginVertical: padding }}
+            horizontal={true}
+          >
+            {passProps.rawChildren[0].tagName === "code" ? (
+              <Text
+                style={{
+                  ...passProps.baseFontStyle,
+                  ...passProps.tagsStyles.code
+                }}
+              >
+                {passProps.rawChildren[0].parent!.children[0].children[0].data}
+              </Text>
+            ) : (
+              children
+            )}
+          </ScrollView>
+        </View>
       )
     }}
   />

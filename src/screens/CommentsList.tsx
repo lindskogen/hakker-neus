@@ -1,16 +1,24 @@
 import * as d3 from "d3-scale-chromatic";
 import gql from "graphql-tag";
 import * as React from "react";
-import { FlatList, RefreshControl, View } from "react-native";
+import { useCallback } from "react";
+import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
+import { NavigationScreenProp } from "react-navigation";
 import { useQuery } from "urql";
-import { HNComment } from "../common/types";
+import { HNComment, HNStory } from "../common/types";
 import { backgroundDark } from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
 
-export const CommentsList = ({ navigation }) => {
-  const { id } = navigation.state.params;
+interface HNStoryWithComments extends HNStory {
+  kids: HNComment[];
+}
+
+export const CommentsList: React.FC<{
+  navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
+}> = ({ navigation }) => {
+  const { id } = navigation.state.params!;
   const [{ data, fetching }, executeQuery] = useQuery({
     query: gql`
       query CommentsQuery($id: Int!) {
@@ -58,13 +66,30 @@ export const CommentsList = ({ navigation }) => {
     variables: { id }
   });
 
-  if (!data) {
+  const story: HNStoryWithComments | undefined = data
+    ? data.hn.item
+    : undefined;
+  const user: string = story ? story.by.id : "undefined";
+
+  const renderItem: ListRenderItem<HNComment> = useCallback(
+    ({ item }) => (
+      <CommentWithChildren
+        op={user}
+        comment={item}
+        depth={0}
+        navigation={navigation}
+      />
+    ),
+    [user, navigation]
+  );
+
+  if (!story) {
     return (
       <View style={{ flex: 1 }}>
-        {navigation.state.params.story && (
+        {navigation.state.params!.story && (
           <CommentsListItemHeader
             navigation={navigation}
-            story={navigation.state.params.story}
+            story={navigation.state.params!.story}
           />
         )}
         <Loader backgroundColor={d3.interpolateBlues(0.6)} />
@@ -72,13 +97,12 @@ export const CommentsList = ({ navigation }) => {
     );
   }
 
-  const story = data.hn.item;
   const comments = story.kids.filter(kid => !!kid.text);
 
   return (
     <FlatList
       style={{ backgroundColor: backgroundDark }}
-      data={comments as HNComment[]}
+      data={comments}
       refreshControl={
         <RefreshControl
           refreshing={fetching}
@@ -90,14 +114,7 @@ export const CommentsList = ({ navigation }) => {
         <CommentsListItemHeader navigation={navigation} story={story} />
       }
       keyExtractor={item => String(item.id)}
-      renderItem={({ item }) => (
-        <CommentWithChildren
-          op={story.by.id}
-          comment={item}
-          depth={0}
-          navigation={navigation}
-        />
-      )}
+      renderItem={renderItem}
     />
   );
 };

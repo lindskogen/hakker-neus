@@ -2,6 +2,8 @@ import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
 import { Share, TouchableOpacity } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
+import { HNStory } from "../common/types";
+import { backgroundOrange } from "../common/vars";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentText } from "./CommentText";
 import { NewsListItem } from "./NewsListItem";
@@ -9,14 +11,14 @@ import { NewsListItemText } from "./NewsListItemText";
 
 interface CommentsListHeaderProps {
   navigation: NavigationScreenProp<{}, {}>;
-  story: { id: string; by: { id: string }; title: string; url: string };
+  story: HNStory;
 }
 
 export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
   navigation,
   story: { by, id, title, url }
 }) => (
-  <NewsListItem backgroundColor={d3.interpolateOranges(0.65)}>
+  <NewsListItem backgroundColor={backgroundOrange}>
     <TouchableOpacity
       style={{ flex: 1 }}
       onLongPress={() => {

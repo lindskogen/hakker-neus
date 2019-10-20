@@ -2,9 +2,10 @@ import * as d3 from "d3-scale-chromatic";
 import gql from "graphql-tag";
 import { uniqBy } from "lodash-es";
 import * as React from "react";
-import { memo, useEffect, useReducer } from "react";
+import { memo, useCallback, useEffect, useReducer } from "react";
 import {
   FlatList,
+  ListRenderItem,
   RefreshControl,
   Share,
   StyleSheet,
@@ -14,7 +15,13 @@ import {
 } from "react-native";
 import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
-import { backgroundDark, fontFamily, padding } from "../common/vars";
+import { HNStory } from "../common/types";
+import {
+  backgroundDark,
+  backgroundOrange,
+  fontFamily,
+  padding
+} from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
@@ -193,80 +200,77 @@ const useNewsListQuery = () => {
   };
 };
 
-function ListItem({
-  navigation,
-  backgroundColor,
-  story
-}: {
-  story: ItemT;
+const ListItem: React.FC<{
+  story: HNStory;
   navigation: NavigationScreenProp<{}, {}>;
   backgroundColor: string;
-}) {
-  return (
-    <Swipeable
-      rightContent={
-        <View
+}> = ({ navigation, backgroundColor, story }) => (
+  <Swipeable
+    rightContent={
+      <View
+        style={{
+          backgroundColor: backgroundDark,
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          paddingLeft: 20
+        }}
+      >
+        <Text
           style={{
-            backgroundColor: backgroundDark,
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "flex-start",
-            paddingLeft: 20
+            fontSize: 50,
+            fontFamily,
+            color: "white",
+            textShadowColor: "rgba(0, 0, 0, 0.1)",
+            textShadowOffset: { height: 0, width: 0 },
+            textShadowRadius: 1
           }}
         >
-          <Text
-            style={{
-              fontSize: 50,
-              fontFamily,
-              color: "white",
-              textShadowColor: "rgba(0, 0, 0, 0.1)",
-              textShadowOffset: { height: 0, width: 0 },
-              textShadowRadius: 1
-            }}
-          >
-            {story.descendants}
-          </Text>
-        </View>
-      }
-      onRightActionRelease={() =>
-        navigation.navigate({
-          routeName: "Comments",
-          params: { id: story.id, story }
-        })
-      }
-    >
-      <NewsListItem backgroundColor={backgroundColor}>
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          onLongPress={() => {
-            Share.share({
-              title: story.title,
-              url: story.url || makeHNUrl(story.id)
+          {story.descendants}
+        </Text>
+      </View>
+    }
+    onRightActionRelease={() =>
+      navigation.navigate({
+        routeName: "Comments",
+        params: { id: story.id, story }
+      })
+    }
+  >
+    <NewsListItem backgroundColor={backgroundColor}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onLongPress={() => {
+          Share.share({
+            title: story.title,
+            url: story.url || makeHNUrl(story.id)
+          });
+        }}
+        onPress={() => {
+          if (story.url) {
+            navigation.navigate({
+              routeName: "Browser",
+              params: { url: story.url }
             });
-          }}
-          onPress={() => {
-            if (story.url) {
-              navigation.navigate({
-                routeName: "Browser",
-                params: { url: story.url }
-              });
-            } else {
-              navigation.navigate({
-                routeName: "Comments",
-                params: { id: story.id, story }
-              });
-            }
-          }}
-        >
-          <NewsListItemText>{story.title}</NewsListItemText>
-        </TouchableOpacity>
-        <Text style={styles.scoreText}>{story.score}</Text>
-      </NewsListItem>
-    </Swipeable>
-  );
-}
+          } else {
+            navigation.navigate({
+              routeName: "Comments",
+              params: { id: story.id, story }
+            });
+          }
+        }}
+      >
+        <NewsListItemText>{story.title}</NewsListItemText>
+      </TouchableOpacity>
+      <Text style={styles.scoreText}>{story.score}</Text>
+    </NewsListItem>
+  </Swipeable>
+);
 
 const MemoedListItem = memo(ListItem);
+
+const getBackgroundColor = (index: number): string =>
+  d3.interpolateOranges((index / 200) * 0.35 + 0.65);
 
 export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
   const {
@@ -278,8 +282,22 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
     fetchMore
   } = useNewsListQuery();
 
+  const renderItem: ListRenderItem<HNStory> = useCallback(
+    ({ item: story, index }) => {
+      return (
+        <MemoedListItem
+          story={story}
+          key={story.id}
+          navigation={navigation}
+          backgroundColor={getBackgroundColor(index)}
+        />
+      );
+    },
+    [navigation]
+  );
+
   if (fetching) {
-    return <Loader backgroundColor={d3.interpolateOranges(0.65)} />;
+    return <Loader backgroundColor={backgroundOrange} />;
   }
 
   return (
@@ -304,16 +322,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
       }
       onEndReached={() => fetchMore()}
       keyExtractor={item => item.id}
-      renderItem={({ item: story, index }) => (
-        <MemoedListItem
-          story={story}
-          key={story.id}
-          navigation={navigation}
-          backgroundColor={d3.interpolateOranges(
-            (index / stories.length) * 0.35 + 0.65
-          )}
-        />
-      )}
+      renderItem={renderItem}
     />
   );
 };
