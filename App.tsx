@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import * as React from "react";
 import { Platform, SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
@@ -10,6 +9,7 @@ import { BrowserScreen } from "./src/screens/Browser";
 import { CommentsList } from "./src/screens/CommentsList";
 import { CommentsSink } from "./src/screens/CommentsSink";
 import { NewsList } from "./src/screens/NewsList";
+
 
 const AppNavigator = createStackNavigator(
   {
@@ -45,7 +45,7 @@ export default function AppWrapper() {
         style={{
           flex: 1,
           backgroundColor: backgroundDark,
-          paddingTop: Platform.OS === "ios" ? 0 : Constants.statusBarHeight
+          paddingTop: Platform.OS === "ios" ? 0 : 20
         }}
       >
         <NavigationContainer />
