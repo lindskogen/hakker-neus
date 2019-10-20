@@ -29,6 +29,9 @@
     },
     "android": {
       "package": "se.lindskogen.hakkerneues"
-    }
-  }
+    },
+    "entryPoint": "node_modules/expo/AppEntry.js"
+  },
+  "displayName": "HackerNeus",
+  "name": "HackerNeus"
 }
