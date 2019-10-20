@@ -1,7 +1,7 @@
-import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
 import { Share, TouchableOpacity } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
+import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
 import { backgroundOrange } from "../common/vars";
 import { makeHNUrl } from "../lib/makeHNUrl";
@@ -28,10 +28,9 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
         });
       }}
       onPress={() => {
-        navigation.navigate({
-          routeName: "Browser",
-          params: { url }
-        });
+        if (url) {
+          openURL(url);
+        }
       }}
     >
       <NewsListItemText>{title}</NewsListItemText>

@@ -3,11 +3,13 @@ import qs from "query-string";
 
 import * as React from "react";
 import { useState } from "react";
-import { TouchableHighlight, View } from "react-native";
+import { Share, TouchableHighlight, View } from "react-native";
 import Collapsible from "react-native-collapsible";
 import { NavigationScreenProp } from "react-navigation";
+import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
 import { padding } from "../common/vars";
+import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
 import { HTMLComment } from "./HTMLComment";
 
@@ -22,10 +24,7 @@ const createLinkHandler = (navigation: NavigationScreenProp<{}, {}>) => (
       params: { id }
     });
   } else {
-    navigation.navigate({
-      routeName: "Browser",
-      params: { url: href }
-    });
+    openURL(href);
   }
 };
 
@@ -48,6 +47,12 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
 
   const handlePressLink = createLinkHandler(navigation);
 
+  const handleLongPress = () => {
+    Share.share({
+      url: makeHNUrl(String(comment.id))
+    });
+  };
+
   return (
     <View
       style={{
@@ -61,6 +66,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
       <TouchableHighlight
         underlayColor={d3.interpolateBlues(0.5)}
         onPress={() => setIsCollapsed(state => !state)}
+        onLongPress={handleLongPress}
       >
         <View
           style={{
@@ -78,6 +84,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         <TouchableHighlight
           underlayColor={d3.interpolateBlues(0.5)}
           onPress={() => setIsCollapsed(state => !state)}
+          onLongPress={handleLongPress}
         >
           <View
             style={{

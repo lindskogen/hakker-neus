@@ -45,7 +45,7 @@ export default function AppWrapper() {
         style={{
           flex: 1,
           backgroundColor: backgroundDark,
-          paddingTop: Platform.OS === "ios" ? 0 : 20
+          paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
         }}
       >
         <NavigationContainer />

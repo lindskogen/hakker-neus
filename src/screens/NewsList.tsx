@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
+import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
 import {
   backgroundDark,
@@ -248,10 +249,7 @@ const ListItem: React.FC<{
         }}
         onPress={() => {
           if (story.url) {
-            navigation.navigate({
-              routeName: "Browser",
-              params: { url: story.url }
-            });
+            openURL(story.url);
           } else {
             navigation.navigate({
               routeName: "Comments",

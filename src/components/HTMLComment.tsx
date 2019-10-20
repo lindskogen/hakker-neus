@@ -34,12 +34,8 @@ export const HTMLComment = ({
         </View>
       ),
       pre: (htmlAttribs, children, convertedCSSStyles, passProps) => (
-        <View onStartShouldSetResponder={() => true}>
-          <ScrollView
-            key={passProps.key}
-            style={{ marginVertical: padding }}
-            horizontal={true}
-          >
+        <View key={passProps.key} onStartShouldSetResponder={() => true}>
+          <ScrollView style={{ marginVertical: padding }} horizontal={true}>
             {passProps.rawChildren[0].tagName === "code" ? (
               <Text
                 style={{

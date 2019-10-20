@@ -1,6 +1,9 @@
 import * as React from "react";
-import { WebView } from "react-native-webview";
+import { useEffect } from "react";
+import { Linking } from "react-native";
+import InAppBrowser from "react-native-inappbrowser-reborn";
 import { NavigationScreenProp } from "react-navigation";
+import { backgroundDark } from "../common/vars";
 
 interface BrowserScreenProps {
   navigation: NavigationScreenProp<{}, { url: string }>;
@@ -8,5 +11,12 @@ interface BrowserScreenProps {
 
 export const BrowserScreen: React.FC<BrowserScreenProps> = ({ navigation }) => {
   const { url } = navigation.state.params!;
-  return <WebView source={{ uri: url }} />;
+
+  useEffect(() => {
+
+
+    fn();
+  }, [url]);
+
+  return null;
 };
