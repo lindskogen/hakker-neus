@@ -5,20 +5,13 @@ import { createStackNavigator } from "react-navigation-stack";
 import { Provider } from "urql";
 import { backgroundDark } from "./src/common/vars";
 import { urqlClient } from "./src/lib/urql";
-import { BrowserScreen } from "./src/screens/Browser";
 import { CommentsList } from "./src/screens/CommentsList";
 import { CommentsSink } from "./src/screens/CommentsSink";
 import { NewsList } from "./src/screens/NewsList";
 
-
 const AppNavigator = createStackNavigator(
   {
-    Home: {
-      screen: NewsList
-    },
-    Browser: {
-      screen: BrowserScreen
-    },
+    Home: { screen: NewsList },
     Comments: { screen: CommentsList },
     CommentsTesting: { screen: CommentsSink }
   },
@@ -29,9 +22,9 @@ const AppNavigator = createStackNavigator(
       gestureResponseDistance: {
         horizontal: 135,
         vertical: 135
-      }
-    },
-    cardStyle: { backgroundColor: backgroundDark }
+      },
+      cardStyle: { backgroundColor: backgroundDark }
+    }
   }
 );
 
@@ -45,7 +38,7 @@ export default function AppWrapper() {
         style={{
           flex: 1,
           backgroundColor: backgroundDark,
-          paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0
         }}
       >
         <NavigationContainer />

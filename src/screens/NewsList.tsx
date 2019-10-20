@@ -302,7 +302,6 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
     <FlatList
       style={{ backgroundColor: backgroundDark }}
       indicatorStyle={"white"}
-      onEndReachedThreshold={0.2}
       data={stories}
       refreshControl={
         <RefreshControl
