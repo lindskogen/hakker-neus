@@ -1,7 +1,8 @@
-import { AppRegistry } from 'react-native';
-import App from './App';
-import { useScreens } from 'react-native-screens';
+import "react-native-gesture-handler";
+import { AppRegistry } from "react-native";
+import App from "./App";
+import { useScreens } from "react-native-screens";
 
 useScreens();
 
-AppRegistry.registerComponent('HackerNeus', () => App);
+AppRegistry.registerComponent("HackerNeus", () => App);

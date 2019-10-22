@@ -11,7 +11,6 @@
 		13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB11A68108700A75B9A /* LaunchScreen.xib */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		3DE4ACFB235CE269003F55D8 /* AppCenter-Config.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3DE4ACFA235CE269003F55D8 /* AppCenter-Config.plist */; };
 		74E08DEBF7AF478A700649AE /* libPods-HackerNeus.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C5718A19634E0520DAAB73B3 /* libPods-HackerNeus.a */; };
 /* End PBXBuildFile section */
 
@@ -25,7 +24,6 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HackerNeus/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = HackerNeus/main.m; sourceTree = "<group>"; };
 		2D16E6891FA4F8E400B85C8A /* libReact.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libReact.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		3DE4ACFA235CE269003F55D8 /* AppCenter-Config.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "AppCenter-Config.plist"; path = "HackerNeus/AppCenter-Config.plist"; sourceTree = "<group>"; };
 		A98D6CB614A07EB56EC7F19D /* Pods-HackerNeus.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HackerNeus.release.xcconfig"; path = "Target Support Files/Pods-HackerNeus/Pods-HackerNeus.release.xcconfig"; sourceTree = "<group>"; };
 		C5718A19634E0520DAAB73B3 /* libPods-HackerNeus.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HackerNeus.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1026F9C77EA9A58F90E370C /* Pods-HackerNeus.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HackerNeus.debug.xcconfig"; path = "Target Support Files/Pods-HackerNeus/Pods-HackerNeus.debug.xcconfig"; sourceTree = "<group>"; };
@@ -48,7 +46,6 @@
 		13B07FAE1A68108700A75B9A /* HackerNeus */ = {
 			isa = PBXGroup;
 			children = (
-				3DE4ACFA235CE269003F55D8 /* AppCenter-Config.plist */,
 				008F07F21AC5B25A0029DE68 /* main.jsbundle */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.m */,
@@ -172,7 +169,6 @@
 			files = (
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */,
-				3DE4ACFB235CE269003F55D8 /* AppCenter-Config.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,7 +187,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh";
+			shellScript = "export NODE_BINARY=node\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
 		67DA2011D60E06BE7B4CDF15 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
