@@ -268,7 +268,7 @@ const ListItem: React.FC<{
 const MemoedListItem = memo(ListItem);
 
 const getBackgroundColor = (index: number): string =>
-  d3.interpolateOranges((index / 200) * 0.35 + 0.65);
+  d3.interpolateOranges((index / 50) * 0.35 + 0.65);
 
 export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
   const {
