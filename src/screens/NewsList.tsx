@@ -294,7 +294,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
     [navigation]
   );
 
-  if (fetching) {
+  if (fetching && !stories) {
     return <Loader backgroundColor={backgroundOrange} />;
   }
 
