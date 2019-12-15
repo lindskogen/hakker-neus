@@ -12,7 +12,7 @@ import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
 
 interface HNStoryWithComments extends HNStory {
-  kids: HNComment[];
+  kids: (HNComment | null)[];
 }
 
 export const CommentsList: React.FC<{
@@ -97,7 +97,7 @@ export const CommentsList: React.FC<{
     );
   }
 
-  const comments = story.kids.filter(kid => !!kid.text);
+  const comments = story.kids.filter(kid => kid && !!kid.text) as HNComment[];
 
   return (
     <FlatList
