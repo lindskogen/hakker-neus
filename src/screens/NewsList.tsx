@@ -17,7 +17,12 @@ import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
-import { backgroundDark, backgroundOrange, fontFamily, padding } from "../common/vars";
+import {
+  backgroundDark,
+  backgroundOrange,
+  fontFamily,
+  padding
+} from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
@@ -111,7 +116,13 @@ const useNewsListQuery = () => {
           return {
             ...state,
             error: null,
-            data: uniqBy([...state.data, ...action.data.hn.topStories], "id"),
+            data: uniqBy(
+              [
+                ...state.data,
+                ...action.data.hn.topStories.filter((story: any) => story)
+              ],
+              "id"
+            ),
             offset: state.offset + state.limit,
             fetchingMore: false
           };
