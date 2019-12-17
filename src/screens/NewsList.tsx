@@ -17,15 +17,11 @@ import Swipeable from "react-native-swipeable";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
-import {
-  backgroundDark,
-  backgroundOrange,
-  fontFamily,
-  padding
-} from "../common/vars";
+import { backgroundDark, backgroundOrange, fontFamily, padding } from "../common/vars";
 import { Loader } from "../components/Loader";
 import { NewsListItem } from "../components/NewsListItem";
 import { NewsListItemText } from "../components/NewsListItemText";
+import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { urqlClient } from "../lib/urql";
 
@@ -243,7 +239,7 @@ const ListItem: React.FC<{
         style={{ flex: 1 }}
         onLongPress={() => {
           Share.share({
-            title: story.title,
+            title: decodeHTMLEntities(story.title),
             url: story.url || makeHNUrl(story.id)
           });
         }}
@@ -258,7 +254,7 @@ const ListItem: React.FC<{
           }
         }}
       >
-        <NewsListItemText>{story.title}</NewsListItemText>
+        <NewsListItemText>{decodeHTMLEntities(story.title)}</NewsListItemText>
       </TouchableOpacity>
       <Text style={styles.scoreText}>{story.score}</Text>
     </NewsListItem>

@@ -4,6 +4,7 @@ import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
 import { backgroundOrange } from "../common/vars";
+import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentText } from "./CommentText";
 import { NewsListItem } from "./NewsListItem";
@@ -23,7 +24,7 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
       style={{ flex: 1 }}
       onLongPress={() => {
         Share.share({
-          title,
+          title: decodeHTMLEntities(title),
           url: makeHNUrl(id)
         });
       }}
@@ -33,7 +34,7 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
         }
       }}
     >
-      <NewsListItemText>{title}</NewsListItemText>
+      <NewsListItemText>{decodeHTMLEntities(title)}</NewsListItemText>
       <CommentText>by {by.id}</CommentText>
     </TouchableOpacity>
   </NewsListItem>
