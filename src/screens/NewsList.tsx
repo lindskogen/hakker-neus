@@ -307,7 +307,11 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
     [navigation]
   );
 
-  if (fetching && !stories) {
+  if (error) {
+    return <Text style={{ color: "white" }}>{error.message}</Text>;
+  }
+
+  if ((fetching && !stories) || stories.length === 0) {
     return <Loader backgroundColor={backgroundOrange} />;
   }
 

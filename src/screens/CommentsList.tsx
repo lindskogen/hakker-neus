@@ -92,7 +92,7 @@ export const CommentsList: React.FC<{
             story={navigation.state.params!.story}
           />
         )}
-        <Loader backgroundColor={d3.interpolateBlues(0.6)} />
+        <Loader backgroundColor={backgroundDark} />
       </View>
     );
   }

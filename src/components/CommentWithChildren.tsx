@@ -8,7 +8,7 @@ import Collapsible from "react-native-collapsible";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
-import { padding } from "../common/vars";
+import { backgroundDark, padding } from "../common/vars";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
 import { HTMLComment } from "./HTMLComment";
@@ -60,11 +60,11 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         paddingTop: padding,
         marginLeft: (padding / 2) * depth,
         minHeight: 40,
-        backgroundColor: d3.interpolateBlues(0.6)
+        backgroundColor: backgroundDark
       }}
     >
       <TouchableHighlight
-        underlayColor={d3.interpolateBlues(0.5)}
+        underlayColor={backgroundDark}
         onPress={() => setIsCollapsed(state => !state)}
         onLongPress={handleLongPress}
       >
@@ -82,7 +82,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
       </TouchableHighlight>
       <Collapsible collapsed={isCollapsed}>
         <TouchableHighlight
-          underlayColor={d3.interpolateBlues(0.5)}
+          underlayColor={backgroundDark}
           onPress={() => setIsCollapsed(state => !state)}
           onLongPress={handleLongPress}
         >
@@ -100,7 +100,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         </TouchableHighlight>
 
         {(comment.kids || [])
-          .filter(kid => !!kid.text)
+          .filter(kid => kid && !!kid.text)
           .map(kid => (
             <CommentWithChildren
               op={op}
