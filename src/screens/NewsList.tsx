@@ -161,10 +161,16 @@ const useNewsListQuery = () => {
   const refetch = () => {
     dispatch({ type: "start_fetch" });
     urqlClient
-      .query(newsListQuery, {
-        limit: 30,
-        offset: 0
-      })
+      .query(
+        newsListQuery,
+        {
+          limit: 30,
+          offset: 0
+        },
+        {
+          requestPolicy: "network-only"
+        }
+      )
       .toPromise()
       .then(
         ({ data }) => {
