@@ -11,6 +11,50 @@ import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
 
+const commentsQuery = gql`
+  query CommentsQuery($id: Int!) {
+    hn {
+      item(id: $id) {
+        id
+        type
+        descendants
+        title
+        kids {
+          ...Comment
+          kids {
+            ...Comment
+            kids {
+              ...Comment
+              kids {
+                ...Comment
+                kids {
+                  ...Comment
+                }
+              }
+            }
+          }
+        }
+        by {
+          id
+        }
+        text
+        url
+        score
+      }
+    }
+  }
+
+  fragment Comment on HackerNewsItem {
+    id
+    type
+    by {
+      id
+    }
+    text
+    timeISO
+  }
+`;
+
 interface HNStoryWithComments extends HNStory {
   kids: (HNComment | null)[];
 }
@@ -20,49 +64,7 @@ export const CommentsList: React.FC<{
 }> = ({ navigation }) => {
   const { id } = navigation.state.params!;
   const [{ data, fetching }, executeQuery] = useQuery({
-    query: gql`
-      query CommentsQuery($id: Int!) {
-        hn {
-          item(id: $id) {
-            id
-            type
-            descendants
-            title
-            kids {
-              ...Comment
-              kids {
-                ...Comment
-                kids {
-                  ...Comment
-                  kids {
-                    ...Comment
-                    kids {
-                      ...Comment
-                    }
-                  }
-                }
-              }
-            }
-            by {
-              id
-            }
-            text
-            url
-            score
-          }
-        }
-      }
-
-      fragment Comment on HackerNewsItem {
-        id
-        type
-        by {
-          id
-        }
-        text
-        timeISO
-      }
-    `,
+    query: commentsQuery,
     variables: { id }
   });
 

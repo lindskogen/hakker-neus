@@ -8,9 +8,10 @@ import Collapsible from "react-native-collapsible";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
-import { backgroundDark, padding } from "../common/vars";
+import { backgroundDark, backgroundRed, padding } from "../common/vars";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { HTMLComment } from "./HTMLComment";
 
 const createLinkHandler = (navigation: NavigationScreenProp<{}, {}>) => (
@@ -54,33 +55,25 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
   };
 
   return (
-    <View
-      style={{
-        marginTop: depth === 0 ? 0 : padding,
-        paddingTop: padding,
-        marginLeft: (padding / 2) * depth,
-        minHeight: 40,
-        backgroundColor: backgroundDark
-      }}
-    >
-      <TouchableHighlight
-        underlayColor={backgroundDark}
-        onPress={() => setIsCollapsed(state => !state)}
-        onLongPress={handleLongPress}
-      >
+    <ErrorBoundary
+      fallback={
         <View
           style={{
-            padding,
-            paddingVertical: padding / 2,
-            borderLeftColor:
-              depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-            borderLeftWidth: 5
+            height: 10,
+            backgroundColor: backgroundRed
           }}
-        >
-          <CommentHeader isOp={isOp} comment={comment} />
-        </View>
-      </TouchableHighlight>
-      <Collapsible collapsed={isCollapsed}>
+        />
+      }
+    >
+      <View
+        style={{
+          marginTop: depth === 0 ? 0 : padding,
+          paddingTop: padding,
+          marginLeft: (padding / 2) * depth,
+          minHeight: 40,
+          backgroundColor: backgroundDark
+        }}
+      >
         <TouchableHighlight
           underlayColor={backgroundDark}
           onPress={() => setIsCollapsed(state => !state)}
@@ -95,22 +88,41 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
               borderLeftWidth: 5
             }}
           >
-            <HTMLComment comment={comment} onLinkPress={handlePressLink} />
+            <CommentHeader isOp={isOp} comment={comment} />
           </View>
         </TouchableHighlight>
+        <Collapsible collapsed={isCollapsed}>
+          <TouchableHighlight
+            underlayColor={backgroundDark}
+            onPress={() => setIsCollapsed(state => !state)}
+            onLongPress={handleLongPress}
+          >
+            <View
+              style={{
+                padding,
+                paddingVertical: padding / 2,
+                borderLeftColor:
+                  depth === 0 ? "transparent" : d3.schemeTableau10[depth],
+                borderLeftWidth: 5
+              }}
+            >
+              <HTMLComment comment={comment} onLinkPress={handlePressLink} />
+            </View>
+          </TouchableHighlight>
 
-        {(comment.kids || [])
-          .filter(kid => kid && !!kid.text)
-          .map(kid => (
-            <CommentWithChildren
-              op={op}
-              key={kid.id}
-              comment={kid}
-              depth={depth + 1}
-              navigation={navigation}
-            />
-          ))}
-      </Collapsible>
-    </View>
+          {(comment.kids || [])
+            .filter(kid => kid && !!kid.text)
+            .map(kid => (
+              <CommentWithChildren
+                op={op}
+                key={kid.id}
+                comment={kid}
+                depth={depth + 1}
+                navigation={navigation}
+              />
+            ))}
+        </Collapsible>
+      </View>
+    </ErrorBoundary>
   );
 };

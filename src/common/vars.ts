@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 export const padding = 10;
 export const backgroundDark = "#1b1d21";
+export const backgroundRed = "#ce5b4c";
 export const backgroundOrange = d3.interpolateOranges(0.65);
 
 export const fontFamily = Platform.select({
