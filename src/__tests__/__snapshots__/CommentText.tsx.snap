@@ -1,0 +1,939 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`HTMLComment renders HTML comment with link 1`] = `
+<View
+  style={Object {}}
+>
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        Actually, that's right, forgot about that :P
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+            "marginBottom": 16,
+            "marginTop": 16,
+            "marginVertical": 10,
+          }
+        }
+      >
+        The only remaining mystery then would be why they bothered encoding it like this:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    0xxxxxxx    110xxxxx  10xxxxxx            1110xxxx  10xxxxxx  10xxxxxx        11110xxx  10xxxxxx  10xxxxxx  10xxxxxx
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        
+... when it could have been done much more simply by putting the continuation bit in position 6 and keeping bit 7 set across the entire multibyte sequence:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    0xxxxxxx    11xxxxxx  11xxxxxx  ...  10xxxxxx
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        
+Or even like this for maximum compactness:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    0xxxxxxx    100xxxxx 1xxxxxxx    101xxxxx 1xxxxxxx 1xxxxxxx    110xxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx    111xxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx 1xxxxxxx
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+  </Text>
+</View>
+`;
+
+exports[`HTMLComment renders HTML comment with link 2`] = `
+<View
+  style={Object {}}
+>
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        &gt;&gt; they seem ... incompatible with such performance
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+            "marginBottom": 16,
+            "marginTop": 16,
+            "marginVertical": 10,
+          }
+        }
+      >
+        Might answer your question [0]
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+            "marginBottom": 16,
+            "marginTop": 16,
+            "marginVertical": 10,
+          }
+        }
+      >
+        [0] 
+      </Text>
+    </Text>
+    <Text
+      allowFontScaling={true}
+      baseFontStyle={
+        Object {
+          "color": "white",
+          "fontFamily": "Helvetica Neue",
+          "fontSize": 16,
+        }
+      }
+      classesStyles={Object {}}
+      debug={false}
+      decodeEntities={true}
+      emSize={14}
+      html="&gt;&gt; they seem ... incompatible with such performance<p>Might answer your question [0]<p>[0] <a href=\\"https:&#x2F;&#x2F;news.ycombinator.com&#x2F;item?id=2192629\\" rel=\\"nofollow\\">https:&#x2F;&#x2F;news.ycombinator.com&#x2F;item?id=2192629</a>"
+      ignoredStyles={Array []}
+      ignoredTags={
+        Array [
+          "head",
+          "scripts",
+          "audio",
+          "video",
+          "track",
+          "embed",
+          "object",
+          "param",
+          "source",
+          "canvas",
+          "noscript",
+          "caption",
+          "col",
+          "colgroup",
+          "table",
+          "tbody",
+          "td",
+          "tfoot",
+          "th",
+          "thead",
+          "tr",
+          "button",
+          "datalist",
+          "fieldset",
+          "form",
+          "input",
+          "label",
+          "legend",
+          "meter",
+          "optgroup",
+          "option",
+          "output",
+          "progress",
+          "select",
+          "textarea",
+          "details",
+          "diaglog",
+          "menu",
+          "menuitem",
+          "summary",
+        ]
+      }
+      imagesMaxWidth={750}
+      nodeIndex={1}
+      onLinkPress={[Function]}
+      onPress={[Function]}
+      parentIndex={2}
+      parentTag="p"
+      parentWrapper="Text"
+      ptSize={1.3}
+      rawChildren={
+        Array [
+          Object {
+            "attribs": Object {},
+            "data": "https://news.ycombinator.com/item?id=2192629",
+            "nodeIndex": 0,
+            "parent": <a>
+              DataNode {
+                "data": "https://news.ycombinator.com/item?id=2192629",
+                "endIndex": null,
+                "next": null,
+                "parent": <a>
+                  [Circular]
+                </a>,
+                "prev": null,
+                "startIndex": null,
+                "type": "text",
+              }
+            </a>,
+            "parentTag": "a",
+            "tagName": "rawtext",
+            "wrapper": "Text",
+          },
+        ]
+      }
+      renderers={
+        Object {
+          "pre": [Function],
+        }
+      }
+      staticContentMaxWidth={750}
+      style={
+        Array [
+          Object {
+            "color": "#245dc1",
+            "fontSize": 14,
+            "textDecorationLine": "underline",
+          },
+          Object {
+            "color": "white",
+          },
+          Object {},
+        ]
+      }
+      tagsStyles={
+        Object {
+          "a": Object {
+            "color": "white",
+          },
+          "code": Object {
+            "color": "white",
+            "fontFamily": "Menlo",
+          },
+          "p": Object {
+            "marginVertical": 10,
+          },
+        }
+      }
+      textSelectable={false}
+    >
+      <Text
+        allowFontScaling={true}
+        selectable={false}
+        style={
+          Array [
+            Object {},
+            Object {},
+          ]
+        }
+      >
+        <Text
+          allowFontScaling={true}
+          style={
+            Object {
+              "color": "white",
+              "fontFamily": "Helvetica Neue",
+              "fontSize": 16,
+              "marginBottom": 16,
+              "marginTop": 16,
+              "marginVertical": 10,
+              "textDecorationLine": "underline",
+            }
+          }
+        >
+          https://news.ycombinator.com/item?id=2192629
+        </Text>
+      </Text>
+    </Text>
+  </Text>
+</View>
+`;
+
+exports[`HTMLComment renders HTML comment with link 3`] = `
+<View
+  style={Object {}}
+>
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        Failed entirely to work on my first attempt with:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    curl -XHEAD https://google.com
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        
+It is just flat out wrong on:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    curl -X HEAD https://google.com
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        
+In that it does a GET request:
+      </Text>
+    </Text>
+  </Text>
+  <Text
+    allowFontScaling={true}
+    selectable={false}
+    style={
+      Array [
+        Object {
+          "marginVertical": 10,
+        },
+        Object {},
+        Object {},
+      ]
+    }
+  />
+  <Text
+    allowFontScaling={true}
+    style={Object {}}
+  >
+    <RCTScrollView
+      horizontal={true}
+    >
+      <View>
+        <Text
+          style={
+            Array [
+              Object {},
+              Object {
+                "marginVertical": 10,
+              },
+            ]
+          }
+        >
+          <Text
+            allowFontScaling={true}
+            selectable={false}
+            style={
+              Array [
+                Object {
+                  "color": "white",
+                  "fontFamily": "Menlo",
+                },
+                Object {},
+                Object {},
+              ]
+            }
+          >
+            <Text
+              allowFontScaling={true}
+              selectable={false}
+              style={
+                Array [
+                  Object {},
+                  Object {},
+                ]
+              }
+            >
+              <Text
+                allowFontScaling={true}
+                style={
+                  Object {
+                    "color": "white",
+                    "fontFamily": "Menlo",
+                    "fontSize": 16,
+                  }
+                }
+              >
+                    import requests        response = requests.get('https://google.com/')
+              </Text>
+            </Text>
+          </Text>
+        </Text>
+      </View>
+    </RCTScrollView>
+    <Text
+      allowFontScaling={true}
+      selectable={false}
+      style={
+        Array [
+          Object {},
+          Object {},
+        ]
+      }
+    >
+      <Text
+        allowFontScaling={true}
+        style={
+          Object {
+            "color": "white",
+            "fontFamily": "Helvetica Neue",
+            "fontSize": 16,
+          }
+        }
+      >
+        
+Clever idea, but my first totally valid example failed (it does OPTIONS, GET, POST, PUT, PATCH successfully)
+      </Text>
+    </Text>
+  </Text>
+</View>
+`;

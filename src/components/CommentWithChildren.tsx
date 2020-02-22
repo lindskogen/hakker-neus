@@ -92,23 +92,17 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
           </View>
         </TouchableHighlight>
         <Collapsible collapsed={isCollapsed}>
-          <TouchableHighlight
-            underlayColor={backgroundDark}
-            onPress={() => setIsCollapsed(state => !state)}
-            onLongPress={handleLongPress}
+          <View
+            style={{
+              padding,
+              paddingVertical: padding / 2,
+              borderLeftColor:
+                depth === 0 ? "transparent" : d3.schemeTableau10[depth],
+              borderLeftWidth: 5
+            }}
           >
-            <View
-              style={{
-                padding,
-                paddingVertical: padding / 2,
-                borderLeftColor:
-                  depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-                borderLeftWidth: 5
-              }}
-            >
-              <HTMLComment comment={comment} onLinkPress={handlePressLink} />
-            </View>
-          </TouchableHighlight>
+            <HTMLComment comment={comment} onLinkPress={handlePressLink} />
+          </View>
 
           {(comment.kids || [])
             .filter(kid => kid && !!kid.text)

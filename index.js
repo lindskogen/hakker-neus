@@ -1,8 +1,8 @@
 import "react-native-gesture-handler";
 import { AppRegistry } from "react-native";
 import App from "./App";
-import { useScreens } from "react-native-screens";
+import { enableScreens } from "react-native-screens";
 
-useScreens();
+enableScreens();
 
 AppRegistry.registerComponent("HackerNeus", () => App);

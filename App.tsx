@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Platform, SafeAreaView, StatusBar } from "react-native";
+import { SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { Provider } from "urql";
@@ -16,7 +16,7 @@ const AppNavigator = createStackNavigator(
     CommentsTesting: { screen: CommentsSink }
   },
   {
-    initialRouteName: "Home",
+    initialRouteName: "CommentsTesting",
     headerMode: "none",
     defaultNavigationOptions: {
       gestureResponseDistance: {
@@ -37,7 +37,7 @@ export default function AppWrapper() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: backgroundDark,
+          backgroundColor: backgroundDark
         }}
       >
         <NavigationContainer />

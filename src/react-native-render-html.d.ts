@@ -1,7 +1,9 @@
 declare module "react-native-render-html" {
-  import { ViewStyle, NativeTouchEvent } from "react-native";
+  import { NativeTouchEvent, ViewStyle } from "react-native";
 
   type WrapperType = "Text" | "View";
+
+  type HTMLTagName = "code" | "p" | "i" | "strong";
 
   interface ParentType {
     attribs: {};
@@ -49,7 +51,7 @@ declare module "react-native-render-html" {
     rawChildren: ChildType[];
     renderers: {};
     staticContentMaxWidth: number;
-    tagsStyles: {};
+    tagsStyles: Record<HTMLTagName, {}>;
     textSelectable: boolean;
   }
 
@@ -73,7 +75,11 @@ declare module "react-native-render-html" {
     imagesMaxWidth?: any;
     staticContentMaxWidth?: any;
     imagesInitialDimensions?: any;
-    onLinkPress?: (evt: NativeTouchEvent, href: string, htmlAttribs: {}) => void;
+    onLinkPress?: (
+      evt: NativeTouchEvent,
+      href: string,
+      htmlAttribs: {}
+    ) => void;
     onParsed?: any;
     tagsStyles?: any;
     classesStyles?: any;
