@@ -2,7 +2,7 @@ import * as React from "react";
 import HTMLView from "react-native-htmlview";
 import { HNComment } from "../common/types";
 import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 const preprocessHTML = (str: string): string => {
   if (str.indexOf("<") !== 0) {
@@ -63,14 +63,17 @@ export const HTMLComment = ({
             style={{
               marginVertical: padding,
               padding,
-              borderWidth: 1,
               borderStyle: "solid",
-              borderColor: "white"
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: "rgba(255,255,255,0.25)"
             }}
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
           >
-            {defaultRenderer((node as any).children, parent)}
+            <View
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+            >
+              {defaultRenderer((node as any).children, parent)}
+            </View>
           </ScrollView>
         );
       }

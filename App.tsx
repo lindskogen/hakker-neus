@@ -16,7 +16,7 @@ const AppNavigator = createStackNavigator(
     CommentsTesting: { screen: CommentsSink }
   },
   {
-    initialRouteName: "CommentsTesting",
+    initialRouteName: "Home",
     headerMode: "none",
     defaultNavigationOptions: {
       gestureResponseDistance: {

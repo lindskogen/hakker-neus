@@ -1423,6 +1423,13 @@
     lodash "^4.5.0"
     prop-types "^15.6.1"
 
+"@urql/core@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@urql/core/-/core-1.9.0.tgz#9317071175a80fe93bee4277a253275ebce781ea"
+  integrity sha512-kP3/mdzwTUv7wR7EJaXxL1dJklHxXhHamc+NbFqhgmJM3y/Wkdm3b4MZ3Gx0HlLlMgo6/i2G0V26sydQdttd6g==
+  dependencies:
+    wonka "^4.0.7"
+
 abab@^2.0.0:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.3.tgz#623e2075e02eb2d3f2475e49f99c91846467907a"
@@ -3272,12 +3279,6 @@ growly@^1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/growly/-/growly-1.3.0.tgz#f10748cbe76af964b7c96c93c6bcc28af120c081"
   integrity sha1-8QdIy+dq+WS3yWyTxrzCivEgwIE=
-
-"hammerjs@https://github.com/naver/hammer.js.git":
-  version "2.0.17-snapshot"
-  resolved "https://github.com/naver/hammer.js.git#54bc698b25edd6e1b76ca975ebaced5ce0467d51"
-  dependencies:
-    "@types/hammerjs" "^2.0.36"
 
 har-schema@^2.0.0:
   version "2.0.0"
@@ -5801,13 +5802,12 @@ react-native-collapsible@^1.5.1:
   dependencies:
     prop-types "^15.6.2"
 
-react-native-gesture-handler@1.5.6:
-  version "1.5.6"
-  resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-1.5.6.tgz#5d90145f624e3707db2930f43ab41579683e2375"
-  integrity sha512-z2jLUkRiRc0PBAC9UcXYkqy3VUzBG0cYQAGMsDHsd90JgrzudHAFRJV9fvFm18wNauFTNnJievjZ0C3rI2ydhw==
+react-native-gesture-handler@1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/react-native-gesture-handler/-/react-native-gesture-handler-1.6.0.tgz#e9a4e1d0c7ac21eb0d6b6ec013e73f9c0c33a629"
+  integrity sha512-KulGCWKTxa6xBpPP4LWEPmmLqBqOe2jbtdlILOVF/dR4EgImiaBVrKdOHeRMyMzJOYAWxs5uDZsyA8hgSsm+lw==
   dependencies:
     "@egjs/hammerjs" "^2.0.17"
-    hammerjs "https://github.com/naver/hammer.js.git"
     hoist-non-react-statics "^2.3.1"
     invariant "^2.2.4"
     prop-types "^15.7.2"
@@ -5848,10 +5848,10 @@ react-native-render-html@^4.2.0:
     html-entities "^1.2.0"
     htmlparser2 "^4.0.0"
 
-react-native-safe-area-context@^0.6.4:
-  version "0.6.4"
-  resolved "https://registry.yarnpkg.com/react-native-safe-area-context/-/react-native-safe-area-context-0.6.4.tgz#624bd50cebc9f47853f179373501511931d2a0c3"
-  integrity sha512-xj8Mv8ZHfc8RquBgVYt+4+nOJaexTblLsQJpyx4Dh4qFUG+3QtbNlfOF7/ITj/qY5LNdlfafKoDsVgFz0WIU1w==
+react-native-safe-area-context@^0.7.3:
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/react-native-safe-area-context/-/react-native-safe-area-context-0.7.3.tgz#ad6bd4abbabe195332c53810e4ce5851eb21aa2a"
+  integrity sha512-9Uqu1vlXPi+2cKW/CW6OnHxA76mWC4kF3wvlqzq4DY8hn37AeiXtLFs2WkxH4yXQRrnJdP6ivc65Lz+MqwRZAA==
 
 react-native-safe-area-view@^0.14.8:
   version "0.14.8"
@@ -5860,10 +5860,10 @@ react-native-safe-area-view@^0.14.8:
   dependencies:
     hoist-non-react-statics "^2.3.1"
 
-react-native-screens@2.0.0-beta.2:
-  version "2.0.0-beta.2"
-  resolved "https://registry.yarnpkg.com/react-native-screens/-/react-native-screens-2.0.0-beta.2.tgz#317e844e02134b42aa0e3551da925c511cc58d64"
-  integrity sha512-N+k4S/Wr+YGjzuGF49fB4VjIG6Fcaj4md3uxTsyeshEILGptPWAlgb5hAgn6C9xOj1x/rrAoXwZmrPNxPw6CSg==
+react-native-screens@2.0.0-beta.10:
+  version "2.0.0-beta.10"
+  resolved "https://registry.yarnpkg.com/react-native-screens/-/react-native-screens-2.0.0-beta.10.tgz#129b7b7887cd68374131442bc5b9613d0db847cd"
+  integrity sha512-W+bq7YvUxtoXD7VxK8/fivBJyhBfqhXYocVtd+XuxFosa5fhWDsN4gtJIShFCqzQy9HZruJ0f+FLrrBsVY7crw==
   dependencies:
     debounce "^1.2.0"
 
@@ -5905,10 +5905,10 @@ react-native-unimodules@^0.7.0:
     unimodules-sensors-interface "~5.0.0"
     unimodules-task-manager-interface "~5.0.0"
 
-react-native-webview@8.0.6:
-  version "8.0.6"
-  resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-8.0.6.tgz#247e6e16926e06105144bb33ec9d0429e01c8900"
-  integrity sha512-lvapBzV0Ymv39EpubaitF8RzkhYDb7uT9n230f5V+SpDU3BN03WnED7v3HHQDXoPwjDBNRWzDgoImnFn9WlSzw==
+react-native-webview@8.1.2:
+  version "8.1.2"
+  resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-8.1.2.tgz#c2ddb1e82d1c294f8f68a13be5d0536f7808f377"
+  integrity sha512-UnGQDttXcgp9JuexidYVu3KIQn1V9xG93yKIs7u6OMdORD5EM4lm7Z1fqqBa59LBeEii5M546kh1/rm0rDA0cA==
   dependencies:
     escape-string-regexp "2.0.0"
     invariant "2.2.4"
@@ -5978,11 +5978,6 @@ react-test-renderer@16.9.0:
     prop-types "^15.6.2"
     react-is "^16.9.0"
     scheduler "^0.15.0"
-
-react-wonka@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/react-wonka/-/react-wonka-2.0.1.tgz#75bdf03dbad8ceb8c1066216f635f05ce2b642a5"
-  integrity sha512-mM2UH2gnK5LLzaqVWd6JCLrB1vO3I4PN/sQZbjvzsjms4vSv+nKwelNUftM0KeC+LtTPC4GGsuxyu2XJnsCUTw==
 
 react@16.9.0:
   version "16.9.0"
@@ -6333,14 +6328,6 @@ scheduler@0.15.0, scheduler@^0.15.0:
   version "0.15.0"
   resolved "https://registry.yarnpkg.com/scheduler/-/scheduler-0.15.0.tgz#6bfcf80ff850b280fed4aeecc6513bc0b4f17f8e"
   integrity sha512-xAefmSfN6jqAa7Kuq7LIJY0bwAPG3xlCj0HMEBQk1lxYiDKZscY2xJ5U/61ZTrYbmNQbXa+gc7czPkVo11tnCg==
-  dependencies:
-    loose-envify "^1.1.0"
-    object-assign "^4.1.1"
-
-"scheduler@>= 0.16.0":
-  version "0.18.0"
-  resolved "https://registry.yarnpkg.com/scheduler/-/scheduler-0.18.0.tgz#5901ad6659bc1d8f3fdaf36eb7a67b0d6746b1c4"
-  integrity sha512-agTSHR1Nbfi6ulI0kYNK0203joW2Y5W4po4l+v03tOoiJKpTBbxpNhWDvqc/4IcOw+KLmSiQLTasZ4cab2/UWQ==
   dependencies:
     loose-envify "^1.1.0"
     object-assign "^4.1.1"
@@ -7189,14 +7176,21 @@ url-parse@^1.4.4:
     querystringify "^2.1.1"
     requires-port "^1.0.0"
 
-urql@^1.8.2:
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/urql/-/urql-1.8.2.tgz#66fcd111c346c45e647b7905fc6291e044425b06"
-  integrity sha512-ilTTkRxQrY1H9kz8YPFjE4Npe9J540uxT4tUb5kTP1Cs+xJCjxKcqIVPZtRkrLw/1pUM5vKxg4a3I2GYFLmHoQ==
+urql@^1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/urql/-/urql-1.9.0.tgz#38a2a5a4c477a34162f00a9a099aa302098f36d1"
+  integrity sha512-A9mJEa5QDUB6+TWDk55UCU7QziwmN5BPBaQsT7LIOtMBNOISy5GAHqPoWqQAFueNoXk8r4rNLPNtkdLnZbES1Q==
   dependencies:
-    react-wonka "^2.0.1"
-    scheduler ">= 0.16.0"
+    "@urql/core" "^1.9.0"
+    use-subscription "^1.3.0"
     wonka "^4.0.7"
+
+use-subscription@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/use-subscription/-/use-subscription-1.3.0.tgz#3df13a798e826c8d462899423293289a3362e4e6"
+  integrity sha512-buZV7FUtnbOr+65dN7PHK7chHhQGfk/yjgqfpRLoWuHIAc4klAD/rdot2FsPNtFthN1ZydvA8tR/mWBMQ+/fDQ==
+  dependencies:
+    object-assign "^4.1.1"
 
 use@^3.1.0:
   version "3.1.1"
