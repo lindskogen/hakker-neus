@@ -3,6 +3,7 @@ import HTMLView from "react-native-htmlview";
 import { HNComment } from "../common/types";
 import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { decodeHTMLEntities } from "../lib/formatter";
 
 const preprocessHTML = (str: string): string => {
   if (str.indexOf("<") !== 0) {
@@ -10,6 +11,16 @@ const preprocessHTML = (str: string): string => {
   }
   str = str.replace(/<p><pre>/g, "<pre>");
   return str;
+};
+
+const RenderNode: React.FC = ({ children, ...props }) => {
+  return (
+    <View {...props}>
+      {React.Children.map(children, ch =>
+        typeof ch === "string" ? <Text>{ch}</Text> : ch
+      )}
+    </View>
+  );
 };
 
 export const HTMLComment = ({
@@ -22,15 +33,7 @@ export const HTMLComment = ({
   <HTMLView
     value={preprocessHTML(comment.text)}
     onLinkPress={url => onLinkPress(url)}
-    NodeComponent={({ children, ...props }) => {
-      return (
-        <View {...props}>
-          {React.Children.map(children, ch =>
-            typeof ch === "string" ? <Text>{ch}</Text> : ch
-          )}
-        </View>
-      );
-    }}
+    NodeComponent={RenderNode}
     TextComponent={props => {
       return <Text {...props} />;
     }}
@@ -43,7 +46,8 @@ export const HTMLComment = ({
     }}
     stylesheet={{
       a: {
-        color: "white"
+        color: "white",
+        textDecorationLine: "underline"
       },
       code: {
         fontFamily: fontFamilyMonospaced
@@ -69,12 +73,35 @@ export const HTMLComment = ({
             }}
           >
             <View
-              onStartShouldSetResponder={() => true}
+              onStartShouldSetResponder={event => {
+                console.log(event);
+                return true;
+              }}
               onMoveShouldSetResponder={() => true}
             >
               {defaultRenderer((node as any).children, parent)}
             </View>
           </ScrollView>
+        );
+      }
+
+      let linkPressHandler = null;
+      if (node.name === "a" && node.attribs && node.attribs.href) {
+        linkPressHandler = () =>
+          onLinkPress(decodeHTMLEntities(node.attribs.href));
+
+        return (
+          <RenderNode
+            onStartShouldSetResponder={() => true}
+            key={index}
+            onResponderRelease={linkPressHandler}
+            style={{
+              color: "white",
+              textDecorationLine: "underline"
+            }}
+          >
+            {defaultRenderer(node.children, node)}
+          </RenderNode>
         );
       }
 

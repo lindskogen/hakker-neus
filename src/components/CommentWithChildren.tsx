@@ -94,7 +94,11 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         <Collapsible collapsed={isCollapsed}>
           <TouchableHighlight
             underlayColor={backgroundDark}
-            onPress={() => setIsCollapsed(state => !state)}
+            onPress={event => {
+              event.persist();
+              console.log(event);
+              setIsCollapsed(state => !state);
+            }}
             onLongPress={handleLongPress}
           >
             <View
