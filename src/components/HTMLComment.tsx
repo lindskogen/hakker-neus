@@ -14,15 +14,17 @@ const preprocessHTML = (str: string): string => {
 
 export const HTMLComment = ({
   comment,
-  onLinkPress
+  onLinkPress,
+  scrollInCodeBlocksEnabled = false
 }: {
   comment: HNComment;
+  scrollInCodeBlocksEnabled?: boolean;
   onLinkPress: (href: string) => void;
 }) => (
   <HTMLView
     value={preprocessHTML(comment.text)}
-    onLinkPress={url => onLinkPress(url)}
-    NodeComponent={({ children, ...props }) => {
+    onLinkPress={onLinkPress}
+    NodeComponent={scrollInCodeBlocksEnabled ? ({ children, ...props }) => {
       return (
         <View {...props}>
           {React.Children.map(children, ch =>
@@ -30,10 +32,7 @@ export const HTMLComment = ({
           )}
         </View>
       );
-    }}
-    TextComponent={props => {
-      return <Text {...props} />;
-    }}
+    }: undefined}
     textComponentProps={{
       style: {
         fontSize: 16,
@@ -43,9 +42,15 @@ export const HTMLComment = ({
     }}
     stylesheet={{
       a: {
-        color: "white"
+        color: "white",
+        textDecorationLine: "underline"
       },
       code: {
+        marginVertical: padding,
+        padding,
+        borderStyle: "solid",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.25)",
         fontFamily: fontFamilyMonospaced
       }
     }}
@@ -55,18 +60,11 @@ export const HTMLComment = ({
           node.data = node.data.replace(/^ {4}/gm, "");
         }
       }
-      if (node.name === "pre") {
+      if (node.name === "pre" && scrollInCodeBlocksEnabled) {
         return (
           <ScrollView
             key={index}
             horizontal
-            style={{
-              marginVertical: padding,
-              padding,
-              borderStyle: "solid",
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: "rgba(255,255,255,0.25)"
-            }}
           >
             <View
               onStartShouldSetResponder={() => true}
