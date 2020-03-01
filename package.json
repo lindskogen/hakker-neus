@@ -18,14 +18,13 @@
     "react-native-htmlview": "^0.15.0",
     "react-native-inappbrowser-reborn": "^3.3.4",
     "react-native-reanimated": "~1.7.0",
-    "react-native-render-html": "^4.2.0",
     "react-native-safe-area-context": "^0.7.3",
-    "react-native-screens": "2.0.0-beta.10",
+    "react-native-screens": "2.2.0",
     "react-native-swipeable": "^0.6.0",
     "react-native-unimodules": "^0.7.0",
     "react-native-webview": "8.1.2",
-    "react-navigation": "^4.1.1",
-    "react-navigation-stack": "^2.1.1",
+    "react-navigation": "^4.2.2",
+    "react-navigation-stack": "^2.2.2",
     "urql": "^1.9.0"
   },
   "devDependencies": {
