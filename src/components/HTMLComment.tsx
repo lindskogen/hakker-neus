@@ -2,7 +2,8 @@ import * as React from "react";
 import HTMLView from "react-native-htmlview";
 import { HNComment } from "../common/types";
 import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View, ViewProps } from "react-native";
+import { decodeHTMLEntities } from "../lib/formatter";
 
 const preprocessHTML = (str: string): string => {
   if (str.indexOf("<") !== 0) {
@@ -12,27 +13,27 @@ const preprocessHTML = (str: string): string => {
   return str;
 };
 
+const CommentNode: React.FC<ViewProps> = ({ children, ...props }) => {
+  return (
+    <View {...props}>
+      {React.Children.map(children, ch =>
+        typeof ch === "string" ? <Text>{ch}</Text> : ch
+      )}
+    </View>
+  );
+};
+
 export const HTMLComment = ({
   comment,
-  onLinkPress,
-  scrollInCodeBlocksEnabled = false
+  onLinkPress
 }: {
   comment: HNComment;
-  scrollInCodeBlocksEnabled?: boolean;
   onLinkPress: (href: string) => void;
 }) => (
   <HTMLView
     value={preprocessHTML(comment.text)}
     onLinkPress={onLinkPress}
-    NodeComponent={scrollInCodeBlocksEnabled ? ({ children, ...props }) => {
-      return (
-        <View {...props}>
-          {React.Children.map(children, ch =>
-            typeof ch === "string" ? <Text>{ch}</Text> : ch
-          )}
-        </View>
-      );
-    }: undefined}
+    NodeComponent={CommentNode}
     textComponentProps={{
       style: {
         fontSize: 16,
@@ -60,12 +61,9 @@ export const HTMLComment = ({
           node.data = node.data.replace(/^ {4}/gm, "");
         }
       }
-      if (node.name === "pre" && scrollInCodeBlocksEnabled) {
+      if (node.name === "pre") {
         return (
-          <ScrollView
-            key={index}
-            horizontal
-          >
+          <ScrollView key={index} horizontal>
             <View
               onStartShouldSetResponder={() => true}
               onMoveShouldSetResponder={() => true}
@@ -73,6 +71,20 @@ export const HTMLComment = ({
               {defaultRenderer((node as any).children, parent)}
             </View>
           </ScrollView>
+        );
+      }
+
+      if (node.name === "a" && node.attribs && node.attribs.href) {
+        return (
+          <CommentNode
+            onStartShouldSetResponder={() => true}
+            key={index}
+            onResponderRelease={() =>
+              onLinkPress(decodeHTMLEntities(node.attribs.href))
+            }
+          >
+            {defaultRenderer((node as any).children, node)}
+          </CommentNode>
         );
       }
 
