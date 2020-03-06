@@ -1,77 +1,41 @@
-import * as d3 from "d3-scale-chromatic";
-import gql from "graphql-tag";
 import * as React from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
-import { useQuery } from "urql";
 import { HNComment, HNStory } from "../common/types";
 import { backgroundDark } from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
-
-const commentsQuery = gql`
-  query CommentsQuery($id: Int!) {
-    hn {
-      item(id: $id) {
-        id
-        type
-        descendants
-        title
-        kids {
-          ...Comment
-          kids {
-            ...Comment
-            kids {
-              ...Comment
-              kids {
-                ...Comment
-                kids {
-                  ...Comment
-                }
-              }
-            }
-          }
-        }
-        by {
-          id
-        }
-        text
-        url
-        score
-      }
-    }
-  }
-
-  fragment Comment on HackerNewsItem {
-    id
-    type
-    by {
-      id
-    }
-    text
-    timeISO
-  }
-`;
-
-interface HNStoryWithComments extends HNStory {
-  kids: (HNComment | null)[];
-}
+import { useQuery } from "react-query";
+import {
+  fetchCommentsForItem,
+  HNStoryWithComments
+} from "../fetchers/fetchCommentsForItem";
 
 export const CommentsList: React.FC<{
   navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
 }> = ({ navigation }) => {
   const { id } = navigation.state.params!;
-  const [{ data, fetching }, executeQuery] = useQuery({
-    query: commentsQuery,
-    variables: { id }
-  });
 
-  const story: HNStoryWithComments | undefined = data
-    ? data.hn.item
-    : undefined;
-  const user: string = story ? story.by.id : "undefined";
+  const [mounted, setMounted] = useState(false);
+
+  const { data: story, status, error, refetch, ...rest } = useQuery<
+    HNStoryWithComments,
+    any
+  >(
+    ["comments", { id }],
+    // @ts-ignore
+    fetchCommentsForItem
+  );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  console.log(status, rest);
+
+  const user: string = story?.by.id ?? "undefined";
 
   const renderItem: ListRenderItem<HNComment> = useCallback(
     ({ item }) => (
@@ -85,7 +49,7 @@ export const CommentsList: React.FC<{
     [user, navigation]
   );
 
-  if (!story) {
+  if (!story || !mounted) {
     return (
       <View style={{ flex: 1 }}>
         {navigation.state.params!.story && (
@@ -99,7 +63,9 @@ export const CommentsList: React.FC<{
     );
   }
 
-  const comments = story.kids.filter(kid => kid && !!kid.text) as HNComment[];
+  const comments = story.kids.filter(
+    (kid: HNComment | null) => kid && !!kid.text
+  ) as HNComment[];
 
   return (
     <FlatList
@@ -107,8 +73,8 @@ export const CommentsList: React.FC<{
       data={comments}
       refreshControl={
         <RefreshControl
-          refreshing={fetching}
-          onRefresh={() => executeQuery({ requestPolicy: "network-only" })}
+          refreshing={status === "loading"}
+          onRefresh={() => refetch()}
           tintColor={"white"}
         />
       }

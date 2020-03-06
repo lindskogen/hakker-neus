@@ -2,7 +2,7 @@ import * as React from "react";
 import { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
-  fallback: ReactNode;
+  fallback: ReactNode | ((error: Error) => ReactNode);
   onError?: (error: Error, componentStack: string) => void;
 }
 
@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
     const { error } = this.state;
 
     if (error !== null) {
-      return fallback;
+      return typeof fallback === "function" ? fallback(error) : fallback;
     }
 
     return children;

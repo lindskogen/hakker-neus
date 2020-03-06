@@ -2,16 +2,14 @@ import * as React from "react";
 import { SafeAreaView, StatusBar } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
-import { Provider } from "urql";
 import { backgroundDark } from "./src/common/vars";
-import { urqlClient } from "./src/lib/urql";
 import { CommentsList } from "./src/screens/CommentsList";
 import { CommentsSink } from "./src/screens/CommentsSink";
-import { NewsList } from "./src/screens/NewsList";
+import { NewsListScreen } from "./src/screens/NewsList";
 
 const AppNavigator = createStackNavigator(
   {
-    Home: { screen: NewsList },
+    Home: { screen: NewsListScreen },
     Comments: { screen: CommentsList },
     CommentsTesting: { screen: CommentsSink }
   },
@@ -32,7 +30,7 @@ const NavigationContainer = createAppContainer(AppNavigator);
 
 export default function AppWrapper() {
   return (
-    <Provider value={urqlClient}>
+    <>
       <StatusBar barStyle={"light-content"} />
       <SafeAreaView
         style={{
@@ -42,6 +40,6 @@ export default function AppWrapper() {
       >
         <NavigationContainer />
       </SafeAreaView>
-    </Provider>
+    </>
   );
 }
