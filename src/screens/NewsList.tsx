@@ -1,6 +1,6 @@
 import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
-import { memo, Suspense, useCallback, useMemo } from "react";
+import { memo, Suspense, useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   ListRenderItem,
@@ -16,7 +16,7 @@ import { Loader } from "../components/Loader";
 import { useInfiniteQuery } from "react-query";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ListItem } from "../components/ListItem";
-import { flatten, uniq, uniqBy } from "lodash-es";
+import { flatten, uniqBy } from "lodash-es";
 import { fetchNewsList } from "../fetchers/fetchNewsList";
 
 interface NewsListProps {
@@ -29,7 +29,9 @@ const getBackgroundColor = (index: number): string =>
   d3.interpolateOranges((index / 50) * 0.35 + 0.65);
 
 export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
+  const [isRefetching, setRefetching] = useState(false);
   const {
+    status,
     refetch,
     data,
     isFetching,
@@ -37,12 +39,22 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
     isFetchingMore
   } = useInfiniteQuery("news-list", fetchNewsList, {
     suspense: true,
-    getFetchMore: (lastGroup: HNStory[], allGroups: HNStory[][]) => allGroups.length
+    refetchOnMount: false,
+    onSettled: () => setRefetching(false),
+    refetchOnWindowFocus: false,
+    getFetchMore: (lastGroup: HNStory[], allGroups: HNStory[][]) => {
+      const length = allGroups.length;
+      console.log("next fetch:", length);
+      return length;
+    }
   });
 
   const stories = data as HNStory[][];
 
-  const flattenedStories = useMemo(() => uniqBy(flatten(stories), story => story.id), [stories]);
+  const flattenedStories = useMemo(
+    () => uniqBy(flatten(stories), story => story.id),
+    [stories]
+  );
 
   const renderItem: ListRenderItem<HNStory> = useCallback(
     ({ item: story, index }) => {
@@ -65,8 +77,11 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
       data={flattenedStories}
       refreshControl={
         <RefreshControl
-          refreshing={isFetching}
-          onRefresh={() => refetch()}
+          refreshing={isRefetching}
+          onRefresh={() => {
+            setRefetching(true);
+            refetch();
+          }}
           tintColor={"white"}
         />
       }

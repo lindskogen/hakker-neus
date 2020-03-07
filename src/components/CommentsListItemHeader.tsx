@@ -21,7 +21,6 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
 }) => (
   <NewsListItem backgroundColor={backgroundOrange}>
     <TouchableOpacity
-      style={{ flex: 1 }}
       onLongPress={() => {
         Share.share({
           title: decodeHTMLEntities(title),

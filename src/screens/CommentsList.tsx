@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
 import { HNComment, HNStory } from "../common/types";
@@ -12,29 +12,23 @@ import {
   fetchCommentsForItem,
   HNStoryWithComments
 } from "../fetchers/fetchCommentsForItem";
+import { EmptyStateIcon } from "../components/EmptyStateIcon";
 
-export const CommentsList: React.FC<{
+interface Props {
+  story: HNStoryWithComments;
+  comments: HNComment[];
   navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
-}> = ({ navigation }) => {
-  const { id } = navigation.state.params!;
+  isFetching: boolean;
+  refetch: () => void;
+}
 
-  const [mounted, setMounted] = useState(false);
-
-  const { data: story, status, error, refetch, ...rest } = useQuery<
-    HNStoryWithComments,
-    any
-  >(
-    ["comments", { id }],
-    // @ts-ignore
-    fetchCommentsForItem
-  );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  console.log(status, rest);
-
+const CommentsFlatList = ({
+  navigation,
+  story,
+  comments,
+  isFetching,
+  refetch
+}: Props) => {
   const user: string = story?.by.id ?? "undefined";
 
   const renderItem: ListRenderItem<HNComment> = useCallback(
@@ -49,31 +43,13 @@ export const CommentsList: React.FC<{
     [user, navigation]
   );
 
-  if (!story || !mounted) {
-    return (
-      <View style={{ flex: 1 }}>
-        {navigation.state.params!.story && (
-          <CommentsListItemHeader
-            navigation={navigation}
-            story={navigation.state.params!.story}
-          />
-        )}
-        <Loader backgroundColor={backgroundDark} />
-      </View>
-    );
-  }
-
-  const comments = story.kids.filter(
-    (kid: HNComment | null) => kid && !!kid.text
-  ) as HNComment[];
-
   return (
     <FlatList
       style={{ backgroundColor: backgroundDark }}
       data={comments}
       refreshControl={
         <RefreshControl
-          refreshing={status === "loading"}
+          refreshing={isFetching}
           onRefresh={() => refetch()}
           tintColor={"white"}
         />
@@ -83,6 +59,70 @@ export const CommentsList: React.FC<{
       }
       keyExtractor={item => String(item.id)}
       renderItem={renderItem}
+    />
+  );
+};
+
+export const CommentsList: React.FC<{
+  navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
+}> = ({ navigation }) => {
+  const { id } = navigation.state.params!;
+
+  const [mounted, setMounted] = useState(false);
+
+  const { data: story, isFetching, refetch } = useQuery<
+    HNStoryWithComments,
+    any
+  >(
+    ["comments", { id }],
+    // @ts-ignore
+    fetchCommentsForItem
+  );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const comments = story?.kids.filter(
+    (kid: HNComment | null) => kid && !!kid.text
+  ) as HNComment[];
+
+  const isLoading = isFetching || !mounted;
+
+  if (isLoading || comments.length == 0) {
+    return (
+      <>
+        {navigation.state.params!.story && (
+          <CommentsListItemHeader
+            navigation={navigation}
+            story={navigation.state.params!.story}
+          />
+        )}
+        {isLoading ? (
+          <Loader backgroundColor={backgroundDark} />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: backgroundDark
+            }}
+          >
+            <EmptyStateIcon width={70} height={70} opacity={0.3} />
+          </View>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <CommentsFlatList
+      story={story}
+      navigation={navigation}
+      comments={comments}
+      isFetching={isFetching}
+      refetch={refetch}
     />
   );
 };

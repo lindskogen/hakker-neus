@@ -47,11 +47,8 @@ export const HTMLComment = ({
         textDecorationLine: "underline"
       },
       code: {
-        marginVertical: padding,
         padding,
-        borderStyle: "solid",
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(255,255,255,0.25)",
+        fontSize: 14,
         fontFamily: fontFamilyMonospaced
       }
     }}
@@ -63,7 +60,13 @@ export const HTMLComment = ({
       }
       if (node.name === "pre") {
         return (
-          <ScrollView key={index} horizontal>
+          <ScrollView key={index} horizontal style={{
+            paddingTop: padding,
+            marginVertical: padding,
+            borderStyle: "solid",
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: "rgba(255,255,255,0.25)",
+          }}>
             <View
               onStartShouldSetResponder={() => true}
               onMoveShouldSetResponder={() => true}

@@ -27,7 +27,7 @@ export const CommentHeader = ({
     >
       <Text
         style={{
-          fontSize: 10,
+          fontSize: 12,
           fontFamily,
           color: "white"
         }}
@@ -61,7 +61,7 @@ export const CommentHeader = ({
     </View>
     <Text
       style={{
-        fontSize: 10,
+        fontSize: 12,
         fontFamily,
         color: "white"
       }}

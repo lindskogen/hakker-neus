@@ -1,6 +1,6 @@
 import * as React from "react";
-import { SafeAreaView, StatusBar } from "react-native";
-import { createAppContainer } from "react-navigation";
+import { StatusBar } from "react-native";
+import { createAppContainer, SafeAreaView } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
 import { backgroundDark } from "./src/common/vars";
 import { CommentsList } from "./src/screens/CommentsList";
@@ -33,6 +33,7 @@ export default function AppWrapper() {
     <>
       <StatusBar barStyle={"light-content"} />
       <SafeAreaView
+        forceInset={{ bottom: "never" }}
         style={{
           flex: 1,
           backgroundColor: backgroundDark

@@ -1,4 +1,3 @@
-import * as d3 from "d3-scale-chromatic";
 import qs from "query-string";
 
 import * as React from "react";
@@ -13,6 +12,7 @@ import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { HTMLComment } from "./HTMLComment";
+import { ContainerWithLeftBorder } from "./ContainerWithLeftBorder";
 
 const createLinkHandler = (navigation: NavigationScreenProp<{}, {}>) => (
   href: string
@@ -79,17 +79,9 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
           onPress={() => setIsCollapsed(state => !state)}
           onLongPress={handleLongPress}
         >
-          <View
-            style={{
-              padding,
-              paddingVertical: padding / 2,
-              borderLeftColor:
-                depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-              borderLeftWidth: 5
-            }}
-          >
+          <ContainerWithLeftBorder depth={depth}>
             <CommentHeader isOp={isOp} comment={comment} />
-          </View>
+          </ContainerWithLeftBorder>
         </TouchableHighlight>
         <Collapsible collapsed={isCollapsed}>
           <TouchableHighlight
@@ -97,17 +89,9 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
             onPress={() => setIsCollapsed(state => !state)}
             onLongPress={handleLongPress}
           >
-            <View
-              style={{
-                padding,
-                paddingVertical: padding / 2,
-                borderLeftColor:
-                  depth === 0 ? "transparent" : d3.schemeTableau10[depth],
-                borderLeftWidth: 5
-              }}
-            >
+            <ContainerWithLeftBorder depth={depth}>
               <HTMLComment comment={comment} onLinkPress={handlePressLink} />
-            </View>
+            </ContainerWithLeftBorder>
           </TouchableHighlight>
 
           {(comment.kids || [])
