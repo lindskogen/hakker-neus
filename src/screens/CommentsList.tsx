@@ -1,9 +1,20 @@
 import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
+import {
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  View,
+  Text
+} from "react-native";
 import { NavigationScreenProp } from "react-navigation";
 import { HNComment, HNStory } from "../common/types";
-import { backgroundDark } from "../common/vars";
+import {
+  backgroundDark,
+  backgroundOrange,
+  fontFamily,
+  padding
+} from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { CommentWithChildren } from "../components/CommentWithChildren";
 import { Loader } from "../components/Loader";
@@ -47,6 +58,7 @@ const CommentsFlatList = ({
     <FlatList
       style={{ backgroundColor: backgroundDark }}
       data={comments}
+      contentContainerStyle={{ paddingBottom: padding * 3 }}
       refreshControl={
         <RefreshControl
           refreshing={isFetching}
@@ -110,6 +122,16 @@ export const CommentsList: React.FC<{
             }}
           >
             <EmptyStateIcon width={70} height={70} opacity={0.3} />
+            <Text
+              style={{
+                fontFamily,
+                color: "rgba(255, 255, 255, 0.3)",
+                fontWeight: "300",
+                fontSize: 24
+              }}
+            >
+              No comments here
+            </Text>
           </View>
         )}
       </>

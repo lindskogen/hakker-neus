@@ -4,19 +4,25 @@ import { HNStory } from "../common/types";
 import { NavigationScreenProp } from "react-navigation";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
-  Animated, Easing,
+  Animated,
+  Platform,
+  PlatformIOSStatic,
   Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from "react-native";
-import { backgroundDark, fontFamily } from "../common/vars";
+import {
+  backgroundDark,
+  fontFamily,
+  fontWeight,
+  padding
+} from "../common/vars";
 import { NewsListItem } from "./NewsListItem";
 import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { openURL } from "../common/browser";
-import { NewsListItemText } from "./NewsListItemText";
 import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
 // @ts-ignore
 import { queryCache } from "react-query";
@@ -41,15 +47,7 @@ export const ListItem: React.FC<{
         });
 
         return (
-          <View
-            style={{
-              backgroundColor: backgroundDark,
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "flex-end",
-              paddingRight: 20
-            }}
-          >
+          <View style={styles.commentCountBg}>
             <Animated.Text
               style={[
                 {
@@ -61,7 +59,7 @@ export const ListItem: React.FC<{
                   textShadowRadius: 1,
                   transform: [
                     {
-                      scaleX: scale,
+                      scaleX: scale
                     },
                     {
                       scaleY: scale
@@ -111,25 +109,48 @@ export const ListItem: React.FC<{
             }
           }}
         >
-          <NewsListItemText>{decodeHTMLEntities(story.title)}</NewsListItemText>
+          <Text style={styles.newsListItemText}>
+            {decodeHTMLEntities(story.title)}
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.scoreText}>{story.score}</Text>
+        <View style={styles.scoreTextBgContainer}>
+          <Text style={styles.scoreText}>{story.score}</Text>
+        </View>
       </NewsListItem>
     </Swipeable>
   );
 };
 
 const styles = StyleSheet.create({
-  scoreText: {
+  commentCountBg: {
+    backgroundColor: backgroundDark,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingRight: 20
+  },
+  scoreTextBgContainer: {
     position: "absolute",
-    right: 20,
-    bottom: 20,
-    fontSize: 50,
+    right: padding,
+    justifyContent: "center",
+    bottom: padding
+  },
+  scoreText: {
+    fontSize: 30,
     fontFamily,
     color: "white",
     opacity: 0.3,
     textShadowColor: "rgba(0, 0, 0, 0.1)",
     textShadowOffset: { height: 0, width: 0 },
+    textShadowRadius: 1
+  },
+  newsListItemText: {
+    fontSize: (Platform as PlatformIOSStatic).isPad ? 30 : 25,
+    fontFamily,
+    fontWeight,
+    paddingRight: padding * 2,
+    color: "white",
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
     textShadowRadius: 1
   }
 });

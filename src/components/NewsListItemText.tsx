@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Platform, PlatformIOSStatic, StyleSheet, Text } from "react-native";
-import { fontFamily, fontWeight } from "../common/vars";
+import { fontFamily, fontWeight, padding } from "../common/vars";
 
 export const NewsListItemText: React.FC = ({ children }) => (
   <Text style={styles.newsListItemText}>{children}</Text>

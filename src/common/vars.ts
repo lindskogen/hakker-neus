@@ -2,6 +2,7 @@ import * as d3 from "d3-scale-chromatic";
 import { Platform } from "react-native";
 
 export const padding = 10;
+export const postAuthorFontSize = 16;
 export const backgroundDark = "#1b1d21";
 export const backgroundRed = "#ce5b4c";
 export const backgroundOrange = d3.interpolateOranges(0.65);

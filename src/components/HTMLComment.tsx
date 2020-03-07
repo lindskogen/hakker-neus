@@ -1,7 +1,7 @@
 import * as React from "react";
 import HTMLView from "react-native-htmlview";
 import { HNComment } from "../common/types";
-import { fontFamily, fontFamilyMonospaced, padding } from "../common/vars";
+import { fontFamily, fontFamilyMonospaced, padding, postAuthorFontSize } from "../common/vars";
 import { ScrollView, StyleSheet, Text, View, ViewProps } from "react-native";
 import { decodeHTMLEntities } from "../lib/formatter";
 
@@ -36,7 +36,7 @@ export const HTMLComment = ({
     NodeComponent={CommentNode}
     textComponentProps={{
       style: {
-        fontSize: 16,
+        fontSize: postAuthorFontSize,
         fontFamily,
         color: "white"
       }

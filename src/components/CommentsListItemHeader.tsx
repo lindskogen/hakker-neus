@@ -1,12 +1,11 @@
 import * as React from "react";
-import { Share, TouchableOpacity } from "react-native";
+import { Share, Text, TouchableOpacity } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
-import { backgroundOrange } from "../common/vars";
+import { backgroundOrange, fontFamily, padding, postAuthorFontSize } from "../common/vars";
 import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
-import { CommentText } from "./CommentText";
 import { NewsListItem } from "./NewsListItem";
 import { NewsListItemText } from "./NewsListItemText";
 
@@ -34,7 +33,16 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
       }}
     >
       <NewsListItemText>{decodeHTMLEntities(title)}</NewsListItemText>
-      <CommentText>by {by.id}</CommentText>
+      <Text
+        style={{
+          fontSize: postAuthorFontSize,
+          fontFamily,
+          paddingTop: padding / 2,
+          color: "white"
+        }}
+      >
+        by {by.id}
+      </Text>
     </TouchableOpacity>
   </NewsListItem>
 );

@@ -13,6 +13,7 @@ const styles = StyleSheet.create({
   newsListItemView: {
     padding,
     minHeight: 100,
+    paddingVertical: padding * 2,
     borderBottomColor: "#000",
     borderBottomWidth: StyleSheet.hairlineWidth
   }
