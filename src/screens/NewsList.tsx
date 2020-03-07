@@ -11,7 +11,7 @@ import {
 import { NavigationScreenProp } from "react-navigation";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
-import { Loader } from "../components/Loader";
+import { FullPageLoader } from "../components/FullPageLoader";
 // @ts-ignore
 import { useInfiniteQuery } from "react-query";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -88,7 +88,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
       ListFooterComponent={
         isFetchingMore ? (
           <View style={{ padding }}>
-            <Loader backgroundColor={backgroundDark} />
+            <FullPageLoader backgroundColor={backgroundDark} />
           </View>
         ) : null
       }
@@ -101,7 +101,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
 
 export const NewsListScreen: React.FC<NewsListProps> = ({ navigation }) => {
   return (
-    <Suspense fallback={<Loader backgroundColor={backgroundOrange} />}>
+    <Suspense fallback={<FullPageLoader backgroundColor={backgroundOrange} />}>
       <ErrorBoundary
         fallback={error => (
           <Text style={{ color: "white" }}>{error.message}</Text>
