@@ -1,7 +1,10 @@
 import * as React from "react";
 import { StatusBar } from "react-native";
 import { createAppContainer, SafeAreaView } from "react-navigation";
-import { createStackNavigator } from "react-navigation-stack";
+import {
+  CardStyleInterpolators,
+  createStackNavigator
+} from "react-navigation-stack";
 import { backgroundDark } from "./src/common/vars";
 import { CommentsList } from "./src/screens/CommentsList";
 import { CommentsSink } from "./src/screens/CommentsSink";
@@ -17,11 +20,14 @@ const AppNavigator = createStackNavigator(
     initialRouteName: "Home",
     headerMode: "none",
     defaultNavigationOptions: {
+      gestureEnabled: true,
+      gestureDirection: "horizontal",
       gestureResponseDistance: {
         horizontal: 135,
         vertical: 135
       },
-      cardStyle: { backgroundColor: backgroundDark }
+      cardStyle: { backgroundColor: backgroundDark },
+      cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS
     }
   }
 );
