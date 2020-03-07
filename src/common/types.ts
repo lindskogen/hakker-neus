@@ -9,6 +9,11 @@ export interface HNComment {
   timeISO: string;
 }
 
+export interface FlatHNComment {
+  comment: HNComment;
+  depth: number;
+}
+
 export interface HNStory {
   id: string;
   descendants: number;

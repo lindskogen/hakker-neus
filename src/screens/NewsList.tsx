@@ -31,10 +31,8 @@ const getBackgroundColor = (index: number): string =>
 export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
   const [isRefetching, setRefetching] = useState(false);
   const {
-    status,
     refetch,
     data,
-    isFetching,
     fetchMore,
     isFetchingMore
   } = useInfiniteQuery("news-list", fetchNewsList, {

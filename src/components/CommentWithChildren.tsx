@@ -3,14 +3,12 @@ import qs from "query-string";
 import * as React from "react";
 import { useState } from "react";
 import { Share, TouchableHighlight, View } from "react-native";
-import Collapsible from "react-native-collapsible";
 import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
-import { backgroundDark, backgroundRed, padding } from "../common/vars";
+import { backgroundDark, padding } from "../common/vars";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
-import { ErrorBoundary } from "./ErrorBoundary";
 import { HTMLComment } from "./HTMLComment";
 import { ContainerWithLeftBorder } from "./ContainerWithLeftBorder";
 
@@ -42,8 +40,6 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
   depth,
   navigation
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
   const isOp = op === comment.by.id;
 
   const handlePressLink = createLinkHandler(navigation);
@@ -55,58 +51,24 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
   };
 
   return (
-    <ErrorBoundary
-      fallback={
-        <View
-          style={{
-            height: 10,
-            backgroundColor: backgroundRed
-          }}
-        />
-      }
+    <View
+      style={{
+        marginTop: depth === 0 ? 0 : padding,
+        paddingTop: padding,
+        marginLeft: (padding / 2) * depth,
+        minHeight: 40,
+        backgroundColor: backgroundDark
+      }}
     >
-      <View
-        style={{
-          marginTop: depth === 0 ? 0 : padding,
-          paddingTop: padding,
-          marginLeft: (padding / 2) * depth,
-          minHeight: 40,
-          backgroundColor: backgroundDark
-        }}
+      <TouchableHighlight
+        underlayColor={backgroundDark}
+        onLongPress={handleLongPress}
       >
-        <TouchableHighlight
-          underlayColor={backgroundDark}
-          onPress={() => setIsCollapsed(state => !state)}
-          onLongPress={handleLongPress}
-        >
-          <ContainerWithLeftBorder depth={depth}>
-            <CommentHeader isOp={isOp} comment={comment} />
-          </ContainerWithLeftBorder>
-        </TouchableHighlight>
-        <Collapsible collapsed={isCollapsed}>
-          <TouchableHighlight
-            underlayColor={backgroundDark}
-            onPress={() => setIsCollapsed(state => !state)}
-            onLongPress={handleLongPress}
-          >
-            <ContainerWithLeftBorder depth={depth}>
-              <HTMLComment comment={comment} onLinkPress={handlePressLink} />
-            </ContainerWithLeftBorder>
-          </TouchableHighlight>
-
-          {(comment.kids || [])
-            .filter(kid => kid && !!kid.text)
-            .map(kid => (
-              <CommentWithChildren
-                op={op}
-                key={kid.id}
-                comment={kid}
-                depth={depth + 1}
-                navigation={navigation}
-              />
-            ))}
-        </Collapsible>
-      </View>
-    </ErrorBoundary>
+        <ContainerWithLeftBorder depth={depth}>
+          <CommentHeader isOp={isOp} comment={comment} />
+          <HTMLComment comment={comment} onLinkPress={handlePressLink} />
+        </ContainerWithLeftBorder>
+      </TouchableHighlight>
+    </View>
   );
 };

@@ -26,8 +26,7 @@ export const openURL = async (url: string) => {
           startExit: "slide_out_left",
           endEnter: "slide_in_left",
           endExit: "slide_out_right"
-        },
-        waitForRedirectDelay: 0
+        }
       });
 
       console.log(JSON.stringify(result));

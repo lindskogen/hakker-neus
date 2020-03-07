@@ -31,7 +31,7 @@ export const HTMLComment = ({
   onLinkPress: (href: string) => void;
 }) => (
   <HTMLView
-    value={preprocessHTML(comment.text)}
+    value={preprocessHTML(comment.text ?? "")}
     onLinkPress={onLinkPress}
     NodeComponent={CommentNode}
     textComponentProps={{

@@ -1,5 +1,5 @@
 import { FlatList, ListRenderItem, RefreshControl } from "react-native";
-import { HNComment, HNStory } from "../common/types";
+import { FlatHNComment, HNStory } from "../common/types";
 import { default as React, useCallback } from "react";
 import { CommentWithChildren } from "./CommentWithChildren";
 import { backgroundDark, padding } from "../common/vars";
@@ -9,7 +9,7 @@ import { NavigationScreenProp } from "react-navigation";
 
 interface Props {
   story: HNStoryWithComments;
-  comments: HNComment[];
+  comments: FlatHNComment[];
   navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
   isRefreshing: boolean;
   refetch: () => void;
@@ -24,12 +24,12 @@ export const CommentsFlatList: React.FC<Props> = ({
 }) => {
   const user: string = story?.by.id ?? "undefined";
 
-  const renderItem: ListRenderItem<HNComment> = useCallback(
+  const renderItem: ListRenderItem<FlatHNComment> = useCallback(
     ({ item }) => (
       <CommentWithChildren
         op={user}
-        comment={item}
-        depth={0}
+        comment={item.comment}
+        depth={item.depth}
         navigation={navigation}
       />
     ),
@@ -44,14 +44,14 @@ export const CommentsFlatList: React.FC<Props> = ({
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
-          onRefresh={() => refetch()}
+          onRefresh={refetch}
           tintColor={"white"}
         />
       }
       ListHeaderComponent={
         <CommentsListItemHeader navigation={navigation} story={story} />
       }
-      keyExtractor={item => String(item.id)}
+      keyExtractor={item => String(item.comment.id)}
       renderItem={renderItem}
     />
   );

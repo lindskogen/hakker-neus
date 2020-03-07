@@ -1,8 +1,8 @@
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { RefreshControl, ScrollView } from "react-native";
 import { NavigationScreenProp } from "react-navigation";
-import { HNComment, HNStory } from "../common/types";
+import { FlatHNComment, HNComment, HNStory } from "../common/types";
 import { backgroundDark } from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { Loader } from "../components/FullPageLoader";
@@ -14,14 +14,22 @@ import {
 import { FullPageView } from "../components/FullPageView";
 import { EmptyCommentsView } from "../components/EmptyCommentsView";
 import { CommentsFlatList } from "../components/CommentsFlatList";
+import { flatMap } from "lodash-es";
+
+export const flattenComments = (
+  comments: HNComment[],
+  depth: number = 0
+): FlatHNComment[] =>
+  flatMap(comments, comment => [
+    { comment, depth },
+    ...flattenComments(comment.kids ?? [], depth + 1)
+  ]);
 
 export const CommentsList: React.FC<{
   navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
 }> = ({ navigation }) => {
   const { id } = navigation.state.params!;
   const [isRefreshing, setRefreshing] = useState(false);
-
-  const [mounted, setMounted] = useState(false);
 
   const { data: story, isFetching, refetch } = useQuery<
     HNStoryWithComments,
@@ -41,16 +49,17 @@ export const CommentsList: React.FC<{
     refetch();
   };
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const comments = useMemo(
+    () =>
+      story?.kids.filter(
+        (kid: HNComment | null) => kid && !!kid.text
+      ) as HNComment[],
+    [story]
+  );
 
-  const comments = story?.kids.filter(
-    (kid: HNComment | null) => kid && !!kid.text
-  ) as HNComment[];
+  const flatComments = useMemo(() => flattenComments(comments), [comments]);
 
-  const showFullPageSpinner =
-    !mounted || (!story && isFetching && !isRefreshing);
+  const showFullPageSpinner = !story && isFetching && !isRefreshing;
 
   if (showFullPageSpinner || comments.length == 0) {
     return (
@@ -81,7 +90,7 @@ export const CommentsList: React.FC<{
     <CommentsFlatList
       story={story}
       navigation={navigation}
-      comments={comments}
+      comments={flatComments}
       isRefreshing={isRefreshing}
       refetch={onRefresh}
     />

@@ -1,0 +1,982 @@
+[
+  {
+    "id": "22511865",
+    "type": "comment",
+    "by": {
+      "id": "freeAgent"
+    },
+    "text": "This article brings up one of the biggest problems I have with our justice system.  When someone is falsely suspected or accused of a crime, they typically have to hire a lawyer and take time off work and out of their lives.  This can cost thousands of dollars that many people can&#x27;t really afford to spend.  The police or court may eventually say, &quot;oops, our bad,&quot; but the accused typically has no way to recover what they spent on their own defense.  The whole situation is asymmetric given that investigators, courts, and prosecution don&#x27;t have to spend personal funds to conduct investigations and try people in court.",
+    "timeISO": "2020-03-07T15:11:34.000Z",
+    "kids": [
+      {
+        "id": "22512379",
+        "type": "comment",
+        "by": {
+          "id": "hypersoar"
+        },
+        "text": "My sister is a lawyer who works with poor clients with criminal cases (though not a defense attorney). She believes strongly that most people are better off with their public defender than with private council. I asked her if she could square this with the general perception that the criminal justice system is stacked for with wealthy, she answered that the, most of the time, the <i>connections</i> matter more than the actual money. There are a lot of bad private lawyers out there, and it&#x27;s hard for most people to tell them apart from the good ones. For a lot of us here, if we suddenly need a lawyer, then we&#x27;ll ask our friends and family to help us find a good one. But if you don&#x27;t know anybody who knows anybody who knows a lawyer, what do you do? Look at online reviews? If I were freaked out about criminal charges, needed a lawyer <i>now</i>, and didn&#x27;t have my connections, it&#x27;d be up to blind luck. That&#x27;s the reality for most criminal defendants.<p>They&#x27;ll hire private council and think that because they&#x27;re paying for it, it&#x27;s better. But it&#x27;s often not. For a typical defendant with an aggravated assault charge, a public defender has handled dozens of similar cases before. Moreover, they&#x27;ll have done it with your judge and your prosecutor. A private lawyer probably won&#x27;t have that. Granted, this probably holds a lot less for the HN comments section.<p>I&#x27;ll add that there is no right to defense council for civil cases. These can have consequences just as dire as a criminal case, as in immigration or eviction proceedings. An indigent defendant with no lawyer has a very poor chance. There&#x27;s a movement to create this right [1]. The current Supreme Court, however, seems more likely to weaken <i>Gideon v. Wainwright</i> than expand it.",
+        "timeISO": "2020-03-07T16:28:47.000Z",
+        "kids": [
+          {
+            "id": "22512675",
+            "type": "comment",
+            "by": {
+              "id": "berberous"
+            },
+            "text": "Finding a good lawyer is hard, but to your point about public defenders having more relevant experience, there’s a simple heuristic: ask the lawyers you interview what direct experience they have. If you have an aggravated assault charge, and your potential private lawyer has done many DUIs but only one of those, move on.<p>A public defender might not be _bad_, but in many jurisdictions they are egregiously overworked. Their case load is so over burdened they don’t have the time to do a thorough job. I’d much rather take my chances with a paid lawyer.",
+            "timeISO": "2020-03-07T17:17:52.000Z",
+            "kids": []
+          },
+          {
+            "id": "22512864",
+            "type": "comment",
+            "by": {
+              "id": "sfkdjf9j3j"
+            },
+            "text": "I think this post has a big misconception in it. Public defenders are for the destitute. You have to ask for one, and convince a judge that based on your assets and income, you can&#x27;t afford a private attorney. There&#x27;s no choice here, if you can afford a private defense, you won&#x27;t be given a public defender.",
+            "timeISO": "2020-03-07T17:48:17.000Z",
+            "kids": [
+              {
+                "id": "22513217",
+                "type": "comment",
+                "by": {
+                  "id": "bryanrasmussen"
+                },
+                "text": "I think this depends on the state, I think in a lot of states getting a public defender is just based on the Judge saying that in the case you cannot afford a lawyer one will be appointed for you and then asking if you need a lawyer appointed. Sure, if you&#x27;re Bill Gates and you say yes, he might shut that down but the average person I don&#x27;t think most jurisdictions actually investigate their means.",
+                "timeISO": "2020-03-07T18:44:41.000Z",
+                "kids": []
+              }
+            ]
+          },
+          {
+            "id": "22513203",
+            "type": "comment",
+            "by": {
+              "id": "bryanrasmussen"
+            },
+            "text": "Ok, but having a public defender because you&#x27;ve been accused of burglarizing a house because you drove by it on your bike and google tracked the trip might not be that good since the public defender is generally focused on cutting a deal. Getting a deal cut with a public defender might be better than private but going to court under these specific circumstances?",
+            "timeISO": "2020-03-07T18:42:03.000Z",
+            "kids": []
+          },
+          {
+            "id": "22512803",
+            "type": "comment",
+            "by": {
+              "id": "rflrob"
+            },
+            "text": "Though one’s right to a public defender only applies once you’ve been charged, right? In TFA, the guy being investigated was only the subject of a warrant.",
+            "timeISO": "2020-03-07T17:36:22.000Z",
+            "kids": [
+              {
+                "id": "22512985",
+                "type": "comment",
+                "by": {
+                  "id": "desdiv"
+                },
+                "text": "I believe you have the right to a public defender during questioning (which can happen both before and after you are charged) based on the wording of the Miranda warning:<p>&gt;You have the right to have a lawyer with you during questioning. If you cannot afford a lawyer, one will be appointed for you before any questioning if you wish.<p><a href=\"https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Miranda_warning\" rel=\"nofollow\">https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Miranda_warning</a>",
+                "timeISO": "2020-03-07T18:08:10.000Z",
+                "kids": []
+              }
+            ]
+          },
+          {
+            "id": "22512656",
+            "type": "comment",
+            "by": {
+              "id": "irjustin"
+            },
+            "text": "This is very insightful and makes a ton of sense.<p>I&#x27;m not related to the company, but this is exactly what avvo.com is solving. I have known others to use it for traffic infractions all the way to criminal defence. In general they speak positively about the experience.<p>I don&#x27;t know any particular lawyer&#x27;s connections, but I can see the reviews&#x2F;self-reported-track records.<p>But, this creates a new problem - gamification of reviews. But now that it&#x27;s in the &quot;reviews&quot; space, I know how to at least manage that problem as opposed to something I know zero about such as judging a lawyer&#x27;s relationships and effectiveness.",
+            "timeISO": "2020-03-07T17:15:13.000Z",
+            "kids": []
+          },
+          {
+            "id": "22512989",
+            "type": "comment",
+            "by": {
+              "id": "roywiggins"
+            },
+            "text": "Federal public defenders have a very good reputation. State public defenders, less so. Mostly because many public defenders offices are deeply underfunded.",
+            "timeISO": "2020-03-07T18:09:18.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512003",
+        "type": "comment",
+        "by": {
+          "id": "code_duck"
+        },
+        "text": "They can also come through and completely destroy your house in an operation that has absolutely nothing to do with you, and not only do none of the individuals involved have any financial responsibility but neither does any government agency.<p><a href=\"https:&#x2F;&#x2F;www.denverpost.com&#x2F;2019&#x2F;10&#x2F;30&#x2F;swat-team-destroyed-greenwood-village-familys-home-police-dont-have-to-pay-for-damages&#x2F;\" rel=\"nofollow\">https:&#x2F;&#x2F;www.denverpost.com&#x2F;2019&#x2F;10&#x2F;30&#x2F;swat-team-destroyed-gr...</a><p>In this case, police in Colorado destroyed a man&#x27;s $600,000 home while pursuing a shoplifting suspect.",
+        "timeISO": "2020-03-07T15:29:56.000Z",
+        "kids": [
+          {
+            "id": "22512210",
+            "type": "comment",
+            "by": {
+              "id": "amelius"
+            },
+            "text": "This tells me there is not only something terribly wrong with the police, but with lawmaking in general.",
+            "timeISO": "2020-03-07T16:05:44.000Z",
+            "kids": [
+              {
+                "id": "22512457",
+                "type": "comment",
+                "by": {
+                  "id": "cheez"
+                },
+                "text": "Government in general is overfunded with many people seeking to justify their employment.",
+                "timeISO": "2020-03-07T16:43:22.000Z",
+                "kids": [
+                  {
+                    "id": "22513233",
+                    "type": "comment",
+                    "by": {
+                      "id": "Barrin92"
+                    },
+                    "text": "I&#x27;d rather have a well-funded rather than poorly funded police force but this is largely orthogonal to the issue of American police having way too many rights to invade people&#x27;s privacy.<p>And I don&#x27;t think it is just the police. The pervasive erosion and negligence of privacy in American culture, in general, is the issue.",
+                    "timeISO": "2020-03-07T18:47:28.000Z"
+                  },
+                  {
+                    "id": "22513003",
+                    "type": "comment",
+                    "by": {
+                      "id": "roywiggins"
+                    },
+                    "text": "Public defenders offices are, of course, egregiously underfunded.",
+                    "timeISO": "2020-03-07T18:10:28.000Z"
+                  },
+                  {
+                    "id": "22512862",
+                    "type": "comment",
+                    "by": {
+                      "id": "X6S1x6Okd1st"
+                    },
+                    "text": "Why do you feel like overfunding causes a no skin in the game situation?",
+                    "timeISO": "2020-03-07T17:48:03.000Z"
+                  },
+                  {
+                    "id": "22512861",
+                    "type": "comment",
+                    "by": {
+                      "id": "undefined"
+                    },
+                    "text": null,
+                    "timeISO": "2020-03-07T17:48:00.000Z"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "22512198",
+            "type": "comment",
+            "by": {
+              "id": "throwsprtsdy"
+            },
+            "text": "A shoplifting suspect who barricaded himself inside someone else&#x27;s home during the pursuit and fired gunshots at the police.",
+            "timeISO": "2020-03-07T16:03:11.000Z",
+            "kids": [
+              {
+                "id": "22512245",
+                "type": "comment",
+                "by": {
+                  "id": "code_duck"
+                },
+                "text": "Yes, starting with (from another article)<p>&gt;The incident started when an Aurora police officer attempted to lead Seacat into an office at a Walmart, where he was suspected of shoplifting. But Seacat ran to a Lexus in the parking lot, jumped in and fled.<p>So they caused $670,000 of damage to protect Walmart from shoplifting. Not great ROI for the community.<p>All of that is beside the point, anyway. The point is that the government should be paying for that house.",
+                "timeISO": "2020-03-07T16:09:34.000Z",
+                "kids": [
+                  {
+                    "id": "22512515",
+                    "type": "comment",
+                    "by": {
+                      "id": "blisterpeanuts"
+                    },
+                    "text": "As soon as the suspect fled, it became a case of resisting arrest and disobeying a police officer and probably several other charges (home invasion too?).<p>Arguably the police officer did his job, perhaps even bending over backward to protect the suspect&#x27;s rights. Though, a more traditional &quot;alright, buddy, put your hands up, you&#x27;re under arrest!&quot; at gunpoint might have forestalled the ensuing situation.<p>Absolutely agree that the homeowner should get some kind of redress for what was done to his home.",
+                    "timeISO": "2020-03-07T16:55:11.000Z"
+                  },
+                  {
+                    "id": "22512722",
+                    "type": "comment",
+                    "by": {
+                      "id": "alharith"
+                    },
+                    "text": "Caused 670,000 to uphold the law and prevent us from inching that much closer to anarchy. That&#x27;s the invisible benefit to most. Soon as criminals can figure out the law enforcement&#x27;s cost-benefit ratio, they will start exploiting it, and there&#x27;s too many examples of this to count.",
+                    "timeISO": "2020-03-07T17:23:22.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512224",
+                "type": "comment",
+                "by": {
+                  "id": "cthor"
+                },
+                "text": "If society thinks blowing up a house is worth catching the perp then they at least oughta pay for the damn house.",
+                "timeISO": "2020-03-07T16:07:46.000Z",
+                "kids": [
+                  {
+                    "id": "22512268",
+                    "type": "comment",
+                    "by": {
+                      "id": "throwsprtsdy"
+                    },
+                    "text": "So if a shooter sets up in a sufficiently expensive property, the police have to sit there passively and risk being shot because they don&#x27;t have the money to pay for the damage caused by going in?  That makes no sense.<p>I&#x27;m generally of the opinion that police are too heavy-handed in the US, but in this particular case I don&#x27;t think there was any other reasonable option.  Moreover the ancestor post referring to the suspect as simply a &quot;shoplifter&quot; was inaccurate.",
+                    "timeISO": "2020-03-07T16:12:24.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512246",
+                "type": "comment",
+                "by": {
+                  "id": "scrumbledober"
+                },
+                "text": "Ok but even if you agree that the police did what they had to do in order to apprehend a suspect, shouldn&#x27;t the department or local government be repairing damage they did to someone&#x27;s house?",
+                "timeISO": "2020-03-07T16:09:37.000Z",
+                "kids": [
+                  {
+                    "id": "22512272",
+                    "type": "comment",
+                    "by": {
+                      "id": "SamReidHughes"
+                    },
+                    "text": "No, the shoplifting suspect should be.",
+                    "timeISO": "2020-03-07T16:13:23.000Z"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "22512053",
+        "type": "comment",
+        "by": {
+          "id": "sneak"
+        },
+        "text": "It&#x27;s worse.  They can blow up your infant children with explosives because they got the wrong house, and suffer no consequences:<p><a href=\"https:&#x2F;&#x2F;www.nbcnews.com&#x2F;news&#x2F;us-news&#x2F;ex-georgia-deputy-acquitted-after-flash-bang-grenade-hurts-toddler-n479361\" rel=\"nofollow\">https:&#x2F;&#x2F;www.nbcnews.com&#x2F;news&#x2F;us-news&#x2F;ex-georgia-deputy-acqui...</a><p>Policing in the US is entirely out of control.",
+        "timeISO": "2020-03-07T15:38:09.000Z",
+        "kids": [
+          {
+            "id": "22512398",
+            "type": "comment",
+            "by": {
+              "id": "HarryHirsch"
+            },
+            "text": "US police can rape women on the job and walk with a suspended sentence: <a href=\"https:&#x2F;&#x2F;www.elpasotimes.com&#x2F;story&#x2F;news&#x2F;crime&#x2F;2020&#x2F;01&#x2F;31&#x2F;-&#x2F;4625724002&#x2F;\" rel=\"nofollow\">https:&#x2F;&#x2F;www.elpasotimes.com&#x2F;story&#x2F;news&#x2F;crime&#x2F;2020&#x2F;01&#x2F;31&#x2F;-&#x2F;46...</a><p>That shapes the culture. It&#x27;s kind of anti-Spiderman. With great powers comes no responsibility at all.",
+            "timeISO": "2020-03-07T16:32:40.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512129",
+        "type": "comment",
+        "by": {
+          "id": "xyzal"
+        },
+        "text": "As an Eastern European with some experience with autocratic government I quite look up to the U.S. as to a champion of democratic culture, but among two major things that baffle me (healthcare being the other) is why there is such a high cost associated with litigation even for the innocent party. In continental Europe, the &quot;loser pays&quot; principle seems to hold quite well, while also having the benefit of discouraging people from frivolous lawsuits.",
+        "timeISO": "2020-03-07T15:50:39.000Z",
+        "kids": [
+          {
+            "id": "22512202",
+            "type": "comment",
+            "by": {
+              "id": "Hamuko"
+            },
+            "text": "&gt;<i>In continental Europe, the &quot;loser pays&quot; principle seems to hold quite well</i><p>It apparently holds in every western democracy except for the United States of America.<p><a href=\"https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;English_rule_(attorney%27s_fees)\" rel=\"nofollow\">https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;English_rule_(attorney%27s_fee...</a>",
+            "timeISO": "2020-03-07T16:04:20.000Z",
+            "kids": [
+              {
+                "id": "22512694",
+                "type": "comment",
+                "by": {
+                  "id": "huntie"
+                },
+                "text": "The problem with the English Rule is that it protects the rich.",
+                "timeISO": "2020-03-07T17:19:18.000Z",
+                "kids": [
+                  {
+                    "id": "22513021",
+                    "type": "comment",
+                    "by": {
+                      "id": "Fnoord"
+                    },
+                    "text": "No, it does not, its exactly the other way around. English Rule protects the innocent, who did not commit a crime, as they&#x27;ll eventually win the case.<p>American Rule protects the rich (and those in power, such as police, public prosecutor, etc), as it allows them to bully the poor who can&#x27;t afford a lawyer, or lose so much money that their interests are harmed. A clear example of that is patent trolls.<p>The rich can afford in either system, but the poor can only afford in English Rule. It should not be about poor vs rich but about truth (ie. guilty vs innocent).",
+                    "timeISO": "2020-03-07T18:13:39.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512679",
+                "type": "comment",
+                "by": {
+                  "id": "briandear"
+                },
+                "text": "Imagine suing General Motors because of a faulty car. General Motors hires an army of experts and the best attorneys. In the event of loser pays, the apparent victim is now on the hook for perhaps a million dollars. That would shut down all legitimate product liability lawsuits in an instant.",
+                "timeISO": "2020-03-07T17:18:08.000Z",
+                "kids": [
+                  {
+                    "id": "22513204",
+                    "type": "comment",
+                    "by": {
+                      "id": "Hamuko"
+                    },
+                    "text": "Well, that&#x27;s assuming that legitimate product liability lawsuits lose in the court.",
+                    "timeISO": "2020-03-07T18:42:28.000Z"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "22512181",
+            "type": "comment",
+            "by": {
+              "id": "notRobot"
+            },
+            "text": " &gt;  I quite look up to the U.S. as to a champion of democratic culture<p>It really isn&#x27;t. Look towards Scandinavian countries for that.",
+            "timeISO": "2020-03-07T15:59:59.000Z",
+            "kids": [
+              {
+                "id": "22512219",
+                "type": "comment",
+                "by": {
+                  "id": "Legogris"
+                },
+                "text": "Scandinavian here. Keep looking.",
+                "timeISO": "2020-03-07T16:07:18.000Z",
+                "kids": [
+                  {
+                    "id": "22512308",
+                    "type": "comment",
+                    "by": {
+                      "id": "gruez"
+                    },
+                    "text": "What are the ills there?",
+                    "timeISO": "2020-03-07T16:18:17.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512826",
+                "type": "comment",
+                "by": {
+                  "id": "danlugo92"
+                },
+                "text": "One of those went cashless... do I need to say more?",
+                "timeISO": "2020-03-07T17:40:47.000Z",
+                "kids": [
+                  {
+                    "id": "22513060",
+                    "type": "comment",
+                    "by": {
+                      "id": "lostlogin"
+                    },
+                    "text": "Yes.",
+                    "timeISO": "2020-03-07T18:20:34.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512203",
+                "type": "comment",
+                "by": {
+                  "id": "Hamuko"
+                },
+                "text": "Or Finland.",
+                "timeISO": "2020-03-07T16:04:37.000Z",
+                "kids": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "22512297",
+        "type": "comment",
+        "by": {
+          "id": "ta1234567890"
+        },
+        "text": "And this applies to the whole justice system, regardless if it&#x27;s a criminal or civil issue.<p>In civil cases this is used as leverage by wealthy people. The wealthy can sustain a legal battle for as long as they want. They know that if their opponent isn&#x27;t as wealthy, they&#x27;ll be forced to settle, even for an unreasonable amount, just because they won&#x27;t be able to afford defending themselves properly.<p>For reference, a decent civil attorney in a major city in California will charge $250-500&#x2F;hour, which ends up being around $5k&#x2F;month to defend pretty much any civil lawsuit. A lawsuit that goes to trial will take 18-24 months, so you&#x27;ll end up paying $90-120k just in legal fees. There will also be $10-20k in additional court fees and other expenses, not to mention your time.<p>At the end of the day, if you defend a civil lawsuit and you flawlessly &quot;win&quot; the case, after about 2 years of manufactured stress, you&#x27;ll be down $100-150k.<p>That&#x27;s what it costs to prove you are innocent and walk away &quot;free&quot; (free to be sued again).<p>Btw, in civil cases, if you cannot afford a lawyer, the system won&#x27;t appoint one for you, you will have to defend yourself (which judges and lawyers hate, and will very much play against you in court).<p>Also, even if you can represent yourself, the court fees won&#x27;t necessarily be waived ($2-3k), and you&#x27;ll have to fund your own discovery (which can be insanely expensive, depending on the case).<p>Then if you are defending as a corporation (llc, c corp, etc), you must have a lawyer. So basically if someone knows that your company cannot afford to hire a lawyer, they can sue you and force you to pay up or go bankrupt - then during bankruptcy they can keep going after you personally, and even after bankruptcy they can sue you again.",
+        "timeISO": "2020-03-07T16:16:29.000Z",
+        "kids": [
+          {
+            "id": "22512493",
+            "type": "comment",
+            "by": {
+              "id": "indymike"
+            },
+            "text": "<i>In civil cases this is used as leverage by wealthy people. The wealthy can sustain a legal battle for as long as they want. They know that if their opponent isn&#x27;t as wealthy, they&#x27;ll be forced to settle, even for an unreasonable amount, just because they won&#x27;t be able to afford defending themselves properly.</i><p>Hmm. Every civil case I&#x27;ve been involved with was decided not by relative wealth, but by the strength of the case. In every case, the less wealthy party won, and the wealthy party got stuck with legal fees. In many cases, the less wealthy person was represented by a lawyer who was paid mostly on contingency.",
+            "timeISO": "2020-03-07T16:49:59.000Z",
+            "kids": [
+              {
+                "id": "22512841",
+                "type": "comment",
+                "by": {
+                  "id": "ta1234567890"
+                },
+                "text": "If both parties have enough money to litigate, the relative wealth might not matter as much.<p>But if one of the parties cannot afford to litigate, they are screwed.<p>Considering that 40% of Americans can&#x27;t even afford a $400 unexpected expense[0], it means most people are extremely vulnerable to legal liability, as they would barely be able to afford maybe 1 hour of consulting with a lawyer.<p>My guess is that you&#x27;ve mostly dealt with people and companies that had the money to go through the legal system. Most people don&#x27;t.<p>Also, in my experience, it is very (extremely?) rare to find a lawyer that will work on a contingency basis, especially on short notice. So unless you know it&#x27;s coming, and you&#x27;ve already spent the time to interview a bunch of lawyers (most of which are not even going to give you the time of day without having an open case) ahead of time, then you&#x27;ll most likely be out of luck when you get served and have 30 days to respond (and if you don&#x27;t respond they get a default judgement against you).<p>You just can&#x27;t deny that the (American) legal system is, in practice, based on money and resources, rather than on justice and fairness.<p>0: <a href=\"https:&#x2F;&#x2F;abcnews.go.com&#x2F;US&#x2F;10-americans-struggle-cover-400-emergency-expense-federal&#x2F;story?id=63253846\" rel=\"nofollow\">https:&#x2F;&#x2F;abcnews.go.com&#x2F;US&#x2F;10-americans-struggle-cover-400-em...</a>",
+                "timeISO": "2020-03-07T17:43:51.000Z",
+                "kids": [
+                  {
+                    "id": "22513077",
+                    "type": "comment",
+                    "by": {
+                      "id": "indymike"
+                    },
+                    "text": "Stereotypes are horrible and often used as an substitute for reason. Lawyers will take a solid case on contingency especially against &quot;deep pockets&quot;.  People have families and friends. People can change their spending habits. Courts exist to bring disputes to a just resolution. The whole meme that justice is only for the rich and average people can&#x27;t fend for themselves is intellectually lazy and relies on generalization.",
+                    "timeISO": "2020-03-07T18:22:53.000Z"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "22512663",
+            "type": "comment",
+            "by": {
+              "id": "gamblor956"
+            },
+            "text": "This is literally the exact opposite of my past experience as a trial lawyer.<p>The strength of the parties cases matters 10000x more than the amount of money they had. In fact, excessive spending was usually associated with worsened outcomes for the spending party.",
+            "timeISO": "2020-03-07T17:16:07.000Z",
+            "kids": [
+              {
+                "id": "22512807",
+                "type": "comment",
+                "by": {
+                  "id": "ta1234567890"
+                },
+                "text": "You are right, if the defending party has enough money to defend, then the case will mostly be decided on the abilities&#x2F;experience of the lawyers and the merits of each side.<p>But what happens when the defendant just simply doesn&#x27;t have the money to defend themselves in court?<p>Have you represented a client in court for free for 2 years and paid for their court fees and discovery?<p>You&#x27;ve also probably dealt mostly with relatively rational people in good faith. But when you have someone who&#x27;s very vindictive or irrational, acting in bad faith and with a lot of money, it can be terrifying to be on the receiving end, and you can feel absolutely hopeless if you don&#x27;t have the knowledge or money to defend.",
+                "timeISO": "2020-03-07T17:37:04.000Z",
+                "kids": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "22512052",
+        "type": "comment",
+        "by": {
+          "id": "barrkel"
+        },
+        "text": "There&#x27;s also the fact that the courts are driven by narratives; the prosecution just needs a credible story to tell, and doesn&#x27;t have much of an incentive to find out the truth - it&#x27;s up to the defense to tell the counter-narrative.<p>Over time, as more tools become available to find people with precise overlaps with a crime, the stronger the narrative is for innocent people (as well as the guilty). IMO a more inquisitorial approach which tests the counterfactual of each evidentiary point rather than relying solely on defense ought to hold up better in the future.",
+        "timeISO": "2020-03-07T15:38:03.000Z",
+        "kids": [
+          {
+            "id": "22512380",
+            "type": "comment",
+            "by": {
+              "id": "hedora"
+            },
+            "text": "I doubt better surveillance tools will lead to more accurate prosecutions unless individuals also have direct access to the tools.<p>Police and prosecutors in the US are notorious for leaving out evidence that exonerates the accused, even though they are supposedly required to provide the defense with all evidence relevant to the case.<p>Also, well-connected victims’ cases are investigated much more carefully than normal victims.<p>For instance, some SFO luggage handlers were stealing stuff from bags.  People repeatedly reported them to the police, but nothing happened until they stole from a retired cop.  An investigation was launched and they were arrested the next week.<p>Similarly (based on personal experience with multiple incidents in multiple cities with multiple victims), they normally won’t bother to pull location database records for successful burglaries, even if they have exact timestamps of the incident (up to and including video), even in remote areas in the middle of the night involving literal truckloads of loot (where the location records would be a slam dunk, and the evidence would take a while to dispose of).",
+            "timeISO": "2020-03-07T16:28:50.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512200",
+        "type": "comment",
+        "by": {
+          "id": "pragmaticalien8"
+        },
+        "text": "I would also add: Immediate judgement by people online who read headlines and make up their minds. The media will never report on dropped charges as much as they do an arrest. Stigma will live on via Google search forever, because you know &quot;Free speech&quot; and all.",
+        "timeISO": "2020-03-07T16:04:05.000Z",
+        "kids": [
+          {
+            "id": "22512342",
+            "type": "comment",
+            "by": {
+              "id": "HarryHirsch"
+            },
+            "text": "<i>The media will never report on dropped charges as much as they do an arrest.</i><p>They will do that from time to time, if you are wealthy and well-connected enough. We had a case like that at my institution, an attempted rape. Don&#x27;t rely on the government for protection, arm up.",
+            "timeISO": "2020-03-07T16:23:07.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22511909",
+        "type": "comment",
+        "by": {
+          "id": "EarthIsHome"
+        },
+        "text": "It&#x27;s because our justice system is an instrument of the wealthy. It works for them with little friction, and it doesn&#x27;t work for most people without disrupting our lives, or even ruining them (e.g. bails and bonds that most people can&#x27;t afford to pay).",
+        "timeISO": "2020-03-07T15:17:01.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512162",
+        "type": "comment",
+        "by": {
+          "id": "flyGuyOnTheSly"
+        },
+        "text": "&gt;The whole situation is asymmetric given that investigators, courts, and prosecution don&#x27;t have to spend personal funds to conduct investigations and try people in court.<p>It&#x27;s worse than that.<p>Litigation is literally what puts bread on their tables.<p>They are rewarded financially for inconveniencing the layperson and making them jump through the hoops they have built.",
+        "timeISO": "2020-03-07T15:56:45.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512556",
+        "type": "comment",
+        "by": {
+          "id": "fluidcruft"
+        },
+        "text": "If companies want to collect and amass surveillance data for profit, they should be the ones providing compensation for abuses their data hording enables.",
+        "timeISO": "2020-03-07T17:00:51.000Z",
+        "kids": []
+      }
+    ]
+  },
+  {
+    "id": "22513128",
+    "type": "comment",
+    "by": {
+      "id": "crazygringo"
+    },
+    "text": "Of course it made him a suspect. So would anyone caught on security cameras nearby, cars passing intersections that record license plates, and so on. Or anyone a neighbor described seeing walk by.<p><i>And then of course he was cleared.</i> Because unless they then find additional evidence like him selling the jewelry on eBay or something... there&#x27;s nothing there.<p>I don&#x27;t know about you guys, but I <i>appreciate</i> living in a world where we have reasonable tools to catch criminals, rather than live in fear of burglary and worse.<p>I&#x27;m <i>glad</i> we can use cell phone locations to help catch the <i>actual</i> criminals. Obviously <i>abusing</i> that power is bad (e.g. a police officer using it to stalk an ex.) But as long as there are procedures, safeguards and accountability in place... this seems like a win, no?",
+    "timeISO": "2020-03-07T18:30:55.000Z",
+    "kids": [
+      {
+        "id": "22513162",
+        "type": "comment",
+        "by": {
+          "id": "AlexandrB"
+        },
+        "text": "&gt; I don&#x27;t know about you guys, but I appreciate living in a world where we have reasonable tools to catch criminals, rather than live in fear of burglary and worse.<p>Why is this the only choice? Is there <i>any</i> evidence that crime would increase if geofence warrants were disallowed entirely? Crime has been on the decline for decades now even without invasive techniques like geofence warrants. Considering the historically low crime rates, living in fear of burglary is irrational - a &quot;you&quot; problem, not a law enforcement technology problem.",
+        "timeISO": "2020-03-07T18:35:37.000Z",
+        "kids": [
+          {
+            "id": "22513188",
+            "type": "comment",
+            "by": {
+              "id": "crazygringo"
+            },
+            "text": "&gt; <i>Crime has been on the decline for decades now even without invasive techniques like geofence warrants.</i><p>So we should stop trying to lower crime further? Why don&#x27;t you tell that to the families of murder victims?<p>&gt; <i>Considering the historically low crime rates, living in fear of burglary is irrational - a &quot;you&quot; problem, not a law enforcement technology problem.</i><p>Burglary is by definition a law enforcement problem, and law enforcement uses tools like technology. It always has.<p>You&#x27;re writing as though burglary and other crime doesn&#x27;t exist anymore. Lower crime does NOT equal no crime.<p>Perhaps if you&#x27;d ever had someone close to you be a victim of a crime, you&#x27;d be a bit more empathetic. The idea that fear of crime is &quot;irrational&quot; is just... one of the most callous comments I&#x27;ve read in a while.",
+            "timeISO": "2020-03-07T18:40:15.000Z",
+            "kids": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "22512057",
+    "type": "comment",
+    "by": {
+      "id": "vermontdevil"
+    },
+    "text": "* I’m definitely sorry that happened to her, and I’m glad police were trying to solve it,” McCoy said. “But it just seems like a really broad net for them to cast. What’s the cost-benefit? How many innocent people do we have to harass?”*<p>I understand he doesn’t have the resources to fight the constitutionality of the whole process. This quote is why ACLU, EFF, and others need to work together to take it up further. Stop the police from continuing the habit of just sweeping people’s data and worry about the details later.",
+    "timeISO": "2020-03-07T15:38:29.000Z",
+    "kids": [
+      {
+        "id": "22512523",
+        "type": "comment",
+        "by": {
+          "id": "throwaway17_17"
+        },
+        "text": "There is no constitutional issue in this case. This person gave their information to Google and Google was asked for the information. There is no 4th Amendment protection for information a person gives to someone else. The ACLU, EFF, and others have nothing to take further.",
+        "timeISO": "2020-03-07T16:55:50.000Z",
+        "kids": [
+          {
+            "id": "22512939",
+            "type": "comment",
+            "by": {
+              "id": "theluketaylor"
+            },
+            "text": "The third party doctrine is badly outdated in the modern world where third parties hold immense volumes of information about our locations and interactions.  Since it was a court ruling that brought the doctrine into being, the passage of legislation or further court rulings can overturn it or reduce the scope.  There is absolutely work for groups like the ACLU and EFF to do here.<p>Here in Canada several of our wireless providers banded together to fight an incredibly broad request for information about everyone hitting particular cell towers during a robbery.  The crown tried to simply drop the request when challenged, but thankfully the judge didn&#x27;t let them off so easily.  The court issued some rather strict requirements for similar requests.<p><a href=\"https:&#x2F;&#x2F;blog.privacylawyer.ca&#x2F;2016&#x2F;01&#x2F;ontario-court-provides-clear-guidance.html\" rel=\"nofollow\">https:&#x2F;&#x2F;blog.privacylawyer.ca&#x2F;2016&#x2F;01&#x2F;ontario-court-provides...</a>",
+            "timeISO": "2020-03-07T17:58:44.000Z",
+            "kids": []
+          },
+          {
+            "id": "22512888",
+            "type": "comment",
+            "by": {
+              "id": "cat199"
+            },
+            "text": "Legislation requiring mandatory ability of carriers to track mobile phones by location was passed in 1999 in the US[1], almost a decade before the &#x27;modern smartphone&#x27; existed. The broader issues still apply whether or not someone opted in to google location services or not.<p><a href=\"https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Enhanced_9-1-1#The_911_Act\" rel=\"nofollow\">https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Enhanced_9-1-1#The_911_Act</a>",
+            "timeISO": "2020-03-07T17:52:20.000Z",
+            "kids": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "22512222",
+    "type": "comment",
+    "by": {
+      "id": "pjdemers"
+    },
+    "text": "What surprises me is that somewhere there is a police department that can afford the time to investigate a $2,000 loss.",
+    "timeISO": "2020-03-07T16:07:29.000Z",
+    "kids": [
+      {
+        "id": "22512291",
+        "type": "comment",
+        "by": {
+          "id": "notRobot"
+        },
+        "text": "There are too many cops in the US. So they need the work. This is also why they have police cops in all schools. Which seems horrifying to anyone not from the US. (They&#x27;re often on a power trip and take even the smallest opportunities to beat up kids. A web search brings up a long list of such cases.)",
+        "timeISO": "2020-03-07T16:15:38.000Z",
+        "kids": [
+          {
+            "id": "22512452",
+            "type": "comment",
+            "by": {
+              "id": "burlesona"
+            },
+            "text": "They are really unevenly distributed though. Many major cities are short on police, while most suburbs have plenty to spare. This has a lot of effects on day to day, for example in most cities you aren’t getting a traffic ticket unless you do something egregious, the police will see you commit a very minor offense (probably on accident), and just shrug and let it go. They have no time to spare. But in a lot of suburbs they’ll come ticket you with this attitude that they’ve saved the world from a criminal. It’s frustrating.",
+            "timeISO": "2020-03-07T16:42:34.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512470",
+        "type": "comment",
+        "by": {
+          "id": "TwoBit"
+        },
+        "text": "Perhaps there was a pattern in the area that this burglary was part of, and there was serial burglaries they were trying to stamp out.",
+        "timeISO": "2020-03-07T16:45:15.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512718",
+        "type": "comment",
+        "by": {
+          "id": "briandear"
+        },
+        "text": "If they don’t, then you’ll have an increase in $1999 crimes. Look at the effect of Prop 47 in California. Crime has increased.",
+        "timeISO": "2020-03-07T17:22:55.000Z",
+        "kids": []
+      }
+    ]
+  },
+  {
+    "id": "22511756",
+    "type": "comment",
+    "by": {
+      "id": "asdfasgasdgasdg"
+    },
+    "text": "And also cleared him, for what that&#x27;s worth. If this concerns you, go [here](<a href=\"https:&#x2F;&#x2F;myaccount.google.com&#x2F;activitycontrols\" rel=\"nofollow\">https:&#x2F;&#x2F;myaccount.google.com&#x2F;activitycontrols</a>) and disable location history.",
+    "timeISO": "2020-03-07T14:53:55.000Z",
+    "kids": [
+      {
+        "id": "22512156",
+        "type": "comment",
+        "by": {
+          "id": "cortesoft"
+        },
+        "text": "Yeah, but it cost him several thousand dollars to fight something he shouldn&#x27;t have had to fight.<p>Would we be ok if the police just randomly fined people $2000 bucks for no reason? That is basically what happened here.",
+        "timeISO": "2020-03-07T15:55:29.000Z",
+        "kids": [
+          {
+            "id": "22512429",
+            "type": "comment",
+            "by": {
+              "id": "asdfasgasdgasdg"
+            },
+            "text": "He didn&#x27;t have to fight them getting his location data. It was a choice he made.",
+            "timeISO": "2020-03-07T16:40:08.000Z",
+            "kids": [
+              {
+                "id": "22512592",
+                "type": "comment",
+                "by": {
+                  "id": "MereInterest"
+                },
+                "text": "Wanting privacy on your daily bikeride is a $2000 choice?  Wanting to prevent police overreach into your daily life is a $2000 choice?  No, not at all.  Quit blaming the victim.",
+                "timeISO": "2020-03-07T17:07:09.000Z",
+                "kids": [
+                  {
+                    "id": "22512731",
+                    "type": "comment",
+                    "by": {
+                      "id": "asdfasgasdgasdg"
+                    },
+                    "text": "Personally I don&#x27;t have any problem with geofenced warrants. I actually think they are a pretty great idea. So I would more say that he spent $2000 pointlessly. What would likely have happened if he hadn&#x27;t fought it is the prosecutors would have gotten the data, seen who he was, and been like, nah, not our guy. They don&#x27;t just go and arrest every single person who has been in a geofenced region when they get these warrants. They use it to look for who might be worth additional investigation.",
+                    "timeISO": "2020-03-07T17:25:23.000Z"
+                  }
+                ]
+              },
+              {
+                "id": "22512643",
+                "type": "comment",
+                "by": {
+                  "id": "wool_gather"
+                },
+                "text": "He chose between<p>- hiring this lawyer to fight the warrant, or<p>- the risk of being arrested and dealing with criminal charges<p>That&#x27;s no choice at all.",
+                "timeISO": "2020-03-07T17:13:23.000Z",
+                "kids": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "22512044",
+        "type": "comment",
+        "by": {
+          "id": "kevin_thibedeau"
+        },
+        "text": "Google has a shit-ton of dark patterns making it hard to turn it off completely. Maps will refuse to center on your location even though the phone has a GPS lock and the blue pip is right where it is supposed to be.<p>You can restrict data to three months which would have been helpful here.",
+        "timeISO": "2020-03-07T15:37:09.000Z",
+        "kids": []
+      },
+      {
+        "id": "22513138",
+        "type": "comment",
+        "by": {
+          "id": "ilamont"
+        },
+        "text": "&quot;Explore your timeline. Rediscover the places you’ve been and the routes you’ve traveled in your timeline. <i>Only you can see your timeline.</i>&quot;<p>Based on TFA, this statement is untrue.",
+        "timeISO": "2020-03-07T18:32:38.000Z",
+        "kids": []
+      },
+      {
+        "id": "22513016",
+        "type": "comment",
+        "by": {
+          "id": "Thorrez"
+        },
+        "text": "Make sure you also disable Web &amp; App Activity (on that same page).<p>&gt; Important: If you have other settings like Web &amp; App Activity turned on and you pause Location History or delete location data from Location History, you may still have location data saved in your Google Account as part of your use of other Google sites, apps, and services.<p><a href=\"https:&#x2F;&#x2F;support.google.com&#x2F;accounts&#x2F;answer&#x2F;3118687\" rel=\"nofollow\">https:&#x2F;&#x2F;support.google.com&#x2F;accounts&#x2F;answer&#x2F;3118687</a>",
+        "timeISO": "2020-03-07T18:12:37.000Z",
+        "kids": []
+      },
+      {
+        "id": "22511788",
+        "type": "comment",
+        "by": {
+          "id": "gbrown"
+        },
+        "text": "&gt; And also cleared him<p>He&#x27;s lucky an overzealous prosecutor didn&#x27;t go after him anyway.",
+        "timeISO": "2020-03-07T15:00:42.000Z",
+        "kids": [
+          {
+            "id": "22511801",
+            "type": "comment",
+            "by": {
+              "id": "augustocallejas"
+            },
+            "text": "Also lucky his parents had money to pay for a lawyer:<p>&gt; So he went to his parents’ home in St. Augustine, where, over dinner, he told them what was happening. They agreed to dip into their savings to pay for a lawyer.",
+            "timeISO": "2020-03-07T15:02:44.000Z",
+            "kids": [
+              {
+                "id": "22512134",
+                "type": "comment",
+                "by": {
+                  "id": "michaelmrose"
+                },
+                "text": "This is WHY they didn&#x27;t go after him anyway. If your goal is to turn resources into results the best roi is to punish anyone they can plausibly accuse and threaten into taking a plea.",
+                "timeISO": "2020-03-07T15:51:12.000Z",
+                "kids": []
+              },
+              {
+                "id": "22512262",
+                "type": "comment",
+                "by": {
+                  "id": "trophycase"
+                },
+                "text": "I guess the silver lining here is that perhaps another person has finally learned about the value of privacy. And that &quot;nothing to hide&quot; is bullshit",
+                "timeISO": "2020-03-07T16:11:07.000Z",
+                "kids": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "22511919",
+        "type": "comment",
+        "by": {
+          "id": "northz"
+        },
+        "text": "[citation needed] there is no official word from Google saying that disabling location history disables sensorvault.<p>As far as I know, sensorvault is originally sourced from &quot;improve location accuracy&quot; events sent by the phone (hence the original name: sensorvault and not userlocation-vault), and kept &quot;anonymized&quot; until request for de-anonymization by law enforcement.",
+        "timeISO": "2020-03-07T15:17:53.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512066",
+        "type": "comment",
+        "by": {
+          "id": "sneak"
+        },
+        "text": "Google will still track your coarse location by geolocation history of your IP.  You cannot continue to use any of these services and opt out of location surveillance.",
+        "timeISO": "2020-03-07T15:39:30.000Z",
+        "kids": [
+          {
+            "id": "22512759",
+            "type": "comment",
+            "by": {
+              "id": "asdfasgasdgasdg"
+            },
+            "text": "Citation? I do not believe this is true, but I&#x27;d be happy to learn of evidence to the contrary.",
+            "timeISO": "2020-03-07T17:28:41.000Z",
+            "kids": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "22512788",
+    "type": "comment",
+    "by": {
+      "id": "miguelmota"
+    },
+    "text": "American justice system is broken; if you’re arrested you get put in jail until your court date unless you can pay the bail. If you can’t pay the bail then you can be in jail for months or years for something you didn’t do. The prosecutor will tell you to take plea deal for a shorter sentence or risk losing fighting in court and get a more severe punishment. A lot of innocent people end up taking plea deals because the odds are against them. Court cases can drag on for years and cost a fortune in lawyer fees. The biggest lie is that you’re &#x27;innocent until proven guilty&#x27;. If you get accused of a felony and end being proven innocent, there’s still no way to get that off your permanent record and will show up in background checks and follow you for life.",
+    "timeISO": "2020-03-07T17:32:24.000Z",
+    "kids": [
+      {
+        "id": "22513049",
+        "type": "comment",
+        "by": {
+          "id": "metabagel"
+        },
+        "text": "California eliminated cash bail in 2018. In California, a risk assessment is done to determine whether a suspect can be safely released.",
+        "timeISO": "2020-03-07T18:17:58.000Z",
+        "kids": []
+      }
+    ]
+  },
+  {
+    "id": "22513083",
+    "type": "comment",
+    "by": {
+      "id": "AlexandrB"
+    },
+    "text": "&gt; They also scoop up data from people who have nothing to do with the crime, often without their knowing ─ which Google itself has described as “a significant incursion on privacy.”<p>This is masterful re-framing of Google&#x27;s deplorable attitude towards user privacy. Apparently the <i>real</i> incursion on privacy is <i>not</i> when Google collects and tracks this information, but when government officials subpoena the information from Google. Amazing.",
+    "timeISO": "2020-03-07T18:23:43.000Z",
+    "kids": []
+  },
+  {
+    "id": "22512367",
+    "type": "comment",
+    "by": {
+      "id": "jeffdavis"
+    },
+    "text": "This might run afoul of the <i>Carpenter</i> decision, right? It basically held that asking for cell tower location data is a search of the person rather than a subpoena of records.<p>EDIT: maybe not. This one had a warrant rather than a subpoena. I&#x27;d still be interested in the interaction though.",
+    "timeISO": "2020-03-07T16:25:55.000Z",
+    "kids": [
+      {
+        "id": "22512562",
+        "type": "comment",
+        "by": {
+          "id": "throwaway17_17"
+        },
+        "text": "Doubtful, Carpenter was based on the fact that the cell tower location was not a willing transfer of international, but merely a functioning of the cellular technology and so the information was still protected under the 4th amendment requirement for a warrant. In this case, suspect ‘willingly’ transferred that information to Google and there was a warrant request for the information. Although, I suspect that the warrant was more to make it easier to get Google’s compliance than to deal with 4th amendment concerns.",
+        "timeISO": "2020-03-07T17:01:51.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512525",
+        "type": "comment",
+        "by": {
+          "id": "ajross"
+        },
+        "text": "Exactly, the warrant is exactly the mechanism used by our legal system to document the suspension of rights otherwise granted by the fourth amendment.<p>And it&#x27;s why I think a lot of the ire here is misdirected.  I mean, sure, the police were wrong for asking for this data, but it&#x27;s easy to see why they wanted it -- it makes their job easier in an obvious way.  The real problem here is the judge that granted the warrant.",
+        "timeISO": "2020-03-07T16:56:12.000Z",
+        "kids": []
+      }
+    ]
+  },
+  {
+    "id": "22512179",
+    "type": "comment",
+    "by": {
+      "id": "jb775"
+    },
+    "text": "Couldn&#x27;t he just show the police his exact bike route for that day? It would show him passing the house only momentarily. That&#x27;s probably more than enough for them to eliminate his as a suspect, especially considering they have access to Google&#x27;s metadata for cross-reference.",
+    "timeISO": "2020-03-07T15:59:35.000Z",
+    "kids": [
+      {
+        "id": "22512392",
+        "type": "comment",
+        "by": {
+          "id": "sedachv"
+        },
+        "text": "Trying to &quot;explain&quot; things to the police is a very bad idea:<p><a href=\"https:&#x2F;&#x2F;www.latimes.com&#x2F;opinion&#x2F;op-ed&#x2F;la-oe-duane-dont-talk-police-20160826-snap-story.html\" rel=\"nofollow\">https:&#x2F;&#x2F;www.latimes.com&#x2F;opinion&#x2F;op-ed&#x2F;la-oe-duane-dont-talk-...</a>",
+        "timeISO": "2020-03-07T16:31:57.000Z",
+        "kids": [
+          {
+            "id": "22512499",
+            "type": "comment",
+            "by": {
+              "id": "LeoTinnitus"
+            },
+            "text": "Talking to cops is like being questioned by your parents as a kid. They assume the worst and don&#x27;t care if they&#x27;re wrong.",
+            "timeISO": "2020-03-07T16:50:58.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512310",
+        "type": "comment",
+        "by": {
+          "id": "HarryHirsch"
+        },
+        "text": "You are presumed innocent. In civics class you learn that the prosecution has to prove your guilt (that&#x27;s bullshit, of course, because you&#x27;ll be offered a plea deal and have the choice between a copping a plea and finding yourself before a crooked jury that would convict a ham sandwich), but even so, why would you talk to the police and offer them ammunition that can be twisted into a story against you?",
+        "timeISO": "2020-03-07T16:18:45.000Z",
+        "kids": [
+          {
+            "id": "22512943",
+            "type": "comment",
+            "by": {
+              "id": "cat199"
+            },
+            "text": "&gt; You are presumed innocent.<p>This is once your case makes it to court. Police&#x2F;Prosecutors are looking to find&#x2F;prosecute the culprit, and will assume guilt where they think it makes sense - the court then confirms&#x2F;denies if this assumed guilt was correct in a trial.",
+            "timeISO": "2020-03-07T17:59:04.000Z",
+            "kids": []
+          }
+        ]
+      },
+      {
+        "id": "22512334",
+        "type": "comment",
+        "by": {
+          "id": "cesarb"
+        },
+        "text": "&gt; It would show him passing the house only momentarily.<p>Passing the house momentarily (three times within an hour, according to the article) could mean he was checking out the house as a potential target. That&#x27;s probably more than enough to mark him as a suspect. Were he the culprit, he could have then turned off the phone, or hid it within some distant bushes making it look like he stopped to rest, while actually doing the burglary.",
+        "timeISO": "2020-03-07T16:22:14.000Z",
+        "kids": []
+      },
+      {
+        "id": "22512223",
+        "type": "comment",
+        "by": {
+          "id": "quadrifoliate"
+        },
+        "text": "That&#x27;s not the point. What if he stopped to have a drink of water like 10 minutes from there?<p>Innocent people who happened to be in the vicinity should not have to explain their every moment on some day months in the past because the police don&#x27;t want to spend time doing more detailed investigations and interviewing potential eyewitnesses.",
+        "timeISO": "2020-03-07T16:07:38.000Z",
+        "kids": []
+      }
+    ]
+  },
+  {
+    "id": "22512506",
+    "type": "comment",
+    "by": {
+      "id": "sedachv"
+    },
+    "text": "Do you need to take phone calls and answer messages while riding your bike?<p>When it became obvious to me that the scenario described in the article was going to be increasingly common, I started to carry my phone in airplane mode, in an electromagnetically shielded pouch (most of which only work marginally), when in transit from place to place. I only turn GPS on when I need it. This also has a nice side-effect of prolonging battery life.<p>As far as bike fitness tracking, I have and highly recommend the Sigma BC 14.16 bike computer - it runs for over a year on a single coin cell battery, comes with a barometric altimeter, and even does altitude plotting. And it does not and cannot report you to the police!<p><a href=\"https:&#x2F;&#x2F;www.sigmasport.com&#x2F;en&#x2F;produkte&#x2F;fahrrad-computer&#x2F;wired&#x2F;wired&#x2F;bc1416\" rel=\"nofollow\">https:&#x2F;&#x2F;www.sigmasport.com&#x2F;en&#x2F;produkte&#x2F;fahrrad-computer&#x2F;wire...</a>",
+    "timeISO": "2020-03-07T16:53:09.000Z",
+    "kids": [
+      {
+        "id": "22512763",
+        "type": "comment",
+        "by": {
+          "id": "glitcher"
+        },
+        "text": "I get it that this is a simple thing one can do today to help increase their privacy a little, but this is wholly the wrong attitude. One can still easily be caught up in a geofence dragnet without riding bikes, regardless of how often they turn on airplane mode.<p>If law makers&#x2F;enforcement continue down this dystopian path, having your phone off or not with you at all may become enough to make you a suspect.",
+        "timeISO": "2020-03-07T17:29:16.000Z",
+        "kids": []
+      }
+    ]
+  }
+]
