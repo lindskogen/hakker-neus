@@ -17,10 +17,7 @@ const createLinkHandler = (navigation: StackNavigationProp<{}, {}>) => (
   if (/^https?:\/\/news.ycombinator.com/.test(href)) {
     const parsedHref = qs.parseUrl(href);
     const { id } = parsedHref.query;
-    navigation.navigate({
-      routeName: "Comments",
-      params: { id }
-    });
+    navigation.push("Comments", { id });
   } else {
     openURL(href);
   }
