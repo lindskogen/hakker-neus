@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useMemo, useState } from "react";
 import { RefreshControl, ScrollView } from "react-native";
-import { NavigationScreenProp } from "react-navigation";
 import { FlatHNComment, HNComment, HNStory } from "../common/types";
 import { backgroundDark } from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
@@ -15,6 +14,7 @@ import { FullPageView } from "../components/FullPageView";
 import { EmptyCommentsView } from "../components/EmptyCommentsView";
 import { CommentsFlatList } from "../components/CommentsFlatList";
 import { flatMap } from "lodash-es";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 export const flattenComments = (
   comments: HNComment[],
@@ -26,7 +26,7 @@ export const flattenComments = (
   ]);
 
 export const CommentsList: React.FC<{
-  navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
+  navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
 }> = ({ navigation }) => {
   const { id } = navigation.state.params!;
   const [isRefreshing, setRefreshing] = useState(false);

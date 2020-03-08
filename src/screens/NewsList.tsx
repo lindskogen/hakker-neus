@@ -8,7 +8,6 @@ import {
   Text,
   View
 } from "react-native";
-import { NavigationScreenProp } from "react-navigation";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
 import { FullPageLoader } from "../components/FullPageLoader";
@@ -18,9 +17,10 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ListItem } from "../components/ListItem";
 import { flatten, uniqBy } from "lodash-es";
 import { fetchNewsList } from "../fetchers/fetchNewsList";
+import { StackNavigationProp } from "react-navigation-stack/src/vendor/types";
 
 interface NewsListProps {
-  navigation: NavigationScreenProp<{}, {}>;
+  navigation: StackNavigationProp<{}, {}>;
 }
 
 const MemoedListItem = memo(ListItem);

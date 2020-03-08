@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Share, Text, TouchableOpacity } from "react-native";
-import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNStory } from "../common/types";
 import { backgroundOrange, fontFamily, padding, postAuthorFontSize } from "../common/vars";
@@ -8,9 +7,10 @@ import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { NewsListItem } from "./NewsListItem";
 import { NewsListItemText } from "./NewsListItemText";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 interface CommentsListHeaderProps {
-  navigation: NavigationScreenProp<{}, {}>;
+  navigation: StackNavigationProp<{}, {}>;
   story: HNStory;
 }
 

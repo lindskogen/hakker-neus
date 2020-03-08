@@ -5,12 +5,12 @@ import { CommentWithChildren } from "./CommentWithChildren";
 import { backgroundDark, padding } from "../common/vars";
 import { CommentsListItemHeader } from "./CommentsListItemHeader";
 import { HNStoryWithComments } from "../fetchers/fetchCommentsForItem";
-import { NavigationScreenProp } from "react-navigation";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 interface Props {
   story: HNStoryWithComments;
   comments: FlatHNComment[];
-  navigation: NavigationScreenProp<{}, { id: string; story?: HNStory }>;
+  navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
   isRefreshing: boolean;
   refetch: () => void;
 }

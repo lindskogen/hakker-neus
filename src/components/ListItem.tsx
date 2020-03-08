@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useRef } from "react";
 import { HNStory } from "../common/types";
-import { NavigationScreenProp } from "react-navigation";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
   Animated,
@@ -26,10 +25,11 @@ import { openURL } from "../common/browser";
 import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
 // @ts-ignore
 import { queryCache } from "react-query";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 export const ListItem: React.FC<{
   story: HNStory;
-  navigation: NavigationScreenProp<{}, {}>;
+  navigation: StackNavigationProp<{}, {}>;
   backgroundColor: string;
 }> = ({ navigation, backgroundColor, story }) => {
   const ref = useRef<Swipeable>(null);

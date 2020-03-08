@@ -1,9 +1,7 @@
 import qs from "query-string";
 
 import * as React from "react";
-import { useState } from "react";
 import { Share, TouchableHighlight, View } from "react-native";
-import { NavigationScreenProp } from "react-navigation";
 import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
 import { backgroundDark, padding } from "../common/vars";
@@ -11,8 +9,9 @@ import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
 import { HTMLComment } from "./HTMLComment";
 import { ContainerWithLeftBorder } from "./ContainerWithLeftBorder";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
-const createLinkHandler = (navigation: NavigationScreenProp<{}, {}>) => (
+const createLinkHandler = (navigation: StackNavigationProp<{}, {}>) => (
   href: string
 ) => {
   if (/^https?:\/\/news.ycombinator.com/.test(href)) {
@@ -31,7 +30,7 @@ interface CommentProps {
   op: string;
   comment: HNComment;
   depth: number;
-  navigation: NavigationScreenProp<{}, {}>;
+  navigation: StackNavigationProp<{}, {}>;
 }
 
 export const CommentWithChildren: React.FC<CommentProps> = ({

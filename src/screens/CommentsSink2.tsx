@@ -1,11 +1,11 @@
 import * as React from "react";
-import { NavigationScreenProp } from "react-navigation";
 import { CommentsFlatList } from "../components/CommentsFlatList";
 import { noop } from "lodash-es";
 import { flattenComments } from "./CommentsList";
+import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 export const CommentsSink2: React.FC<{
-  navigation: NavigationScreenProp<{}, {}>;
+  navigation: StackNavigationProp<{}, {}>;
 }> = ({ navigation }) => {
   return (
     <CommentsFlatList
