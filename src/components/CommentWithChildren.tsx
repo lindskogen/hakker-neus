@@ -1,7 +1,7 @@
 import qs from "query-string";
 
 import * as React from "react";
-import { Share, TouchableHighlight, View } from "react-native";
+import { Share, StyleSheet, TouchableHighlight, View } from "react-native";
 import { openURL } from "../common/browser";
 import { HNComment } from "../common/types";
 import { backgroundDark, padding } from "../common/vars";
@@ -49,11 +49,12 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
   return (
     <View
       style={{
-        marginTop: depth === 0 ? 0 : padding,
-        paddingTop: padding,
-        marginLeft: (padding / 2) * depth,
+        paddingVertical: padding,
+        marginLeft: (padding) * depth,
         minHeight: 40,
-        backgroundColor: backgroundDark
+        backgroundColor: backgroundDark,
+        borderTopColor: "#fff3",
+        borderTopWidth: StyleSheet.hairlineWidth
       }}
     >
       <TouchableHighlight

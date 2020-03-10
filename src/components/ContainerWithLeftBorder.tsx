@@ -16,7 +16,7 @@ export const ContainerWithLeftBorder: React.FC<ContainerWithLeftBorderProps> = (
       padding,
       paddingVertical: padding / 2,
       borderLeftColor: depth === 0 ? "transparent" : (d3 as any).schemeTableau10[depth],
-      borderLeftWidth: 5
+      borderLeftWidth: 3
     }}
   >
     {children}
