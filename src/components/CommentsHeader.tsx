@@ -42,7 +42,7 @@ export const CommentHeader = ({
             marginLeft: 5,
             justifyContent: "center",
             alignItems: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.1)"
+            backgroundColor: "#fff2"
           }}
         >
           <Text
