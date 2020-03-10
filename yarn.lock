@@ -5858,17 +5858,17 @@ react-native-safe-area-view@^0.14.8:
   dependencies:
     hoist-non-react-statics "^2.3.1"
 
-react-native-screens@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/react-native-screens/-/react-native-screens-2.2.0.tgz#cc4cdf17426fdda97ad93a5e812a1899390f1978"
-  integrity sha512-a0VzxOWot7F9B/GQyDSssBRd3jUJazFnTQS61IiyReWB6aHlFhf3Xz10jBRoURXy1EMCDCHgenmTVTkKHpKyqQ==
+react-native-screens@2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-screens/-/react-native-screens-2.3.0.tgz#fd2b0c841f4fdebb2937c0e84acccc62bf9ebb22"
+  integrity sha512-b+zazYedHPZoDzeKOE4RF/rPpJX8AAITazZCsVFUtw5Qn2QNHvAi0xbzWvQFNgqfvET0TLuu8F2HfBDh1WSqdQ==
   dependencies:
     debounce "^1.2.0"
 
-react-native-svg@^12.0.2:
-  version "12.0.2"
-  resolved "https://registry.yarnpkg.com/react-native-svg/-/react-native-svg-12.0.2.tgz#0d9413ed5aa4d793ca665f75d4a790f292bdaed8"
-  integrity sha512-c0Q9qPnu7MsCWHJg7+6KkRLYfCj0JEGZtpCo3mNT/hqWv3PiW33Tc5FiXx9skDjlGZPqI9ZpxCs81cfCPmS6TQ==
+react-native-svg@^12.0.3:
+  version "12.0.3"
+  resolved "https://registry.yarnpkg.com/react-native-svg/-/react-native-svg-12.0.3.tgz#5dcc0e73efca50c8cfff098b20404551fad4aa5e"
+  integrity sha512-ZuZUHMVpF4AX1pNGvHOCZLUuMC5oG6LQnwImJTRw8avKYhpUQdGDWwqi6YtPfYszKx+DwepFeq1uWlAFMzB4qQ==
   dependencies:
     css-select "^2.1.0"
     css-tree "^1.0.0-alpha.39"
@@ -5963,10 +5963,10 @@ react-navigation@^4.2.2:
     "@react-navigation/core" "^3.6.1"
     "@react-navigation/native" "^3.7.3"
 
-react-query@^1.0.22:
-  version "1.0.22"
-  resolved "https://registry.yarnpkg.com/react-query/-/react-query-1.0.22.tgz#a48f3e616015f7369a3342b350c2b64b9ca6580e"
-  integrity sha512-xJVK/c6lRZR6xi6sZrBnroZDrYAdQVVGSiwNONQdBrV3WEmIAJaSse5D8H+UW1BNdceNN036OnSxq9s3hRtClQ==
+react-query@^1.0.23:
+  version "1.0.23"
+  resolved "https://registry.yarnpkg.com/react-query/-/react-query-1.0.23.tgz#30ccdd91640767a3c42d5c2a4ce8acdfa3986ef4"
+  integrity sha512-xk3+ozmnClBnRRIkSjXxvX7Nb6Wvh3AOKTSDVObEStpNFoGCtvx5QTB9hKpdIlcYSsNLSoJewV3jfYK/6oMY3g==
 
 react-refresh@^0.4.0:
   version "0.4.2"
