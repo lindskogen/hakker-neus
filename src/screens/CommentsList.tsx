@@ -15,15 +15,22 @@ import { EmptyCommentsView } from "../components/EmptyCommentsView";
 import { CommentsFlatList } from "../components/CommentsFlatList";
 import { flatMap } from "lodash-es";
 import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
+import { isDefined } from "../lib/isDefined";
 
 export const flattenComments = (
   comments: HNComment[],
   depth: number = 0
 ): FlatHNComment[] =>
-  flatMap(comments, comment => [
-    { comment, depth },
-    ...flattenComments(comment.kids ?? [], depth + 1)
-  ]);
+  flatMap(comments, comment => {
+    if (comment && comment.text) {
+      return [
+        { comment, depth },
+        ...flattenComments(comment?.kids ?? [], depth + 1)
+      ];
+    } else {
+      return flattenComments(comment?.kids ?? [], depth + 1);
+    }
+  });
 
 export const CommentsList: React.FC<{
   navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
@@ -57,7 +64,10 @@ export const CommentsList: React.FC<{
     [story]
   );
 
-  const flatComments = useMemo(() => flattenComments(comments), [comments]);
+  const flatComments = useMemo(
+    () => flattenComments(comments).filter(isDefined),
+    [comments]
+  );
 
   const showFullPageSpinner = !story && isFetching && !isRefreshing;
 
