@@ -21,5 +21,16 @@ const newsListQuery = `
   }
 `;
 
-export const fetchNewsList = (key: string, cursor: number = 0): Promise<HNStory[]> =>
-  request(GQL_ENDPOINT, newsListQuery, { limit: 20, offset: 20 * cursor }).then(data => data.hn.topStories);
+export interface Paginated<T> {
+  data: T;
+  nextPage: number;
+}
+
+export const fetchNewsList = (
+  key: string,
+  cursor: number = 0
+): Promise<Paginated<HNStory[]>> =>
+  request(GQL_ENDPOINT, newsListQuery, {
+    limit: 20,
+    offset: 20 * cursor
+  }).then(data => ({ data: data.hn.topStories, nextPage: cursor + 1 }));

@@ -15,8 +15,7 @@ import { FullPageLoader } from "../components/FullPageLoader";
 import { useInfiniteQuery } from "react-query";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ListItem } from "../components/ListItem";
-import { flatten, uniqBy } from "lodash-es";
-import { fetchNewsList } from "../fetchers/fetchNewsList";
+import { fetchNewsList, Paginated } from "../fetchers/fetchNewsList";
 import { StackNavigationProp } from "react-navigation-stack/src/vendor/types";
 
 interface NewsListProps {
@@ -30,29 +29,23 @@ const getBackgroundColor = (index: number): string =>
 
 export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
   const [isRefetching, setRefetching] = useState(false);
-  const {
-    refetch,
-    data,
-    fetchMore,
-    isFetchingMore
-  } = useInfiniteQuery("news-list", fetchNewsList, {
-    suspense: true,
-    refetchOnMount: false,
-    onSettled: () => setRefetching(false),
-    refetchOnWindowFocus: false,
-    getFetchMore: (lastGroup: HNStory[], allGroups: HNStory[][]) => {
-      const length = allGroups.length;
-      console.log("next fetch:", length);
-      return length;
+  const { refetch, data, fetchMore, isFetchingMore } = useInfiniteQuery(
+    "news-list",
+    fetchNewsList,
+    {
+      suspense: true,
+      refetchOnMount: false,
+      onSettled: () => setRefetching(false),
+      refetchOnWindowFocus: false,
+      getFetchMore: (lastPage: any) => lastPage.nextPage
     }
-  });
-
-  const stories = data as HNStory[][];
-
-  const flattenedStories = useMemo(
-    () => uniqBy(flatten(stories), story => story.id),
-    [stories]
   );
+
+  const stories = data as Paginated<HNStory[]>[];
+
+  const flattenedStories = useMemo(() => stories.flatMap(page => page.data), [
+    stories
+  ]);
 
   const renderItem: ListRenderItem<HNStory> = useCallback(
     ({ item: story, index }) => {
