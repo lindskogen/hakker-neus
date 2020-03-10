@@ -1,8 +1,9 @@
-import { formatDistanceStrict, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import * as React from "react";
 import { Text, View } from "react-native";
 import { HNComment } from "../common/types";
 import { fontFamily, padding } from "../common/vars";
+import { RelativeTime } from "../common/CurrentTimeContext";
 
 export const CommentHeader = ({
   comment,
@@ -66,7 +67,7 @@ export const CommentHeader = ({
         color: "white"
       }}
     >
-      {formatDistanceStrict(parseISO(comment.timeISO), new Date())}
+      <RelativeTime pastDate={parseISO(comment.timeISO)} />
     </Text>
   </View>
 );
