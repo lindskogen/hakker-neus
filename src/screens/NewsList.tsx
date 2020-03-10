@@ -1,22 +1,18 @@
 import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
 import { memo, Suspense, useCallback, useMemo, useState } from "react";
-import {
-  FlatList,
-  ListRenderItem,
-  RefreshControl,
-  Text,
-  View
-} from "react-native";
+import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
 import { FullPageLoader } from "../components/FullPageLoader";
 // @ts-ignore
 import { useInfiniteQuery } from "react-query";
-import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ListItem } from "../components/ListItem";
 import { fetchNewsList, Paginated } from "../fetchers/fetchNewsList";
 import { StackNavigationProp } from "react-navigation-stack/src/vendor/types";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { ErrorView } from "../components/ErrorView";
+import { FullPageView } from "../components/FullPageView";
 
 interface NewsListProps {
   navigation: StackNavigationProp<{}, {}>;
@@ -95,7 +91,9 @@ export const NewsListScreen: React.FC<NewsListProps> = ({ navigation }) => {
     <Suspense fallback={<FullPageLoader backgroundColor={backgroundOrange} />}>
       <ErrorBoundary
         fallback={error => (
-          <Text style={{ color: "white" }}>{error.message}</Text>
+          <FullPageView backgroundColor={backgroundDark}>
+            <ErrorView error={error} />
+          </FullPageView>
         )}
       >
         <NewsList navigation={navigation} />

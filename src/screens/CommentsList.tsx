@@ -16,6 +16,8 @@ import { CommentsFlatList } from "../components/CommentsFlatList";
 import { flatMap } from "lodash-es";
 import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 import { isDefined } from "../lib/isDefined";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { ErrorView } from "../components/ErrorView";
 
 export const flattenComments = (
   comments: HNComment[],
@@ -32,7 +34,7 @@ export const flattenComments = (
     }
   });
 
-export const CommentsList: React.FC<{
+const InnerCommentsList: React.FC<{
   navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
 }> = ({ navigation }) => {
   const { id } = navigation.state.params!;
@@ -104,5 +106,29 @@ export const CommentsList: React.FC<{
       isRefreshing={isRefreshing}
       refetch={onRefresh}
     />
+  );
+};
+
+export const CommentsList: React.FC<{
+  navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
+}> = ({ navigation }) => {
+  return (
+    <ErrorBoundary
+      fallback={error => (
+        <ScrollView contentContainerStyle={{ flex: 1 }}>
+          {navigation.state.params!.story && (
+            <CommentsListItemHeader
+              navigation={navigation}
+              story={navigation.state.params!.story}
+            />
+          )}
+          <FullPageView backgroundColor={backgroundDark}>
+            <ErrorView error={error} />
+          </FullPageView>
+        </ScrollView>
+      )}
+    >
+      <InnerCommentsList navigation={navigation} />
+    </ErrorBoundary>
   );
 };

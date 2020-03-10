@@ -1,4 +1,4 @@
-import { EmptyStateIcon } from "./EmptyStateIcon";
+import { EmptyStateIcon } from "./Icons";
 import { Text } from "react-native";
 import { fontFamily } from "../common/vars";
 import * as React from "react";
