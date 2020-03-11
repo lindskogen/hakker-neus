@@ -13,6 +13,7 @@ import { StackNavigationProp } from "react-navigation-stack/src/vendor/types";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ErrorView } from "../components/ErrorView";
 import { FullPageView } from "../components/FullPageView";
+import { flatMap } from "lodash-es";
 
 interface NewsListProps {
   navigation: StackNavigationProp<{}, {}>;
@@ -39,7 +40,7 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
 
   const stories = data as Paginated<HNStory[]>[];
 
-  const flattenedStories = useMemo(() => stories.flatMap(page => page.data), [
+  const flattenedStories = useMemo(() => flatMap(stories, page => page.data), [
     stories
   ]);
 
