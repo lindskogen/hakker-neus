@@ -274,6 +274,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = se.lindskogen.hakkerneues;
 				PRODUCT_NAME = HackerNeus;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -294,6 +295,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = se.lindskogen.hakkerneues;
 				PRODUCT_NAME = HackerNeus;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
