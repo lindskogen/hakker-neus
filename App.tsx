@@ -1,44 +1,47 @@
 import * as React from "react";
 import { StatusBar } from "react-native";
-import { createAppContainer, SafeAreaView } from "react-navigation";
+import { NavigationContainer } from "@react-navigation/native";
 import {
   CardStyleInterpolators,
-  createStackNavigator
-} from "react-navigation-stack";
+  createStackNavigator,
+  StackNavigationOptions
+} from "@react-navigation/stack";
 import { backgroundDark } from "./src/common/vars";
-import { CommentsList } from "./src/screens/CommentsList";
-import { CommentsSink } from "./src/screens/CommentsSink";
-import { NewsListScreen } from "./src/screens/NewsList";
 import { CurrentTimeProvider } from "./src/common/CurrentTimeContext";
-import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { ErrorView } from "./src/components/ErrorView";
 import { FullPageView } from "./src/components/FullPageView";
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  useSafeArea
+} from "react-native-safe-area-context";
+import { NewsListScreen } from "./src/screens/NewsList";
+import { CommentsList } from "./src/screens/CommentsList";
+import { CommentsSink } from "./src/screens/CommentsSink";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
+import { HNStory } from "./src/common/types";
 
-const AppNavigator = createStackNavigator(
-  {
-    Home: { screen: NewsListScreen },
-    Comments: { screen: CommentsList },
-    CommentsTesting: { screen: CommentsSink }
+const Stack = createStackNavigator<RootStackParamList>();
+
+export type RootStackParamList = {
+  Home: undefined;
+  Comments: { id: string; story?: HNStory };
+  CommentsTesting: undefined;
+};
+
+const screenOptions: StackNavigationOptions = {
+  gestureEnabled: true,
+  gestureDirection: "horizontal",
+  gestureResponseDistance: {
+    horizontal: 135,
+    vertical: 135
   },
-  {
-    initialRouteName: "Home",
-    headerMode: "none",
-    defaultNavigationOptions: {
-      gestureEnabled: true,
-      gestureDirection: "horizontal",
-      gestureResponseDistance: {
-        horizontal: 135,
-        vertical: 135
-      },
-      cardStyle: { backgroundColor: backgroundDark },
-      cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS
-    }
-  }
-);
+  cardStyle: { backgroundColor: backgroundDark },
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS
+};
 
-const NavigationContainer = createAppContainer(AppNavigator);
-
-export default function AppWrapper() {
+function AppWrapper() {
+  const { right, left, top } = useSafeArea();
   return (
     <ErrorBoundary
       fallback={error => (
@@ -50,15 +53,33 @@ export default function AppWrapper() {
       <CurrentTimeProvider>
         <StatusBar barStyle={"light-content"} />
         <SafeAreaView
-          forceInset={{ bottom: "never" }}
           style={{
             flex: 1,
+            paddingRight: right,
+            paddingLeft: left,
+            paddingTop: top,
             backgroundColor: backgroundDark
           }}
         >
-          <NavigationContainer />
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Home"
+              headerMode="none"
+              screenOptions={screenOptions}
+            >
+              <Stack.Screen name="Home" component={NewsListScreen} />
+              <Stack.Screen name="Comments" component={CommentsList} />
+              <Stack.Screen name="CommentsTesting" component={CommentsSink} />
+            </Stack.Navigator>
+          </NavigationContainer>
         </SafeAreaView>
       </CurrentTimeProvider>
     </ErrorBoundary>
   );
 }
+
+export default () => (
+  <SafeAreaProvider>
+    <AppWrapper />
+  </SafeAreaProvider>
+);

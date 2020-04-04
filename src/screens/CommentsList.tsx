@@ -14,10 +14,12 @@ import { FullPageView } from "../components/FullPageView";
 import { EmptyCommentsView } from "../components/EmptyCommentsView";
 import { CommentsFlatList } from "../components/CommentsFlatList";
 import { flatMap } from "lodash-es";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { isDefined } from "../lib/isDefined";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ErrorView } from "../components/ErrorView";
+import { RootStackParamList } from "../../App";
+import { RouteProp } from "@react-navigation/native";
 
 export const flattenComments = (
   comments: HNComment[],
@@ -34,24 +36,16 @@ export const flattenComments = (
     }
   });
 
-const InnerCommentsList: React.FC<{
-  navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
-}> = ({ navigation }) => {
-  const { id } = navigation.state.params!;
+const InnerCommentsList: React.FC<{ id: string; story?: HNStory }> = props => {
   const [isRefreshing, setRefreshing] = useState(false);
 
   const { data: story, isFetching, refetch } = useQuery<
     HNStoryWithComments,
     any
-  >(
-    ["comments", { id }],
-    // @ts-ignore
-    fetchCommentsForItem,
-    {
-      onSettled: () => setRefreshing(false),
-      refetchOnWindowFocus: false
-    }
-  );
+  >(["comments", { id: props.id }], fetchCommentsForItem, {
+    onSettled: () => setRefreshing(false),
+    refetchOnWindowFocus: false
+  });
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -85,12 +79,7 @@ const InnerCommentsList: React.FC<{
           />
         }
       >
-        {navigation.state.params!.story && (
-          <CommentsListItemHeader
-            navigation={navigation}
-            story={navigation.state.params!.story}
-          />
-        )}
+        {props.story && <CommentsListItemHeader story={props.story} />}
         <FullPageView backgroundColor={backgroundDark}>
           {showFullPageSpinner ? <Loader /> : <EmptyCommentsView />}
         </FullPageView>
@@ -100,8 +89,7 @@ const InnerCommentsList: React.FC<{
 
   return (
     <CommentsFlatList
-      story={story}
-      navigation={navigation}
+      story={story!}
       comments={flatComments}
       isRefreshing={isRefreshing}
       refetch={onRefresh}
@@ -109,18 +97,18 @@ const InnerCommentsList: React.FC<{
   );
 };
 
-export const CommentsList: React.FC<{
-  navigation: StackNavigationProp<{}, { id: string; story?: HNStory }>;
-}> = ({ navigation }) => {
+interface CommentsListProps {
+  navigation: StackNavigationProp<RootStackParamList, "Comments">;
+  route: RouteProp<RootStackParamList, "Comments">;
+}
+
+export const CommentsList: React.FC<CommentsListProps> = ({ route }) => {
   return (
     <ErrorBoundary
       fallback={error => (
         <ScrollView contentContainerStyle={{ flex: 1 }}>
-          {navigation.state.params!.story && (
-            <CommentsListItemHeader
-              navigation={navigation}
-              story={navigation.state.params!.story}
-            />
+          {route.params.story && (
+            <CommentsListItemHeader story={route.params.story} />
           )}
           <FullPageView backgroundColor={backgroundDark}>
             <ErrorView error={error} />
@@ -128,7 +116,7 @@ export const CommentsList: React.FC<{
         </ScrollView>
       )}
     >
-      <InnerCommentsList navigation={navigation} />
+      <InnerCommentsList id={route.params.id} story={route.params.story} />
     </ErrorBoundary>
   );
 };

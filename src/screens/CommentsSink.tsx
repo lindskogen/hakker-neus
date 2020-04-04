@@ -1,7 +1,6 @@
 import * as React from "react";
 import { ScrollView } from "react-native";
 import { CommentWithChildren } from "../components/CommentWithChildren";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 const codeComment = `Actually, that&#x27;s right, forgot about that :P<p>The only remaining mystery then would be why they bothered encoding it like this:<p><pre><code>    0xxxxxxx
     110xxxxx  10xxxxxx        
@@ -23,9 +22,7 @@ const multipleCodeComment = `Failed entirely to work on my first attempt with:<p
 
 const italicComment = `&gt; <i>The metro is also super efficient, you can get everywhere &quot;intra muros&quot; in 30-40 minutes.</i><p>Yes.  Both times I was there visiting, we didn&#x27;t bother with even the buses.  The Metro was usually a short walk, and a short wait.`;
 
-export const CommentsSink: React.FC<{
-  navigation: StackNavigationProp<{}, {}>;
-}> = ({ navigation }) => {
+export const CommentsSink: React.FC = () => {
   return (
     <ScrollView style={{ flex: 1 }}>
       {[italicComment, codeComment, linkComment, multipleCodeComment].map(
@@ -42,7 +39,6 @@ export const CommentsSink: React.FC<{
               timeISO: new Date().toISOString()
             }}
             depth={0}
-            navigation={navigation}
           />
         )
       )}

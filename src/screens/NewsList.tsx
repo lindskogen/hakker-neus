@@ -5,26 +5,23 @@ import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
 import { FullPageLoader } from "../components/FullPageLoader";
-// @ts-ignore
 import { useInfiniteQuery } from "react-query";
 import { ListItem } from "../components/ListItem";
 import { fetchNewsList, Paginated } from "../fetchers/fetchNewsList";
-import { StackNavigationProp } from "react-navigation-stack/src/vendor/types";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ErrorView } from "../components/ErrorView";
 import { FullPageView } from "../components/FullPageView";
 import { flatMap } from "lodash-es";
-
-interface NewsListProps {
-  navigation: StackNavigationProp<{}, {}>;
-}
+import { RootStackParamList } from "../../App";
+import { RouteProp } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 
 const MemoedListItem = memo(ListItem);
 
 const getBackgroundColor = (index: number): string =>
   d3.interpolateOranges((index / 50) * 0.35 + 0.65);
 
-export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
+export const NewsList: React.FC = () => {
   const [isRefetching, setRefetching] = useState(false);
   const { refetch, data, fetchMore, isFetchingMore } = useInfiniteQuery(
     "news-list",
@@ -50,12 +47,11 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
         <MemoedListItem
           story={story}
           key={story.id}
-          navigation={navigation}
           backgroundColor={getBackgroundColor(index)}
         />
       );
     },
-    [navigation]
+    []
   );
 
   return (
@@ -87,18 +83,21 @@ export const NewsList: React.FC<NewsListProps> = ({ navigation }) => {
   );
 };
 
-export const NewsListScreen: React.FC<NewsListProps> = ({ navigation }) => {
-  return (
-    <Suspense fallback={<FullPageLoader backgroundColor={backgroundOrange} />}>
-      <ErrorBoundary
-        fallback={error => (
-          <FullPageView backgroundColor={backgroundDark}>
-            <ErrorView error={error} />
-          </FullPageView>
-        )}
-      >
-        <NewsList navigation={navigation} />
-      </ErrorBoundary>
-    </Suspense>
-  );
-};
+interface NewsListScreenProps {
+  navigation: StackNavigationProp<RootStackParamList, "Home">;
+  route: RouteProp<RootStackParamList, "Home">;
+}
+
+export const NewsListScreen: React.FC<NewsListScreenProps> = () => (
+  <Suspense fallback={<FullPageLoader backgroundColor={backgroundOrange} />}>
+    <ErrorBoundary
+      fallback={error => (
+        <FullPageView backgroundColor={backgroundDark}>
+          <ErrorView error={error} />
+        </FullPageView>
+      )}
+    >
+      <NewsList />
+    </ErrorBoundary>
+  </Suspense>
+);

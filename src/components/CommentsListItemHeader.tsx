@@ -7,15 +7,12 @@ import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { NewsListItem } from "./NewsListItem";
 import { NewsListItemText } from "./NewsListItemText";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
 interface CommentsListHeaderProps {
-  navigation: StackNavigationProp<{}, {}>;
   story: HNStory;
 }
 
 export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
-  navigation,
   story: { by, id, title, url }
 }) => (
   <NewsListItem backgroundColor={backgroundOrange}>

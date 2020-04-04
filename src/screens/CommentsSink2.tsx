@@ -2,11 +2,8 @@ import * as React from "react";
 import { CommentsFlatList } from "../components/CommentsFlatList";
 import { noop } from "lodash-es";
 import { flattenComments } from "./CommentsList";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
 
-export const CommentsSink2: React.FC<{
-  navigation: StackNavigationProp<{}, {}>;
-}> = ({ navigation }) => {
+export const CommentsSink2: React.FC = () => {
   return (
     <CommentsFlatList
       comments={flattenComments(require("./fullcomments.json"))}
@@ -21,7 +18,6 @@ export const CommentsSink2: React.FC<{
         title: "title",
         score: 2
       }}
-      navigation={navigation}
       refetch={noop}
     />
   );

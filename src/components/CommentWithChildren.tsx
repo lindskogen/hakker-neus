@@ -9,15 +9,19 @@ import { makeHNUrl } from "../lib/makeHNUrl";
 import { CommentHeader } from "./CommentsHeader";
 import { HTMLComment } from "./HTMLComment";
 import { ContainerWithLeftBorder } from "./ContainerWithLeftBorder";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../App";
+import { useAppNavigation } from "../common/useAppNavigation";
 
-const createLinkHandler = (navigation: StackNavigationProp<{}, {}>) => (
-  href: string
-) => {
+const createLinkHandler = (
+  navigation: StackNavigationProp<RootStackParamList>
+) => (href: string) => {
   if (/^https?:\/\/news.ycombinator.com/.test(href)) {
     const parsedHref = qs.parseUrl(href);
     const { id } = parsedHref.query;
-    navigation.push("Comments", { id });
+    if (id && !Array.isArray(id)) {
+      navigation.push("Comments", { id });
+    }
   } else {
     openURL(href);
   }
@@ -27,16 +31,15 @@ interface CommentProps {
   op: string;
   comment: HNComment;
   depth: number;
-  navigation: StackNavigationProp<{}, {}>;
 }
 
 export const CommentWithChildren: React.FC<CommentProps> = ({
   op,
   comment,
-  depth,
-  navigation
+  depth
 }) => {
   const isOp = op === comment.by.id;
+  const navigation = useAppNavigation();
 
   const handlePressLink = createLinkHandler(navigation);
 
@@ -50,7 +53,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
     <View
       style={{
         paddingVertical: padding,
-        marginLeft: (padding) * depth,
+        marginLeft: padding * depth,
         minHeight: 40,
         backgroundColor: backgroundDark,
         borderTopColor: "#fff3",

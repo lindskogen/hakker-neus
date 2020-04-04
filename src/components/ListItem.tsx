@@ -23,16 +23,15 @@ import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { openURL } from "../common/browser";
 import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
-// @ts-ignore
 import { queryCache } from "react-query";
-import { StackNavigationProp } from "react-navigation-stack/lib/typescript/src/vendor/types";
+import { useAppNavigation } from "../common/useAppNavigation";
 
 export const ListItem: React.FC<{
   story: HNStory;
-  navigation: StackNavigationProp<{}, {}>;
   backgroundColor: string;
-}> = ({ navigation, backgroundColor, story }) => {
+}> = ({ backgroundColor, story }) => {
   const ref = useRef<Swipeable>(null);
+  const navigation = useAppNavigation();
 
   return (
     <Swipeable
@@ -79,9 +78,9 @@ export const ListItem: React.FC<{
           ["comments", { id: story.id }],
           fetchCommentsForItem
         );
-        navigation.navigate({
-          routeName: "Comments",
-          params: { id: story.id, story }
+        navigation.navigate("Comments", {
+          id: story.id,
+          story
         });
       }}
     >
@@ -102,9 +101,9 @@ export const ListItem: React.FC<{
                 ["comments", { id: story.id }],
                 fetchCommentsForItem
               );
-              navigation.navigate({
-                routeName: "Comments",
-                params: { id: story.id, story }
+              navigation.navigate("Comments", {
+                id: story.id,
+                story
               });
             }
           }}
