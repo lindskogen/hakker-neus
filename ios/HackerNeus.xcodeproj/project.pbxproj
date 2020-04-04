@@ -96,7 +96,6 @@
 				3B45DEE767108C263ABBED6F /* Pods-HackerNeus-HackerNeusTests.debug.xcconfig */,
 				B0FA9C53B793FB2255F2B681 /* Pods-HackerNeus-HackerNeusTests.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -242,6 +241,7 @@
 						TestTargetID = 13B07F861A680F5B00A75B9A;
 					};
 					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = RKHV3WZ9CR;
 						LastSwiftMigration = 1120;
 					};
 					2D02E47A1E0B4A5D006451C7 = {
@@ -565,6 +565,25 @@
 			};
 			name = Release;
 		};
+		3D46E99224393F0F00E5C913 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = HackerNeusTests;
+			};
+			name = Debug;
+		};
+		3D46E99324393F0F00E5C913 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				PRODUCT_NAME = HackerNeusTests;
+			};
+			name = Release;
+		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -684,6 +703,8 @@
 		00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "HackerNeusTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
+				3D46E99224393F0F00E5C913 /* Debug */,
+				3D46E99324393F0F00E5C913 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
