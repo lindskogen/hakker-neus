@@ -1,7 +1,8 @@
-import gql from "graphql-tag";
 import { HNComment, HNStory } from "../common/types";
 import { request } from "graphql-request";
 import { GQL_ENDPOINT } from "../lib/graphql-endpoint";
+import { useQuery } from "react-query";
+import { useState } from "react";
 
 const commentsQuery = `
   query CommentsQuery($id: Int!) {
@@ -53,8 +54,31 @@ export interface HNStoryWithComments extends HNStory {
 
 export const fetchCommentsForItem = (
   key: string,
-  { id }: { id: string }
+  id: string
 ): Promise<HNStoryWithComments> =>
   request(GQL_ENDPOINT, commentsQuery, { id: parseInt(id, 10) }).then(
     data => data.hn.item
   );
+
+export const useHNItemWithComments = (id: string) => {
+  const [isRefreshing, setRefreshing] = useState(false);
+  const { data: story, isFetching, refetch } = useQuery<
+    HNStoryWithComments,
+    any
+  >(["comments", id], fetchCommentsForItem, {
+    onSettled: () => setRefreshing(false),
+    refetchOnWindowFocus: false,
+  });
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    refetch();
+  };
+
+  return {
+    onRefresh,
+    isRefreshing,
+    story,
+    isFetching
+  };
+};

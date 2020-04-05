@@ -33,6 +33,14 @@ export const ListItem: React.FC<{
   const ref = useRef<Swipeable>(null);
   const navigation = useAppNavigation();
 
+  const navigateToStory = () => {
+    queryCache.prefetchQuery(["comments", story.id], fetchCommentsForItem);
+    navigation.navigate("Comments", {
+      id: story.id,
+      story
+    });
+  };
+
   return (
     <Swipeable
       ref={ref}
@@ -74,14 +82,7 @@ export const ListItem: React.FC<{
       }}
       onSwipeableRightWillOpen={() => {
         ref.current?.close();
-        queryCache.prefetchQuery(
-          ["comments", { id: story.id }],
-          fetchCommentsForItem
-        );
-        navigation.navigate("Comments", {
-          id: story.id,
-          story
-        });
+        navigateToStory();
       }}
     >
       <NewsListItem backgroundColor={backgroundColor}>
@@ -97,14 +98,7 @@ export const ListItem: React.FC<{
             if (story.url) {
               openURL(story.url);
             } else {
-              queryCache.prefetchQuery(
-                ["comments", { id: story.id }],
-                fetchCommentsForItem
-              );
-              navigation.navigate("Comments", {
-                id: story.id,
-                story
-              });
+              navigateToStory();
             }
           }}
         >

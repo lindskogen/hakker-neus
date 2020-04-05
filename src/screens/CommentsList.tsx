@@ -8,7 +8,7 @@ import { Loader } from "../components/FullPageLoader";
 import { useQuery } from "react-query";
 import {
   fetchCommentsForItem,
-  HNStoryWithComments
+  HNStoryWithComments, useHNItemWithComments
 } from "../fetchers/fetchCommentsForItem";
 import { FullPageView } from "../components/FullPageView";
 import { EmptyCommentsView } from "../components/EmptyCommentsView";
@@ -37,20 +37,7 @@ export const flattenComments = (
   });
 
 const InnerCommentsList: React.FC<{ id: string; story?: HNStory }> = props => {
-  const [isRefreshing, setRefreshing] = useState(false);
-
-  const { data: story, isFetching, refetch } = useQuery<
-    HNStoryWithComments,
-    any
-  >(["comments", { id: props.id }], fetchCommentsForItem, {
-    onSettled: () => setRefreshing(false),
-    refetchOnWindowFocus: false
-  });
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    refetch();
-  };
+  const { story, isRefreshing, isFetching, onRefresh } = useHNItemWithComments(props.id);
 
   const comments = useMemo(
     () =>

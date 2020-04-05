@@ -1,17 +1,15 @@
 import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
-import { memo, Suspense, useCallback, useMemo, useState } from "react";
+import { memo, Suspense } from "react";
 import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
 import { FullPageLoader } from "../components/FullPageLoader";
-import { useInfiniteQuery } from "react-query";
 import { ListItem } from "../components/ListItem";
-import { fetchNewsList, Paginated } from "../fetchers/fetchNewsList";
+import { useNewsList } from "../fetchers/fetchNewsList";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ErrorView } from "../components/ErrorView";
 import { FullPageView } from "../components/FullPageView";
-import { flatMap } from "lodash-es";
 import { RootStackParamList } from "../../App";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -21,51 +19,32 @@ const MemoedListItem = memo(ListItem);
 const getBackgroundColor = (index: number): string =>
   d3.interpolateOranges((index / 50) * 0.35 + 0.65);
 
+const renderItem: ListRenderItem<HNStory> = ({ item: story, index }) => (
+  <MemoedListItem
+    story={story}
+    key={story.id}
+    backgroundColor={getBackgroundColor(index)}
+  />
+);
+
 export const NewsList: React.FC = () => {
-  const [isRefetching, setRefetching] = useState(false);
-  const { refetch, data, fetchMore, isFetchingMore } = useInfiniteQuery(
-    "news-list",
-    fetchNewsList,
-    {
-      suspense: true,
-      refetchOnMount: false,
-      onSettled: () => setRefetching(false),
-      refetchOnWindowFocus: false,
-      getFetchMore: (lastPage: any) => lastPage.nextPage
-    }
-  );
-
-  const stories = data as Paginated<HNStory[]>[];
-
-  const flattenedStories = useMemo(() => flatMap(stories, page => page.data), [
-    stories
-  ]);
-
-  const renderItem: ListRenderItem<HNStory> = useCallback(
-    ({ item: story, index }) => {
-      return (
-        <MemoedListItem
-          story={story}
-          key={story.id}
-          backgroundColor={getBackgroundColor(index)}
-        />
-      );
-    },
-    []
-  );
+  const {
+    onRefresh,
+    isRefetching,
+    stories,
+    fetchMore,
+    isFetchingMore
+  } = useNewsList();
 
   return (
     <FlatList
       style={{ backgroundColor: backgroundDark }}
       indicatorStyle={"white"}
-      data={flattenedStories}
+      data={stories}
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
-          onRefresh={() => {
-            setRefetching(true);
-            refetch();
-          }}
+          onRefresh={onRefresh}
           tintColor={"white"}
         />
       }
