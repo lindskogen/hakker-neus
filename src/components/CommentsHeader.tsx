@@ -34,7 +34,7 @@ export const CommentHeader = ({
           color: "white"
         }}
       >
-        {comment.by.id}
+        {comment.by?.id ?? 'deleted'}
       </Text>
       {isOp && (
         <View

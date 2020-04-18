@@ -1,7 +1,7 @@
 export interface HNComment {
   id: number;
   type: string;
-  by: {
+  by?: {
     id: string;
   };
   kids?: HNComment[];
@@ -19,7 +19,7 @@ export interface HNStory {
   descendants: number;
   type: string;
   title: string;
-  by: { id: string };
+  by?: { id: string };
   text: string;
   url?: string;
   score: number;

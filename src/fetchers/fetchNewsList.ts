@@ -7,19 +7,17 @@ import { flatMap } from "lodash-es";
 
 const newsListQuery = `
   query Query($limit: Int!, $offset: Int!) {
-    hn {
-      topStories(limit: $limit, offset: $offset) {
+    topStories(limit: $limit, offset: $offset) {
+      id
+      descendants
+      type
+      title
+      by {
         id
-        descendants
-        type
-        title
-        by {
-          id
-        }
-        text
-        url
-        score
       }
+      text
+      url
+      score
     }
   }
 `;
@@ -38,22 +36,23 @@ export const fetchNewsList = (
   request(GQL_ENDPOINT, newsListQuery, {
     limit: STEP,
     offset: STEP * cursor
-  }).then(data => ({ data: data.hn.topStories, nextPage: cursor + 1 }));
+  }).then(data => ({ data: data.topStories, nextPage: cursor + 1 }));
 
 export const useNewsList = () => {
   const [isRefetching, setRefetching] = useState(false);
-  const { refetch, data: stories, fetchMore, isFetchingMore } = useInfiniteQuery(
-    "news-list",
-    fetchNewsList,
-    {
-      suspense: true,
-      refetchOnMount: false,
-      staleTime: 1000,
-      onSettled: () => setRefetching(false),
-      refetchOnWindowFocus: false,
-      getFetchMore: (lastPage: any) => lastPage.nextPage
-    }
-  );
+  const {
+    refetch,
+    data: stories,
+    fetchMore,
+    isFetchingMore
+  } = useInfiniteQuery("news-list", fetchNewsList, {
+    suspense: true,
+    refetchOnMount: false,
+    staleTime: 1000,
+    onSettled: () => setRefetching(false),
+    refetchOnWindowFocus: false,
+    getFetchMore: (lastPage: any) => lastPage.nextPage
+  });
 
   const onRefresh = () => {
     setRefetching(true);

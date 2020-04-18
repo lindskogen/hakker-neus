@@ -19,7 +19,7 @@ export const CommentsFlatList: React.FC<Props> = ({
   isRefreshing,
   refetch
 }) => {
-  const user: string = story?.by.id ?? "undefined";
+  const user: string = story?.by?.id ?? "deleted";
 
   const renderItem: ListRenderItem<FlatHNComment> = useCallback(
     ({ item }) => (

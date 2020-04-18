@@ -6,12 +6,13 @@ import { useState } from "react";
 
 const commentsQuery = `
   query CommentsQuery($id: Int!) {
-    hn {
-      item(id: $id) {
-        id
-        type
-        descendants
-        title
+    item(id: $id) {
+      id
+      type
+      descendants
+      title
+      kids {
+        ...Comment
         kids {
           ...Comment
           kids {
@@ -20,20 +21,17 @@ const commentsQuery = `
               ...Comment
               kids {
                 ...Comment
-                kids {
-                  ...Comment
-                }
               }
             }
           }
         }
-        by {
-          id
-        }
-        text
-        url
-        score
       }
+      by {
+        id
+      }
+      text
+      url
+      score
     }
   }
 
@@ -57,7 +55,7 @@ export const fetchCommentsForItem = (
   id: string
 ): Promise<HNStoryWithComments> =>
   request(GQL_ENDPOINT, commentsQuery, { id: parseInt(id, 10) }).then(
-    data => data.hn.item
+    data => data.item
   );
 
 export const useHNItemWithComments = (id: string) => {
@@ -67,7 +65,7 @@ export const useHNItemWithComments = (id: string) => {
     any
   >(["comments", id], fetchCommentsForItem, {
     onSettled: () => setRefreshing(false),
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false
   });
 
   const onRefresh = () => {

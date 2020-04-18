@@ -1,1 +1,1 @@
-export const GQL_ENDPOINT = "https://www.graphqlhub.com/graphql";
+export const GQL_ENDPOINT = "https://hn.app.sodapop.se";
