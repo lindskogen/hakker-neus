@@ -58,6 +58,7 @@ function AppWrapper() {
             paddingRight: right,
             paddingLeft: left,
             paddingTop: top,
+            paddingBottom: 0,
             backgroundColor: backgroundDark
           }}
         >
