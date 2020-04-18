@@ -37,7 +37,7 @@ const screenOptions: StackNavigationOptions = {
     vertical: 135
   },
   cardStyle: { backgroundColor: backgroundDark },
-  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS
+  cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
 };
 
 function AppWrapper() {
@@ -62,17 +62,15 @@ function AppWrapper() {
             backgroundColor: backgroundDark
           }}
         >
-          <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="Home"
-              headerMode="none"
-              screenOptions={screenOptions}
-            >
-              <Stack.Screen name="Home" component={NewsListScreen} />
-              <Stack.Screen name="Comments" component={CommentsList} />
-              <Stack.Screen name="CommentsTesting" component={CommentsSink} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Home"
+            headerMode="none"
+            screenOptions={screenOptions}
+          >
+            <Stack.Screen name="Home" component={NewsListScreen} />
+            <Stack.Screen name="Comments" component={CommentsList} />
+            <Stack.Screen name="CommentsTesting" component={CommentsSink} />
+          </Stack.Navigator>
         </SafeAreaView>
       </CurrentTimeProvider>
     </ErrorBoundary>
@@ -81,6 +79,8 @@ function AppWrapper() {
 
 export default () => (
   <SafeAreaProvider>
-    <AppWrapper />
+    <NavigationContainer>
+      <AppWrapper />
+    </NavigationContainer>
   </SafeAreaProvider>
 );
