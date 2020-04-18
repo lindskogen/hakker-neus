@@ -12,11 +12,12 @@ import { ContainerWithLeftBorder } from "./ContainerWithLeftBorder";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../App";
 import { useAppNavigation } from "../common/useAppNavigation";
+import { isHackerNewsUrl } from "../lib/isHackerNewsUrl";
 
 const createLinkHandler = (
   navigation: StackNavigationProp<RootStackParamList>
 ) => (href: string) => {
-  if (/^https?:\/\/news.ycombinator.com/.test(href)) {
+  if (isHackerNewsUrl(href)) {
     const parsedHref = qs.parseUrl(href);
     const { id } = parsedHref.query;
     if (id && !Array.isArray(id)) {
@@ -38,7 +39,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
   comment,
   depth
 }) => {
-  const isOp = op === comment.by.id;
+  const isOp = op === comment.by?.id;
   const navigation = useAppNavigation();
 
   const handlePressLink = createLinkHandler(navigation);
