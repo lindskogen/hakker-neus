@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { HNStory } from "../common/types";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
@@ -10,13 +10,13 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import {
   backgroundDark,
   fontFamily,
   fontWeight,
-  padding
+  padding,
 } from "../common/vars";
 import { NewsListItem } from "./NewsListItem";
 import { decodeHTMLEntities } from "../lib/formatter";
@@ -25,6 +25,7 @@ import { openURL } from "../common/browser";
 import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
 import { queryCache } from "react-query";
 import { useAppNavigation } from "../common/useAppNavigation";
+import { useSaveStory } from "../common/useSaveStory";
 
 export const ListItem: React.FC<{
   story: HNStory;
@@ -32,25 +33,27 @@ export const ListItem: React.FC<{
 }> = ({ backgroundColor, story }) => {
   const ref = useRef<Swipeable>(null);
   const navigation = useAppNavigation();
+  const { saved, save, remove } = useSaveStory(story);
+  const [isSaving, setIsSaving] = useState(false);
 
   const navigateToStory = () => {
     queryCache.prefetchQuery(["comments", story.id], fetchCommentsForItem);
     navigation.navigate("Comments", {
       id: story.id,
-      story
+      story,
     });
   };
 
   return (
     <Swipeable
       ref={ref}
-      overshootFriction={8}
-      rightThreshold={80}
+      overshootLeft={false}
+      onSwipeableClose={() => setIsSaving((isSaving) => !isSaving)}
       renderRightActions={(progress, dragX) => {
         const scale = dragX.interpolate({
           inputRange: [-80, 0],
           outputRange: [1, 0],
-          extrapolate: "clamp"
+          extrapolate: "clamp",
         });
 
         return (
@@ -64,15 +67,8 @@ export const ListItem: React.FC<{
                   textShadowColor: "rgba(0, 0, 0, 0.1)",
                   textShadowOffset: { height: 0, width: 0 },
                   textShadowRadius: 1,
-                  transform: [
-                    {
-                      scaleX: scale
-                    },
-                    {
-                      scaleY: scale
-                    }
-                  ]
-                }
+                  transform: [{ scale }],
+                },
               ]}
             >
               {story.descendants}
@@ -84,6 +80,45 @@ export const ListItem: React.FC<{
         ref.current?.close();
         navigateToStory();
       }}
+      renderLeftActions={(progress, dragX) => {
+        const scale = dragX.interpolate({
+          inputRange: [0, 80],
+          outputRange: [0, 1],
+          extrapolate: "clamp",
+        });
+
+        console.log(progress);
+
+        return (
+          <View style={styles.saveBg}>
+            <Animated.Text
+              style={[
+                {
+                  fontSize: 50,
+                  fontFamily,
+                  color: "white",
+                  textShadowColor: "rgba(0, 0, 0, 0.1)",
+                  textShadowOffset: { height: 0, width: 0 },
+                  textShadowRadius: 1,
+                  transform: [{ scale }],
+                },
+              ]}
+            >
+              {isSaving ? "Remove" : "Save"}
+            </Animated.Text>
+          </View>
+        );
+      }}
+      onSwipeableLeftOpen={() => {
+        ref.current?.close();
+      }}
+      onSwipeableLeftWillOpen={() => {
+        if (saved) {
+          remove();
+        } else {
+          save();
+        }
+      }}
     >
       <NewsListItem backgroundColor={backgroundColor}>
         <TouchableOpacity
@@ -91,7 +126,7 @@ export const ListItem: React.FC<{
           onLongPress={() => {
             Share.share({
               title: decodeHTMLEntities(story.title),
-              url: story.url || makeHNUrl(story.id)
+              url: story.url || makeHNUrl(story.id),
             });
           }}
           onPress={() => {
@@ -120,13 +155,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-end",
-    paddingRight: 20
+    paddingRight: 20,
+  },
+  saveBg: {
+    backgroundColor: backgroundDark,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingLeft: 20,
   },
   scoreTextBgContainer: {
     position: "absolute",
     right: padding,
     justifyContent: "center",
-    bottom: padding
+    bottom: padding,
   },
   scoreText: {
     fontSize: 30,
@@ -135,7 +177,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     textShadowColor: "rgba(0, 0, 0, 0.1)",
     textShadowOffset: { height: 0, width: 0 },
-    textShadowRadius: 1
+    textShadowRadius: 1,
   },
   newsListItemText: {
     fontSize: (Platform as PlatformIOSStatic).isPad ? 30 : 25,
@@ -144,6 +186,6 @@ const styles = StyleSheet.create({
     paddingRight: padding * 2,
     color: "white",
     textShadowColor: "rgba(0, 0, 0, 0.1)",
-    textShadowRadius: 1
-  }
+    textShadowRadius: 1,
+  },
 });
