@@ -1,16 +1,11 @@
-import { AsyncStorage } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
 import { HNStory } from "./types";
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const storyKey = (story: HNStory) => `story_${story.id}`;
 
 export const useSaveStory = (story: HNStory) => {
   const [storyItem, setStoryItem] = useState<HNStory | null>(null);
-
-  async function getStoryItem() {
-    const data = await AsyncStorage.getItem(storyKey(story));
-    setStoryItem(data ? JSON.parse(data) : null);
-  }
 
   function updateStoryItem(data: HNStory) {
     AsyncStorage.setItem(storyKey(story), JSON.stringify(data));
@@ -25,7 +20,17 @@ export const useSaveStory = (story: HNStory) => {
   }
 
   useEffect(() => {
-    getStoryItem();
+    let cancelled = false;
+    (async function () {
+      const data = await AsyncStorage.getItem(storyKey(story));
+      if (!cancelled) {
+        setStoryItem(data ? JSON.parse(data) : null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    }
   }, []);
 
   const save = useCallback(() => updateStoryItem(story), [story]);

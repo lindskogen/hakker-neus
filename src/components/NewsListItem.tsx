@@ -14,7 +14,5 @@ const styles = StyleSheet.create({
     padding,
     minHeight: 100,
     paddingVertical: padding * 2,
-    borderBottomColor: "#000",
-    borderBottomWidth: StyleSheet.hairlineWidth
   }
 });

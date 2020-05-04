@@ -1,7 +1,13 @@
 import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
 import { memo, Suspense } from "react";
-import { FlatList, ListRenderItem, RefreshControl, View } from "react-native";
+import {
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  StyleSheet,
+  View
+} from "react-native";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
 import { FullPageLoader } from "../components/FullPageLoader";
@@ -41,6 +47,7 @@ export const NewsList: React.FC = () => {
       style={{ backgroundColor: backgroundDark }}
       indicatorStyle={"white"}
       data={stories}
+      ItemSeparatorComponent={SeparatorComponent}
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
@@ -61,6 +68,12 @@ export const NewsList: React.FC = () => {
     />
   );
 };
+
+const SeparatorComponent = () => <View style={styles.separator} />;
+
+const styles = StyleSheet.create({
+  separator: { borderBottomWidth: StyleSheet.hairlineWidth }
+});
 
 interface NewsListScreenProps {
   navigation: StackNavigationProp<RootStackParamList, "Home">;
