@@ -26,7 +26,7 @@ import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
 import { queryCache } from "react-query";
 import { useAppNavigation } from "../common/useAppNavigation";
 import { useSaveStory } from "../common/useSaveStory";
-import { DocumentAdd, DocumentRemove } from "./Icons";
+import { HeartIcon } from "./Icons";
 
 const ICON_SIZE = 48;
 
@@ -87,44 +87,43 @@ export const ListItem: React.FC<{
       }}
       renderLeftActions={(progress, dragX) => {
         const scale = dragX.interpolate({
-          inputRange: [0, 80],
-          outputRange: [0, 1],
+          inputRange: [0, 70, 80],
+          outputRange: [0, 0, 1],
           extrapolate: "clamp"
         });
 
-        const backgroundColor = saved ? "#dc4e41" : "#20a261";
-
         return (
-          <View style={[styles.saveBg, { backgroundColor }]}>
-            <Animated.Text
-              style={[
-                {
-                  fontFamily,
-                  color: "#fff",
-                  transform: [{ scale }]
-                }
-              ]}
+          <View style={styles.saveBg}>
+            <View style={{ position: "absolute", left: 20 }}>
+              <HeartIcon
+                fill={saved ? "#fff" : "none"}
+                stroke={"#fff"}
+                width={ICON_SIZE}
+                height={ICON_SIZE}
+              />
+            </View>
+            <Animated.View
+              style={{ position: "absolute", left: 20, transform: [{ scale }] }}
             >
-              {saved ? (
-                <DocumentRemove width={ICON_SIZE} height={ICON_SIZE} />
-              ) : (
-                <DocumentAdd width={ICON_SIZE} height={ICON_SIZE} />
-              )}
-            </Animated.Text>
+              <HeartIcon
+                fill={saved ? backgroundDark : "#fff"}
+                stroke={"#fff"}
+                width={ICON_SIZE}
+                height={ICON_SIZE}
+              />
+            </Animated.View>
           </View>
         );
       }}
       onSwipeableLeftWillOpen={() => {
+        if (saved) {
+          remove();
+        } else {
+          save();
+        }
         setTimeout(() => {
           ref.current?.close();
         }, 100);
-        setTimeout(() => {
-          if (saved) {
-            remove();
-          } else {
-            save();
-          }
-        }, 1000);
       }}
     >
       <NewsListItem backgroundColor={backgroundColor}>
