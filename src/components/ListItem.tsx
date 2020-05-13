@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { HNStory } from "../common/types";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 import {
@@ -29,6 +29,8 @@ import { useSaveStory } from "../common/useSaveStory";
 import { HeartIcon } from "./Icons";
 
 const ICON_SIZE = 48;
+const LEFT_THRESHOLD = 80;
+const RIGHT_THRESHOLD = 100;
 
 export const ListItem: React.FC<{
   story: HNStory;
@@ -37,6 +39,15 @@ export const ListItem: React.FC<{
   const ref = useRef<Swipeable>(null);
   const navigation = useAppNavigation();
   const { saved, save, remove } = useSaveStory(story);
+  const saveAnimation = useRef(new Animated.Value(saved ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(saveAnimation, {
+      useNativeDriver: true,
+      delay: 500,
+      toValue: saved ? 1 : 0
+    }).start();
+  }, [saved]);
 
   const navigateToStory = () => {
     queryCache.prefetchQuery(["comments", story.id], fetchCommentsForItem);
@@ -50,8 +61,8 @@ export const ListItem: React.FC<{
     <Swipeable
       ref={ref}
       overshootFriction={8}
-      rightThreshold={80}
-      leftThreshold={80}
+      rightThreshold={RIGHT_THRESHOLD}
+      leftThreshold={LEFT_THRESHOLD}
       overshootLeft={false}
       overshootRight={false}
       renderRightActions={(progress, dragX) => {
@@ -86,27 +97,23 @@ export const ListItem: React.FC<{
         navigateToStory();
       }}
       renderLeftActions={(progress, dragX) => {
-        const scale = dragX.interpolate({
-          inputRange: [0, 70, 80],
+        const translateX = dragX.interpolate({
+          inputRange: [0, LEFT_THRESHOLD],
+          outputRange: [-LEFT_THRESHOLD, 0],
+          extrapolate: "clamp"
+        });
+
+        const opacity = dragX.interpolate({
+          inputRange: [0, 10, LEFT_THRESHOLD],
           outputRange: [0, 0, 1],
           extrapolate: "clamp"
         });
 
         return (
           <View style={styles.saveBg}>
-            <View style={{ position: "absolute", left: 20 }}>
+            <Animated.View style={{ opacity, transform: [{ translateX }] }}>
               <HeartIcon
-                fill={saved ? "#fff" : "none"}
-                stroke={"#fff"}
-                width={ICON_SIZE}
-                height={ICON_SIZE}
-              />
-            </View>
-            <Animated.View
-              style={{ position: "absolute", left: 20, transform: [{ scale }] }}
-            >
-              <HeartIcon
-                fill={saved ? backgroundDark : "#fff"}
+                fill={"#fff"}
                 stroke={"#fff"}
                 width={ICON_SIZE}
                 height={ICON_SIZE}
@@ -147,6 +154,19 @@ export const ListItem: React.FC<{
             {decodeHTMLEntities(story.title)}
           </Text>
         </TouchableOpacity>
+        <Animated.View
+          style={{
+            position: "absolute",
+            right: 10,
+            top: 10,
+            opacity: saveAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.3]
+            })
+          }}
+        >
+          <HeartIcon fill={"#fff"} stroke={"#fff"} width={32} height={32} />
+        </Animated.View>
         <View style={styles.scoreTextBgContainer}>
           <Text style={styles.scoreText}>{story.score}</Text>
         </View>
@@ -158,14 +178,13 @@ export const ListItem: React.FC<{
 const styles = StyleSheet.create({
   commentCountBg: {
     backgroundColor: backgroundDark,
-    flex: 1,
     justifyContent: "center",
     alignItems: "flex-end",
-    paddingRight: 20
+    paddingHorizontal: 20
   },
   saveBg: {
     backgroundColor: backgroundDark,
-    flex: 1,
+    width: LEFT_THRESHOLD,
     justifyContent: "center",
     alignItems: "flex-start",
     paddingLeft: 20
