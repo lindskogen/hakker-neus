@@ -38,7 +38,7 @@ export const CommentsListItemHeader: React.FC<CommentsListHeaderProps> = ({
           color: "white"
         }}
       >
-        by {by.id}
+        by {by?.id}
       </Text>
     </TouchableOpacity>
   </NewsListItem>

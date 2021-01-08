@@ -23,10 +23,10 @@ import { decodeHTMLEntities } from "../lib/formatter";
 import { makeHNUrl } from "../lib/makeHNUrl";
 import { openURL } from "../common/browser";
 import { fetchCommentsForItem } from "../fetchers/fetchCommentsForItem";
-import { queryCache } from "react-query";
 import { useAppNavigation } from "../common/useAppNavigation";
 import { useSaveStory } from "../common/useSaveStory";
 import { HeartIcon } from "./Icons";
+import { queryClient } from "../lib/queryClient";
 
 const ICON_SIZE = 48;
 const LEFT_THRESHOLD = 80;
@@ -50,7 +50,7 @@ export const ListItem: React.FC<{
   }, [saved]);
 
   const navigateToStory = () => {
-    queryCache.prefetchQuery(["comments", story.id], fetchCommentsForItem);
+    queryClient.prefetchQuery(["comments", story.id], ({ queryKey }) => fetchCommentsForItem(queryKey[1]));
     navigation.navigate("Comments", {
       id: story.id,
       story
@@ -63,6 +63,7 @@ export const ListItem: React.FC<{
       overshootFriction={8}
       rightThreshold={RIGHT_THRESHOLD}
       leftThreshold={LEFT_THRESHOLD}
+      enableTrackpadTwoFingerGesture
       overshootLeft={false}
       overshootRight={false}
       renderRightActions={(progress, dragX) => {

@@ -51,7 +51,6 @@ export interface HNStoryWithComments extends HNStory {
 }
 
 export const fetchCommentsForItem = (
-  key: string,
   id: string
 ): Promise<HNStoryWithComments> =>
   request(GQL_ENDPOINT, commentsQuery, { id: parseInt(id, 10) }).then(
@@ -61,9 +60,8 @@ export const fetchCommentsForItem = (
 export const useHNItemWithComments = (id: string) => {
   const [isRefreshing, setRefreshing] = useState(false);
   const { data: story, isFetching, refetch } = useQuery<
-    HNStoryWithComments,
-    any
-  >(["comments", id], fetchCommentsForItem, {
+    HNStoryWithComments
+  >(["comments", id], ({ queryKey }) => fetchCommentsForItem(queryKey[1]), {
     onSettled: () => setRefreshing(false),
     refetchOnWindowFocus: false
   });

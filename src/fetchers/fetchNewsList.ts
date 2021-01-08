@@ -29,29 +29,26 @@ export interface Paginated<T> {
 
 const STEP = 40;
 
-export const fetchNewsList = (
-  key: string,
-  cursor: number = 0
-): Promise<Paginated<HNStory[]>> =>
+export const fetchNewsList = (cursor: number): Promise<Paginated<HNStory[]>> =>
   request(GQL_ENDPOINT, newsListQuery, {
     limit: STEP,
     offset: STEP * cursor
-  }).then(data => ({ data: data.topStories, nextPage: cursor + 1 }));
+  }).then(data => ({data: data.topStories, nextPage: cursor + 1}));
 
 export const useNewsList = () => {
   const [isRefetching, setRefetching] = useState(false);
   const {
     refetch,
     data: stories,
-    fetchMore,
-    isFetchingMore
-  } = useInfiniteQuery("news-list", fetchNewsList, {
+    fetchNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery("news-list", ({ pageParam = 1 }) => fetchNewsList(pageParam), {
     suspense: true,
     refetchOnMount: false,
     staleTime: 1000,
     onSettled: () => setRefetching(false),
     refetchOnWindowFocus: false,
-    getFetchMore: (lastPage: any) => lastPage.nextPage
+    getNextPageParam: (lastPage: Paginated<HNStory[]>) => lastPage.nextPage
   });
 
   const onRefresh = () => {
@@ -59,7 +56,7 @@ export const useNewsList = () => {
     refetch();
   };
 
-  const flattenedStories = useMemo(() => flatMap(stories, page => page.data), [
+  const flattenedStories = useMemo(() => flatMap(stories?.pages, page => page.data), [
     stories
   ]);
 
@@ -67,7 +64,7 @@ export const useNewsList = () => {
     isRefetching,
     onRefresh,
     stories: flattenedStories,
-    fetchMore,
-    isFetchingMore
+    fetchMore: fetchNextPage,
+    isFetchingMore: isFetchingNextPage
   };
 };

@@ -1,15 +1,11 @@
 import * as React from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { RefreshControl, ScrollView } from "react-native";
 import { FlatHNComment, HNComment, HNStory } from "../common/types";
 import { backgroundDark } from "../common/vars";
 import { CommentsListItemHeader } from "../components/CommentsListItemHeader";
 import { Loader } from "../components/FullPageLoader";
-import { useQuery } from "react-query";
-import {
-  fetchCommentsForItem,
-  HNStoryWithComments, useHNItemWithComments
-} from "../fetchers/fetchCommentsForItem";
+import { useHNItemWithComments } from "../fetchers/fetchCommentsForItem";
 import { FullPageView } from "../components/FullPageView";
 import { EmptyCommentsView } from "../components/EmptyCommentsView";
 import { CommentsFlatList } from "../components/CommentsFlatList";
