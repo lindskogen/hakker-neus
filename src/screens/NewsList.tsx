@@ -1,12 +1,12 @@
 import * as d3 from "d3-scale-chromatic";
 import * as React from "react";
-import { memo, Suspense } from "react";
+import { memo, Suspense, useMemo } from "react";
 import {
   FlatList,
   ListRenderItem,
   RefreshControl,
   StyleSheet,
-  View
+  View,
 } from "react-native";
 import { HNStory } from "../common/types";
 import { backgroundDark, backgroundOrange, padding } from "../common/vars";
@@ -39,40 +39,49 @@ export const NewsList: React.FC = () => {
     isRefetching,
     stories,
     fetchMore,
-    isFetchingMore
+    isFetchingMore,
   } = useNewsList();
 
+  const refreshControl = useMemo(
+    () => (
+      <RefreshControl
+        refreshing={isRefetching}
+        onRefresh={onRefresh}
+        tintColor={"white"}
+      />
+    ),
+    [isRefetching, onRefresh]
+  );
+
   return (
-    <FlatList
-      style={{ backgroundColor: backgroundDark }}
+    <FlatList<HNStory>
+      style={styles.scrollView}
       indicatorStyle={"white"}
       data={stories}
       ItemSeparatorComponent={SeparatorComponent}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={onRefresh}
-          tintColor={"white"}
-        />
-      }
+      refreshControl={refreshControl}
       ListFooterComponent={
         isFetchingMore ? (
-          <View style={{ padding }}>
+          <View style={styles.footer}>
             <FullPageLoader backgroundColor={backgroundDark} />
           </View>
         ) : null
       }
-      onEndReached={() => fetchMore()}
-      keyExtractor={item => item.id}
+      onEndReached={fetchMore}
+      keyExtractor={keyExtractor}
       renderItem={renderItem}
     />
   );
 };
 
+const keyExtractor = (item: HNStory) => item.id;
+
 const SeparatorComponent = () => <View style={styles.separator} />;
 
 const styles = StyleSheet.create({
-  separator: { borderBottomWidth: StyleSheet.hairlineWidth }
+  scrollView: { backgroundColor: backgroundDark },
+  separator: { borderBottomWidth: StyleSheet.hairlineWidth },
+  footer: { padding },
 });
 
 interface NewsListScreenProps {
@@ -83,7 +92,7 @@ interface NewsListScreenProps {
 export const NewsListScreen: React.FC<NewsListScreenProps> = () => (
   <Suspense fallback={<FullPageLoader backgroundColor={backgroundOrange} />}>
     <ErrorBoundary
-      fallback={error => (
+      fallback={(error) => (
         <FullPageView backgroundColor={backgroundDark}>
           <ErrorView error={error} />
         </FullPageView>

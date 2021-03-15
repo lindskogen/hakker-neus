@@ -13,6 +13,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../App";
 import { useAppNavigation } from "../common/useAppNavigation";
 import { isHackerNewsUrl } from "../lib/isHackerNewsUrl";
+import { useOp } from "./OpContext";
 
 const createLinkHandler = (
   navigation: StackNavigationProp<RootStackParamList>
@@ -29,24 +30,22 @@ const createLinkHandler = (
 };
 
 interface CommentProps {
-  op: string;
   comment: HNComment;
   depth: number;
 }
 
 export const CommentWithChildren: React.FC<CommentProps> = ({
-  op,
   comment,
-  depth
+  depth,
 }) => {
-  const isOp = op === comment.by?.id;
+  const isOp = useOp() === comment.by?.id;
   const navigation = useAppNavigation();
 
   const handlePressLink = createLinkHandler(navigation);
 
   const handleLongPress = () => {
     Share.share({
-      url: makeHNUrl(String(comment.id))
+      url: makeHNUrl(String(comment.id)),
     });
   };
 
@@ -58,7 +57,7 @@ export const CommentWithChildren: React.FC<CommentProps> = ({
         minHeight: 40,
         backgroundColor: backgroundDark,
         borderTopColor: "#fff3",
-        borderTopWidth: StyleSheet.hairlineWidth
+        borderTopWidth: StyleSheet.hairlineWidth,
       }}
     >
       <TouchableHighlight

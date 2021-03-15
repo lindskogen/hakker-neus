@@ -1,10 +1,16 @@
-import { FlatList, ListRenderItem, RefreshControl } from "react-native";
+import {
+  FlatList,
+  ListRenderItem,
+  RefreshControl,
+  StyleSheet,
+} from "react-native";
 import { FlatHNComment } from "../common/types";
-import { default as React, useCallback } from "react";
+import { default as React, useMemo } from "react";
 import { CommentWithChildren } from "./CommentWithChildren";
 import { backgroundDark, padding } from "../common/vars";
 import { CommentsListItemHeader } from "./CommentsListItemHeader";
 import { HNStoryWithComments } from "../fetchers/fetchCommentsForItem";
+import { OpContextProvider } from "./OpContext";
 
 interface Props {
   story: HNStoryWithComments;
@@ -13,40 +19,50 @@ interface Props {
   refetch: () => void;
 }
 
+const renderItem: ListRenderItem<FlatHNComment> = ({ item }) => (
+  <CommentWithChildren comment={item.comment} depth={item.depth} />
+);
+
 export const CommentsFlatList: React.FC<Props> = ({
   story,
   comments,
   isRefreshing,
-  refetch
+  refetch,
 }) => {
-  const user: string = story?.by?.id ?? "deleted";
+  const listHeaderComponent = useMemo(
+    () => <CommentsListItemHeader story={story} />,
+    [story]
+  );
 
-  const renderItem: ListRenderItem<FlatHNComment> = useCallback(
-    ({ item }) => (
-      <CommentWithChildren
-        op={user}
-        comment={item.comment}
-        depth={item.depth}
+  const refreshControl = useMemo(
+    () => (
+      <RefreshControl
+        refreshing={isRefreshing}
+        onRefresh={refetch}
+        tintColor={"white"}
       />
     ),
-    [user]
+    [isRefreshing, refetch]
   );
 
   return (
-    <FlatList
-      style={{ backgroundColor: backgroundDark }}
-      data={comments}
-      contentContainerStyle={{ paddingBottom: padding * 3 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={refetch}
-          tintColor={"white"}
-        />
-      }
-      ListHeaderComponent={<CommentsListItemHeader story={story} />}
-      keyExtractor={item => String(item.comment.id)}
-      renderItem={renderItem}
-    />
+    <OpContextProvider value={story?.by?.id ?? "deleted"}>
+      <FlatList<FlatHNComment>
+        style={styles.scrollView}
+        data={comments}
+        contentContainerStyle={styles.container}
+        refreshControl={refreshControl}
+        ListHeaderComponent={listHeaderComponent}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+      />
+    </OpContextProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  scrollView: { backgroundColor: backgroundDark },
+  container: { paddingBottom: padding * 3 },
+});
+
+const keyExtractor = (item: FlatHNComment) => String(item.comment.id);
