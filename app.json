@@ -3,11 +3,9 @@
     "name": "HackerNeus",
     "slug": "hakker-neus",
     "privacy": "public",
-    "sdkVersion": "35.0.0",
     "platforms": [
       "ios",
-      "android",
-      "web"
+      "android"
     ],
     "version": "1.0.0",
     "orientation": "default",
@@ -29,6 +27,19 @@
     },
     "android": {
       "package": "se.lindskogen.hakkerneues"
+    },
+    "extra": {
+      "bugsnag": {
+        "apiKey": "842ce72724a50b3e83e895b167bbb622"
+      }
+    },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "@bugsnag/expo/hooks/post-publish.js",
+          "config": {}
+        }
+      ]
     }
   }
 }

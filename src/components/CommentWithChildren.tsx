@@ -34,41 +34,40 @@ interface CommentProps {
   depth: number;
 }
 
-export const CommentWithChildren: React.FC<CommentProps> = ({
-  comment,
-  depth,
-}) => {
-  const isOp = useOp() === comment.by?.id;
-  const navigation = useAppNavigation();
+export const CommentWithChildren: React.FC<CommentProps> = React.memo<CommentProps>(
+  ({ comment, depth }) => {
+    const isOp = useOp() === comment.by?.id;
+    const navigation = useAppNavigation();
 
-  const handlePressLink = createLinkHandler(navigation);
+    const handlePressLink = createLinkHandler(navigation);
 
-  const handleLongPress = () => {
-    Share.share({
-      url: makeHNUrl(String(comment.id)),
-    });
-  };
+    const handleLongPress = () => {
+      Share.share({
+        url: makeHNUrl(String(comment.id)),
+      });
+    };
 
-  return (
-    <View
-      style={{
-        paddingVertical: padding,
-        marginLeft: padding * depth,
-        minHeight: 40,
-        backgroundColor: backgroundDark,
-        borderTopColor: "#fff3",
-        borderTopWidth: StyleSheet.hairlineWidth,
-      }}
-    >
-      <TouchableHighlight
-        underlayColor={backgroundDark}
-        onLongPress={handleLongPress}
+    return (
+      <View
+        style={{
+          paddingVertical: padding,
+          marginLeft: padding * depth,
+          minHeight: 40,
+          backgroundColor: backgroundDark,
+          borderTopColor: "#fff3",
+          borderTopWidth: StyleSheet.hairlineWidth,
+        }}
       >
-        <ContainerWithLeftBorder depth={depth}>
-          <CommentHeader isOp={isOp} comment={comment} />
-          <HTMLComment comment={comment} onLinkPress={handlePressLink} />
-        </ContainerWithLeftBorder>
-      </TouchableHighlight>
-    </View>
-  );
-};
+        <TouchableHighlight
+          underlayColor={backgroundDark}
+          onLongPress={handleLongPress}
+        >
+          <ContainerWithLeftBorder depth={depth}>
+            <CommentHeader isOp={isOp} comment={comment} />
+            <HTMLComment comment={comment} onLinkPress={handlePressLink} />
+          </ContainerWithLeftBorder>
+        </TouchableHighlight>
+      </View>
+    );
+  }
+);

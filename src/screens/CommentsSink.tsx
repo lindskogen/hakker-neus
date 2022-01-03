@@ -29,14 +29,13 @@ export const CommentsSink: React.FC = () => {
         (text, index) => (
           <CommentWithChildren
             key={index}
-            op={"testing"}
             comment={{
               id: 234,
               type: "comment",
               text: text,
               by: { id: "testing" },
               kids: [],
-              timeISO: new Date().toISOString()
+              timeISO: new Date().toISOString(),
             }}
             depth={0}
           />
