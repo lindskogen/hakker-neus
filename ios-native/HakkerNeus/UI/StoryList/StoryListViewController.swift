@@ -72,6 +72,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
                 backgroundColor: Palette.storyBackground(at: indexPath.item),
                 isSaved: coordinator.savedStories.isSaved(id)
             )
+            cell.onToggleSaved = { [unowned self] in coordinator.savedStories.toggle(story) }
+            cell.onOpenComments = { [unowned self] in coordinator.showComments(for: story) }
         }
         let footer = UICollectionView.SupplementaryRegistration<LoadingFooterView>(
             elementKind: UICollectionView.elementKindSectionFooter

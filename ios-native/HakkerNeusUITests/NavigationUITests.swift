@@ -79,6 +79,47 @@ final class NavigationUITests: XCTestCase {
         wait(for: [scrolledAway], timeout: 3)
     }
 
+    private func drag(_ element: XCUIElement, from startX: CGFloat, to endX: CGFloat) {
+        let start = element.coordinate(withNormalizedOffset: CGVector(dx: startX, dy: 0.5))
+        let end = element.coordinate(withNormalizedOffset: CGVector(dx: endX, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.1)
+    }
+
+    func testSwipeRightTogglesSaved() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let wasSaved = (firstStory.value as? String ?? "").hasSuffix(", saved")
+
+        drag(firstStory, from: 0.2, to: 0.8)
+        let toggled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: wasSaved ? "NOT (value ENDSWITH ', saved')" : "value ENDSWITH ', saved'"),
+            object: firstStory
+        )
+        wait(for: [toggled], timeout: 3)
+
+        // Put it back.
+        drag(firstStory, from: 0.2, to: 0.8)
+        let restored = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: wasSaved ? "value ENDSWITH ', saved'" : "NOT (value ENDSWITH ', saved')"),
+            object: firstStory
+        )
+        wait(for: [restored], timeout: 3)
+    }
+
+    func testSwipeLeftOpensComments() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        drag(firstStory, from: 0.8, to: 0.2)
+        XCTAssertTrue(commentsList.waitForExistence(timeout: 5))
+    }
+
+    func testShortSwipeDoesNothing() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let value = firstStory.value as? String
+        drag(firstStory, from: 0.4, to: 0.5)
+
+        XCTAssertFalse(commentsList.waitForExistence(timeout: 1))
+        XCTAssertEqual(firstStory.value as? String, value)
+    }
+
     func testTappingCommentCollapsesThread() {
         openCommentsViaContextMenu()
 
