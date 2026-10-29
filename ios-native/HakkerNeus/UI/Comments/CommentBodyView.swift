@@ -134,6 +134,7 @@ final class CodeBlockView: UIView {
         let label = UILabel()
         label.text = code
         label.font = Theme.Font.monospaced()
+        label.adjustsFontForContentSizeCategory = true
         label.textColor = .white
         label.numberOfLines = 0
         label.lineBreakMode = .byClipping

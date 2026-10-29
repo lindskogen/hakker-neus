@@ -36,7 +36,7 @@ final class CommentCell: UICollectionViewListCell {
         authorLabel.textColor = .white
 
         opBadge.text = "OP"
-        opBadge.font = Theme.Font.bold(size: 8)
+        opBadge.font = Theme.Font.bold(size: 8, maximum: 14)
         opBadge.textColor = .white
         opBadge.backgroundColor = UIColor.white.withAlphaComponent(0.13)
         opBadge.layer.cornerRadius = 3
@@ -45,9 +45,13 @@ final class CommentCell: UICollectionViewListCell {
         collapsedLabel.font = Theme.Font.medium(size: 13)
         collapsedLabel.textColor = UIColor.white.withAlphaComponent(0.5)
 
-        timeLabel.font = Theme.Font.body(size: 13)
+        timeLabel.font = Theme.Font.body(size: 13, style: .footnote)
         timeLabel.textColor = .white
         timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        for label in [authorLabel, opBadge, collapsedLabel, timeLabel] {
+            label.adjustsFontForContentSizeCategory = true
+        }
 
         let author = UIStackView(arrangedSubviews: [authorLabel, opBadge, collapsedLabel])
         author.spacing = 5

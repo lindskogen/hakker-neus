@@ -32,7 +32,7 @@ final class StoryCell: UICollectionViewListCell {
         titleLabel.numberOfLines = 0
         titleLabel.applyTextShadow()
 
-        domainLabel.font = Theme.Font.body(size: 14)
+        domainLabel.font = Theme.Font.body(size: 14, style: .subheadline)
         domainLabel.textColor = UIColor.white.withAlphaComponent(0.7)
         domainLabel.applyTextShadow()
 
@@ -40,7 +40,8 @@ final class StoryCell: UICollectionViewListCell {
         titleStack.axis = .vertical
         titleStack.spacing = 4
 
-        scoreLabel.font = Theme.Font.body(size: 30)
+        // The score and swipe count are decoration; cap them so they don't take over the row.
+        scoreLabel.font = Theme.Font.body(size: 30, style: .title1, maximum: 40)
         scoreLabel.textColor = .white
         scoreLabel.alpha = 0.3
         scoreLabel.applyTextShadow()
@@ -51,9 +52,13 @@ final class StoryCell: UICollectionViewListCell {
         saveActionView.tintColor = .white
         saveActionView.preferredSymbolConfiguration = .init(pointSize: 40)
 
-        commentCountLabel.font = Theme.Font.body(size: 50)
+        commentCountLabel.font = Theme.Font.body(size: 50, style: .largeTitle, maximum: 64)
         commentCountLabel.textColor = .white
         commentCountLabel.applyTextShadow()
+
+        for label in [titleLabel, domainLabel, scoreLabel, commentCountLabel] {
+            label.adjustsFontForContentSizeCategory = true
+        }
 
         for view in [saveActionView, commentCountLabel, rowView] {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -79,6 +84,9 @@ final class StoryCell: UICollectionViewListCell {
             titleStack.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
             titleStack.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
             titleStack.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
+
+            // The domain shares the bottom line with the score; truncate it rather than run underneath.
+            domainLabel.trailingAnchor.constraint(lessThanOrEqualTo: scoreLabel.leadingAnchor, constant: -padding),
 
             scoreLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding),
             scoreLabel.bottomAnchor.constraint(equalTo: rowView.bottomAnchor, constant: -padding),

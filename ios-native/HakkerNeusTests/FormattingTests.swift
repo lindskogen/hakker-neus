@@ -1,3 +1,4 @@
+import UIKit
 import Foundation
 import Testing
 @testable import HakkerNeus
@@ -74,5 +75,29 @@ struct StoryDomainTests {
 
     @Test func selfPostsHaveNoDomain() {
         #expect(story(url: nil).displayDomain == nil)
+    }
+}
+
+@MainActor
+struct DynamicTypeTests {
+    private func traits(_ category: UIContentSizeCategory) -> UITraitCollection {
+        UITraitCollection(preferredContentSizeCategory: category)
+    }
+
+    @Test func defaultSizeMatchesTheRNApp() {
+        #expect(Theme.Font.title(isPad: false, traits: traits(.large)).pointSize == 25)
+        #expect(Theme.Font.body(traits: traits(.large)).pointSize == 16)
+        #expect(Theme.Font.medium(size: 13, traits: traits(.large)).pointSize == 13)
+    }
+
+    @Test func scalesWithTheUsersTextSize() {
+        let small = Theme.Font.body(traits: traits(.small)).pointSize
+        let large = Theme.Font.body(traits: traits(.accessibilityExtraLarge)).pointSize
+        #expect(small < 16)
+        #expect(large > 30)
+    }
+
+    @Test func decorativeNumbersAreCapped() {
+        #expect(Theme.Font.body(size: 30, style: .title1, maximum: 40, traits: traits(.accessibilityExtraExtraExtraLarge)).pointSize == 40)
     }
 }

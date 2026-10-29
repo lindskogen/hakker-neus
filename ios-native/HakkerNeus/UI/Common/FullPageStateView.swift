@@ -24,6 +24,7 @@ final class FullPageStateView: UIView {
         imageView.contentMode = .scaleAspectFit
 
         label.font = Theme.Font.light(size: 24)
+        label.adjustsFontForContentSizeCategory = true
         label.textColor = UIColor.white.withAlphaComponent(0.3)
         label.numberOfLines = 0
         label.textAlignment = .center

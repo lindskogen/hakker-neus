@@ -14,6 +14,9 @@ final class StoryHeaderCell: UICollectionViewListCell {
 
         authorLabel.font = Theme.Font.body()
         authorLabel.textColor = .white
+        authorLabel.numberOfLines = 0
+        titleLabel.adjustsFontForContentSizeCategory = true
+        authorLabel.adjustsFontForContentSizeCategory = true
 
         let stack = UIStackView(arrangedSubviews: [titleLabel, authorLabel])
         stack.axis = .vertical

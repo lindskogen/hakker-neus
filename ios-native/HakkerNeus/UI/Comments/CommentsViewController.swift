@@ -51,6 +51,11 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
 
         NotificationCenter.default.addObserver(self, selector: #selector(updateTimes), name: RelativeTime.tick, object: nil)
 
+        // Comment text is a pre-built attributed string, which doesn't follow text size changes by itself.
+        registerForTraitChanges([UITraitPreferredContentSizeCategory.self]) { (self: Self, _) in
+            self.applySnapshot(animated: false, reconfigureAll: true)
+        }
+
         Task { await load(forceRefresh: false) }
     }
 
