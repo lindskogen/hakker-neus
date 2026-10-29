@@ -38,23 +38,37 @@ struct HTMLTextTests {
     }
 }
 
-struct HackerNewsURLTests {
+struct HackerNewsLinkTests {
     @Test(arguments: [
-        ("https://news.ycombinator.com/item?id=2192629", 2192629),
-        ("http://news.ycombinator.com/item?id=1&p=2", 1),
+        ("https://news.ycombinator.com/item?id=2192629", HackerNewsLink.item(2192629)),
+        ("http://news.ycombinator.com/item?id=1&p=2", .item(1)),
+        ("https://ycombinator.com/item?id=5", .item(5)),
+        ("https://news.ycombinator.com/user?id=pg", .user("pg")),
     ])
-    func recognizesItemLinks(url: String, id: Int) {
-        #expect(URL(string: url)!.hackerNewsItemID == id)
+    func recognizesItemAndUserLinks(url: String, link: HackerNewsLink) {
+        #expect(HackerNewsLink(URL(string: url)!) == link)
     }
 
     @Test(arguments: [
-        "https://news.ycombinator.com/user?id=pg",
         "https://news.ycombinator.com/item",
+        "https://news.ycombinator.com/item?id=abc",
+        "https://news.ycombinator.com/newest",
         "https://example.com/item?id=1",
         "https://notnews.ycombinator.com.evil.com/item?id=1",
     ])
-    func ignoresOtherLinks(url: String) {
-        #expect(URL(string: url)!.hackerNewsItemID == nil)
+    func leavesOtherLinksToTheBrowser(url: String) {
+        #expect(HackerNewsLink(URL(string: url)!) == nil)
+    }
+
+    @Test func relativeLinksInCommentsResolveAgainstHN() {
+        let body = CommentBody(html: "see <a href=\"item?id=123\">this</a>")
+        guard case .paragraph(let runs) = body.blocks.first else {
+            Issue.record("Expected a paragraph")
+            return
+        }
+        let url = try? #require(runs.last?.link)
+        #expect(url?.absoluteString == "https://news.ycombinator.com/item?id=123")
+        #expect(url.flatMap(HackerNewsLink.init) == .item(123))
     }
 }
 

@@ -38,6 +38,15 @@ struct AlgoliaAPITests {
         #expect(item.comments.flattened().map(\.id) == [12])
     }
 
+    @Test func commentsKnowTheirStory() async throws {
+        let json = #"{"id":17,"type":"comment","story_id":1,"author":"pg","text":"hi","created_at_i":0,"children":[]}"#
+        let transport = StubTransport(responses: ["/api/v1/items/17": .success(Data(json.utf8))])
+        #expect(try await AlgoliaAPI(transport: transport).item(id: 17).parentStoryID == 1)
+
+        let story = StubTransport(responses: ["/api/v1/items/1": .success(try Fixture.data("algolia-item-1"))])
+        #expect(try await AlgoliaAPI(transport: story).item(id: 1).parentStoryID == nil)
+    }
+
     @Test func missingItemThrowsNotFound() async {
         let client = LiveHNClient(transport: StubTransport(responses: [:]))
         await #expect(throws: HNClientError.notFound(id: 42)) {

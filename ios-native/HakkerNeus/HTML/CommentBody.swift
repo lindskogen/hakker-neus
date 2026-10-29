@@ -152,6 +152,7 @@ private struct Parser {
             return nil
         }
         let value = HTMLText.decodeEntities(String(attribute[attribute.index(after: start)..<end]))
-        return URL(string: value)
+        // HN sometimes links relatively, e.g. href="item?id=123".
+        return URL(string: value, relativeTo: HackerNewsLink.base)?.absoluteURL
     }
 }

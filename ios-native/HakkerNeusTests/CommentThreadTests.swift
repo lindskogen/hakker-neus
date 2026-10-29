@@ -34,6 +34,19 @@ struct CommentThreadTests {
         #expect(thread.visible.map(\.id) == [1, 2, 4, 5])
     }
 
+    @Test func expandingAncestorsRevealsANestedComment() {
+        var thread = CommentThread(comments: comments)
+        thread.toggle(1)
+        thread.toggle(2)
+        thread.toggle(5)
+
+        thread.expandAncestors(of: 3)
+
+        #expect(thread.visible.map(\.id) == [1, 2, 3, 4, 5])
+        // Unrelated threads stay as they were.
+        #expect(thread.isCollapsed(5))
+    }
+
     @Test func collapsedStateSurvivesRefreshForCommentsThatStillExist() {
         var thread = CommentThread(comments: comments)
         thread.toggle(2)

@@ -42,6 +42,21 @@ struct CommentThread {
         }
     }
 
+    /// Expands every collapsed comment above `id`, so it's visible.
+    mutating func expandAncestors(of id: Int) {
+        var ancestors: [FlatComment] = []
+        for comment in comments {
+            while let last = ancestors.last, last.depth >= comment.depth {
+                ancestors.removeLast()
+            }
+            if comment.id == id {
+                collapsed.subtract(ancestors.map(\.id))
+                return
+            }
+            ancestors.append(comment)
+        }
+    }
+
     /// Replies are the following comments that are deeper than the comment itself.
     private static func countReplies(_ comments: [FlatComment]) -> [Int: Int] {
         var counts: [Int: Int] = [:]

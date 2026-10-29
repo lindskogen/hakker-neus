@@ -45,6 +45,8 @@ struct FlatComment: Hashable, Sendable, Identifiable {
 struct StoryWithComments: Hashable, Sendable {
     let story: Story
     let comments: [Comment]
+    /// Set when the item is a comment: the story it belongs to.
+    var parentStoryID: Int?
 }
 
 extension URL {

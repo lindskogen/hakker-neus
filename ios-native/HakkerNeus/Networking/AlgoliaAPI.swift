@@ -13,6 +13,8 @@ struct AlgoliaAPI: Sendable {
 
     final class Item: Decodable {
         let id: Int
+        let type: String?
+        let storyID: Int?
         let author: String?
         let title: String?
         let url: String?
@@ -22,7 +24,8 @@ struct AlgoliaAPI: Sendable {
         let children: [Item]
 
         enum CodingKeys: String, CodingKey {
-            case id, author, title, url, text, points, children
+            case id, type, author, title, url, text, points, children
+            case storyID = "story_id"
             case createdAtI = "created_at_i"
         }
 
@@ -39,7 +42,8 @@ struct AlgoliaAPI: Sendable {
                 commentCount: comments.reduce(0) { $0 + $1.visibleCount },
                 time: Date(timeIntervalSince1970: TimeInterval(createdAtI))
             )
-            return StoryWithComments(story: story, comments: comments)
+            let parentStoryID = type == "comment" && storyID != id ? storyID : nil
+            return StoryWithComments(story: story, comments: comments, parentStoryID: parentStoryID)
         }
 
         var comment: Comment {

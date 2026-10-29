@@ -4,6 +4,13 @@ import UIKit
 final class StoryHeaderCell: UICollectionViewListCell {
     private let titleLabel = UILabel()
     private let authorLabel = UILabel()
+    /// The text of self posts (Ask HN etc), with tappable links.
+    private let bodyView = CommentBodyView()
+
+    var onLinkTap: ((URL) -> Void)? {
+        get { bodyView.onLinkTap }
+        set { bodyView.onLinkTap = newValue }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -18,7 +25,8 @@ final class StoryHeaderCell: UICollectionViewListCell {
         titleLabel.adjustsFontForContentSizeCategory = true
         authorLabel.adjustsFontForContentSizeCategory = true
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, authorLabel])
+        let stack = UIStackView(arrangedSubviews: [titleLabel, authorLabel, bodyView])
+        stack.setCustomSpacing(Theme.padding, after: authorLabel)
         stack.axis = .vertical
         stack.spacing = Theme.padding / 2
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -39,14 +47,23 @@ final class StoryHeaderCell: UICollectionViewListCell {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(with story: Story) {
+    func configure(with story: Story, body: CommentBody?) {
+        if let body, !body.blocks.isEmpty {
+            bodyView.configure(with: body)
+            bodyView.isHidden = false
+        } else {
+            bodyView.isHidden = true
+        }
+
         titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
         titleLabel.text = story.title
         let byline = [story.author.map { "by \($0)" }, story.displayDomain].compactMap { $0 }
         authorLabel.text = byline.joined(separator: " · ")
         authorLabel.isHidden = byline.isEmpty
 
-        isAccessibilityElement = true
+        // With self-post text, let VoiceOver reach its links instead of reading the header as one element.
+        isAccessibilityElement = bodyView.isHidden
+        titleLabel.accessibilityTraits = .header
         accessibilityLabel = story.title
         accessibilityValue = byline.joined(separator: ", ")
         accessibilityTraits = story.url == nil ? [.header] : [.header, .link]

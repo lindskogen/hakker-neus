@@ -109,9 +109,12 @@ final class AppCoordinator {
 
     /// Opens HN item links in the app and everything else in an in-app browser.
     func open(_ url: URL) {
-        if let id = url.hackerNewsItemID {
+        switch HackerNewsLink(url) {
+        case .item(let id):
             showComments(id: id)
-        } else {
+        case .user(let username):
+            showUser(username)
+        case nil:
             navigationController.present(makeBrowser(for: url), animated: true)
         }
     }
@@ -124,10 +127,11 @@ final class AppCoordinator {
         return browser
     }
 
+    /// There's no native profile screen yet, so profiles open on HN in the browser.
     func showUser(_ username: String) {
         var components = URLComponents(string: "https://news.ycombinator.com/user")!
         components.queryItems = [URLQueryItem(name: "id", value: username)]
-        open(components.url!)
+        navigationController.present(makeBrowser(for: components.url!), animated: true)
     }
 
     func share(_ url: URL, from sourceView: UIView) {
@@ -207,13 +211,30 @@ final class AppCoordinator {
     }
 }
 
-extension URL {
-    /// The item ID of a `news.ycombinator.com/item?id=…` link.
-    var hackerNewsItemID: Int? {
-        guard let host = host(), host == "news.ycombinator.com" || host.hasSuffix(".news.ycombinator.com"),
-              path() == "/item",
-              let components = URLComponents(url: self, resolvingAgainstBaseURL: false)
+/// A Hacker News link the app can show itself.
+enum HackerNewsLink: Equatable {
+    case item(Int)
+    case user(String)
+
+    static let base = URL(string: "https://news.ycombinator.com/")!
+
+    /// Recognizes `news.ycombinator.com/item?id=…` and `/user?id=…`, including the bare
+    /// `ycombinator.com` host. Anything else on HN (or elsewhere) is left to the browser.
+    init?(_ url: URL) {
+        guard let host = url.host()?.lowercased(),
+              ["news.ycombinator.com", "ycombinator.com", "www.ycombinator.com"].contains(host),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+              let value = components.queryItems?.first(where: { $0.name == "id" })?.value, !value.isEmpty
         else { return nil }
-        return components.queryItems?.first { $0.name == "id" }?.value.flatMap { Int($0) }
+
+        switch components.path {
+        case "/item":
+            guard let id = Int(value) else { return nil }
+            self = .item(id)
+        case "/user":
+            self = .user(value)
+        default:
+            return nil
+        }
     }
 }

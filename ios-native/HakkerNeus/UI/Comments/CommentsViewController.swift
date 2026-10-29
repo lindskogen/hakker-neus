@@ -1,7 +1,8 @@
 import UIKit
 
-/// A story (or comment) with its comment tree (`CommentsList.tsx`).
+/// A story with its comment tree (`CommentsList.tsx`).
 /// Tapping a comment collapses its replies, Apollo-style.
+/// Opened with a comment's ID, it shows that comment's story scrolled to the comment.
 final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private enum Section { case header, comments }
 
@@ -17,10 +18,13 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         case failed(Error)
     }
 
-    private let id: Int
+    private var id: Int
     private unowned let coordinator: AppCoordinator
 
     private var story: Story?
+    private var storyBody: CommentBody?
+    /// A comment to scroll to and highlight once its story has loaded.
+    private var focusCommentID: Int?
     private var thread = CommentThread(comments: [])
     private var commentsByID: [Int: FlatComment] = [:]
     private var bodies: [Int: CommentBody] = [:]
@@ -86,7 +90,8 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
 
     private func configureDataSource() {
         let storyCell = UICollectionView.CellRegistration<StoryHeaderCell, Item> { [unowned self] cell, _, _ in
-            if let story { cell.configure(with: story) }
+            if let story { cell.configure(with: story, body: storyBody) }
+            cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
         }
         let statusCell = UICollectionView.CellRegistration<StatusCell, Item> { [unowned self] cell, _, _ in
             switch loadState {
@@ -132,6 +137,13 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         let update: () -> Void
         do {
             let result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
+            if let storyID = result.parentStoryID {
+                // A link to a comment: show its story, focused on the comment.
+                focusCommentID = id
+                id = storyID
+                await load(forceRefresh: forceRefresh)
+                return
+            }
             let flat = result.comments.flattened()
             // Parsing every comment's HTML can take a moment on big threads; keep it off the main thread.
             let parsed = await Task.detached(priority: .userInitiated) {
@@ -140,11 +152,19 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
 
             update = { [self] in
                 story = result.story
+                storyBody = result.story.text.map { CommentBody(html: $0) }
                 thread = CommentThread(comments: flat, collapsed: thread.collapsed)
                 commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
                 bodies = parsed
                 loadState = .loaded
+                if let focus = focusCommentID {
+                    thread.expandAncestors(of: focus)
+                }
                 applySnapshot(animated: false, reconfigureAll: true)
+                if let focus = focusCommentID {
+                    focusCommentID = nil
+                    reveal(focus)
+                }
             }
         } catch {
             update = { [self] in
@@ -179,6 +199,17 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     @objc private func updateTimes() {
         for case let cell as CommentCell in collectionView.visibleCells {
             cell.updateTime()
+        }
+    }
+
+    /// Scrolls a comment into view and briefly highlights it.
+    private func reveal(_ commentID: Int) {
+        guard let indexPath = dataSource.indexPath(for: .comment(commentID)) else { return }
+        collectionView.layoutIfNeeded()
+        collectionView.scrollToItem(at: indexPath, at: .top, animated: false)
+        // The cell exists once the scroll has been laid out.
+        DispatchQueue.main.async { [weak self] in
+            (self?.collectionView.cellForItem(at: indexPath) as? CommentCell)?.flash()
         }
     }
 

@@ -128,6 +128,20 @@ final class CommentCell: UICollectionViewListCell {
         set { bodyView.onLinkTap = newValue }
     }
 
+    /// Briefly highlights the comment, e.g. after following a link to it.
+    func flash() {
+        let highlight = UIView(frame: contentView.bounds)
+        highlight.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        highlight.backgroundColor = Theme.Color.backgroundOrange.withAlphaComponent(0.35)
+        highlight.isUserInteractionEnabled = false
+        contentView.insertSubview(highlight, at: 0)
+        UIView.animate(withDuration: 1.2, delay: 0.6, options: .curveEaseOut) {
+            highlight.alpha = 0
+        } completion: { _ in
+            highlight.removeFromSuperview()
+        }
+    }
+
     func updateTime() {
         timeLabel.text = time.map { RelativeTime.string(from: $0) }
     }
