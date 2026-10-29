@@ -12,11 +12,11 @@ final class StoryCell: UICollectionViewListCell {
     private let rowView = UIView()
     private let titleLabel = UILabel()
     private let domainLabel = UILabel()
-    private let scoreLabel = UILabel()
+    let scoreLabel = UILabel()
     private let savedHeartView = UIImageView(image: UIImage(systemName: "heart.fill"))
 
     private let saveActionView = UIImageView()
-    private let commentCountLabel = UILabel()
+    let commentCountLabel = UILabel()
 
     private var rowColor: UIColor = Theme.Color.backgroundOrange
     private var storyID: Story.ID?
@@ -33,15 +33,14 @@ final class StoryCell: UICollectionViewListCell {
         titleLabel.applyTextShadow()
 
         domainLabel.font = Theme.Font.body(size: 14, style: .subheadline)
+        // Next to the score, the domain is the one that gives way.
+        domainLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         domainLabel.textColor = UIColor.white.withAlphaComponent(0.7)
         domainLabel.applyTextShadow()
 
-        let titleStack = UIStackView(arrangedSubviews: [titleLabel, domainLabel])
-        titleStack.axis = .vertical
-        titleStack.spacing = 4
-
         // The score and swipe count are decoration; cap them so they don't take over the row.
         scoreLabel.font = Theme.Font.body(size: 30, style: .title1, maximum: 40)
+        scoreLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         scoreLabel.textColor = .white
         scoreLabel.alpha = 0.3
         scoreLabel.applyTextShadow()
@@ -53,6 +52,10 @@ final class StoryCell: UICollectionViewListCell {
         saveActionView.preferredSymbolConfiguration = .init(pointSize: 40)
 
         commentCountLabel.font = Theme.Font.body(size: 50, style: .largeTitle, maximum: 64)
+        // Must fit in the gap the row uncovers; long counts shrink rather than hide under the row.
+        commentCountLabel.adjustsFontSizeToFitWidth = true
+        commentCountLabel.minimumScaleFactor = 0.4
+        commentCountLabel.textAlignment = .right
         commentCountLabel.textColor = .white
         commentCountLabel.applyTextShadow()
 
@@ -64,7 +67,7 @@ final class StoryCell: UICollectionViewListCell {
             view.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(view)
         }
-        for view in [titleStack, scoreLabel, savedHeartView] {
+        for view in [titleLabel, domainLabel, scoreLabel, savedHeartView] {
             view.translatesAutoresizingMaskIntoConstraints = false
             rowView.addSubview(view)
         }
@@ -80,13 +83,17 @@ final class StoryCell: UICollectionViewListCell {
             rowView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             minHeight,
 
-            titleStack.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2),
-            titleStack.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
-            titleStack.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
-            titleStack.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
+            titleLabel.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2),
+            titleLabel.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
+            titleLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
 
-            // The domain shares the bottom line with the score; truncate it rather than run underneath.
+            // Not in a stack with the title: a stack would stretch it to the title's full width,
+            // leaving the score no room. On its own it only has to keep its text clear of the score.
+            domainLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            domainLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             domainLabel.trailingAnchor.constraint(lessThanOrEqualTo: scoreLabel.leadingAnchor, constant: -padding),
+            domainLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
+            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
 
             scoreLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding),
             scoreLabel.bottomAnchor.constraint(equalTo: rowView.bottomAnchor, constant: -padding),
@@ -97,7 +104,8 @@ final class StoryCell: UICollectionViewListCell {
             saveActionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding * 2),
             saveActionView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
-            commentCountLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding * 2),
+            commentCountLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
+            commentCountLabel.widthAnchor.constraint(lessThanOrEqualToConstant: StorySwipe.commentsThreshold - padding * 2),
             commentCountLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
         ])
 
@@ -216,7 +224,7 @@ final class StoryCell: UICollectionViewListCell {
         }
     }
 
-    private func apply(_ swipe: StorySwipe) {
+    func apply(_ swipe: StorySwipe) {
         rowView.transform = CGAffineTransform(translationX: swipe.offset, y: 0)
         saveActionView.transform = CGAffineTransform(translationX: swipe.heartTranslation, y: 0)
         saveActionView.alpha = swipe.heartAlpha
