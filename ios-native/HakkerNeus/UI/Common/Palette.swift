@@ -19,16 +19,34 @@ enum Palette {
     }
 
     static func orangesRGB(_ t: Double) -> RGB {
-        RGB(
-            r: channel(basisSpline(orangesStops.map(\.0), t)),
-            g: channel(basisSpline(orangesStops.map(\.1), t)),
-            b: channel(basisSpline(orangesStops.map(\.2), t))
-        )
+        interpolate(orangesStops, t)
+    }
+
+    /// `d3.interpolateReds(t)`, for the saved stories list.
+    static func redsRGB(_ t: Double) -> RGB {
+        interpolate(redsStops, t)
     }
 
     /// Background for row `index` of the story list (`getBackgroundColor` in `NewsList.tsx`).
     static func storyBackground(at index: Int) -> UIColor {
-        oranges(Double(index) / 50 * 0.35 + 0.65)
+        oranges(rowPosition(index))
+    }
+
+    /// Background for row `index` of the saved list: the same ramp in red, so it's clear which list you're on.
+    static func savedStoryBackground(at index: Int) -> UIColor {
+        redsRGB(rowPosition(index)).uiColor
+    }
+
+    private static func rowPosition(_ index: Int) -> Double {
+        Double(index) / 50 * 0.35 + 0.65
+    }
+
+    private static func interpolate(_ stops: [(Double, Double, Double)], _ t: Double) -> RGB {
+        RGB(
+            r: channel(basisSpline(stops.map(\.0), t)),
+            g: channel(basisSpline(stops.map(\.1), t)),
+            b: channel(basisSpline(stops.map(\.2), t))
+        )
     }
 
     /// `d3.schemeTableau10[depth]`, used for the left border of nested comments.
@@ -42,11 +60,18 @@ enum Palette {
         0xEDC949, 0xAF7AA1, 0xFF9DA7, 0x9C755F, 0xBAB0AB,
     ]
 
-    private static let orangesStops: [(Double, Double, Double)] = [
+    private static let orangesStops = stops([
         0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C,
         0xF16913, 0xD94801, 0xA63603, 0x7F2704,
-    ].map { (rgb: UInt32) in
-        (Double((rgb >> 16) & 0xFF), Double((rgb >> 8) & 0xFF), Double(rgb & 0xFF))
+    ])
+
+    private static let redsStops = stops([
+        0xFFF5F0, 0xFEE0D2, 0xFCBBA1, 0xFC9272, 0xFB6A4A,
+        0xEF3B2C, 0xCB181D, 0xA50F15, 0x67000D,
+    ])
+
+    private static func stops(_ colors: [UInt32]) -> [(Double, Double, Double)] {
+        colors.map { (Double(($0 >> 16) & 0xFF), Double(($0 >> 8) & 0xFF), Double($0 & 0xFF)) }
     }
 
     /// Same algorithm as `d3-interpolate`'s `basis`.

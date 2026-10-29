@@ -4,8 +4,10 @@ import UIKit
 final class FullPageStateView: UIView {
     enum State {
         case loading
-        case empty
+        case message(systemImage: String, text: String)
         case error(Error)
+
+        static let noComments = State.message(systemImage: "bubble.left", text: "No comments here")
     }
 
     private let spinner = UIActivityIndicatorView(style: .large)
@@ -55,13 +57,13 @@ final class FullPageStateView: UIView {
             spinner.startAnimating()
             imageView.isHidden = true
             label.isHidden = true
-        case .empty:
+        case .message(let systemImage, let text):
             spinner.stopAnimating()
             imageView.isHidden = false
-            imageView.image = UIImage(systemName: "bubble.left")
+            imageView.image = UIImage(systemName: systemImage)
             imageView.tintColor = UIColor.white.withAlphaComponent(0.3)
             label.isHidden = false
-            label.text = "No comments here"
+            label.text = text
         case .error(let error):
             spinner.stopAnimating()
             imageView.isHidden = false

@@ -94,7 +94,17 @@ final class StoryCell: UICollectionViewListCell {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(with story: Story, backgroundColor: UIColor, isSaved: Bool) {
+    /// - Parameters:
+    ///   - showsSavedBadge: Whether a saved story shows the faded heart in its corner.
+    ///     Off in the saved list, where every row is saved.
+    ///   - extraAccessibilityActions: Screen-level actions VoiceOver should offer on every row.
+    func configure(
+        with story: Story,
+        backgroundColor: UIColor,
+        isSaved: Bool,
+        showsSavedBadge: Bool = true,
+        extraAccessibilityActions: [UIAccessibilityCustomAction] = []
+    ) {
         let savedChanged = story.id == storyID && isSaved != self.isSaved
         storyID = story.id
         self.isSaved = isSaved
@@ -108,7 +118,7 @@ final class StoryCell: UICollectionViewListCell {
         saveActionView.image = UIImage(systemName: isSaved ? "heart.slash.fill" : "heart.fill")
 
         // Fade the saved heart in or out once the row has settled back, like the RN app.
-        let heartAlpha: CGFloat = isSaved ? 0.3 : 0
+        let heartAlpha: CGFloat = isSaved && showsSavedBadge ? 0.3 : 0
         if savedChanged {
             UIView.animate(withDuration: 0.4, delay: 0.3, usingSpringWithDamping: 0.8, initialSpringVelocity: 0) {
                 self.savedHeartView.alpha = heartAlpha
@@ -129,7 +139,7 @@ final class StoryCell: UICollectionViewListCell {
                 self?.onToggleSaved?()
                 return true
             },
-        ]
+        ] + extraAccessibilityActions
         setNeedsUpdateConfiguration()
     }
 
@@ -199,8 +209,17 @@ final class StoryCell: UICollectionViewListCell {
     }
 }
 
-/// Lets a pan begin only for mostly horizontal drags, so vertical drags scroll the list.
+/// Lets a pan begin only for mostly horizontal drags, so vertical drags scroll the list,
+/// and leaves touches near the screen edges to the navigation edge swipes.
 private final class HorizontalPanDelegate: NSObject, UIGestureRecognizerDelegate {
+    private let edgeZone: CGFloat = 24
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard let window = touch.window else { return true }
+        let x = touch.location(in: window).x
+        return x > edgeZone && x < window.bounds.width - edgeZone
+    }
+
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let velocity = pan.velocity(in: pan.view)

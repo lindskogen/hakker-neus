@@ -17,8 +17,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         let coordinator = AppCoordinator(window: window)
         coordinator.start()
+        if let shortcut = connectionOptions.shortcutItem {
+            _ = coordinator.handleShortcut(shortcut.type)
+        }
 
         self.window = window
         self.coordinator = coordinator
+    }
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        completionHandler(coordinator?.handleShortcut(shortcutItem.type) ?? false)
     }
 }

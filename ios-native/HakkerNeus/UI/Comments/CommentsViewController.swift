@@ -86,7 +86,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         let statusCell = UICollectionView.CellRegistration<StatusCell, Item> { [unowned self] cell, _, _ in
             switch loadState {
             case .loading: cell.configure(with: .loading)
-            case .loaded: cell.configure(with: .empty)
+            case .loaded: cell.configure(with: .noComments)
             case .failed(let error): cell.configure(with: .error(error))
             }
         }

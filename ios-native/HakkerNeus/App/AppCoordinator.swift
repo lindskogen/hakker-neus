@@ -2,20 +2,29 @@ import SafariServices
 import UIKit
 
 /// Owns app-wide dependencies, the root navigation stack, and navigation between screens.
+///
+/// The stack starts as [Saved, Front page]: the saved list sits "behind" the front page,
+/// so the edge swipe back from the front page reveals it.
 @MainActor
 final class AppCoordinator {
-    private let window: UIWindow
-    private let navigationController = NavigationController()
+    let window: UIWindow
+    let navigationController = NavigationController()
     private var relativeTimeTimer: Timer?
+    let defaults: UserDefaults
 
     let client: HNClient
     let itemCache: ItemCache
     let savedStories: SavedStoriesStore
 
+    /// Kept alive while the saved list is showing, so its scroll position and pages survive.
+    private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
+    private lazy var savedList = SavedStoriesViewController(coordinator: self)
+
     init(
         window: UIWindow,
         client: HNClient = LiveHNClient(),
-        savedStories: SavedStoriesStore = SavedStoriesStore()
+        savedStories: SavedStoriesStore? = nil,
+        defaults: UserDefaults = .standard
     ) {
         self.window = window
         #if DEBUG
@@ -24,12 +33,21 @@ final class AppCoordinator {
         #endif
         self.client = client
         self.itemCache = ItemCache(client: client)
-        self.savedStories = savedStories
+        self.defaults = defaults
+        self.savedStories = savedStories ?? Self.makeSavedStoriesStore(defaults: defaults)
+    }
+
+    private static func makeSavedStoriesStore(defaults: UserDefaults) -> SavedStoriesStore {
+        do {
+            let url = URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite")
+            return try SavedStoriesStore(database: Database(url: url), legacyDefaults: defaults)
+        } catch {
+            fatalError("Couldn't open the database: \(error)")
+        }
     }
 
     func start() {
-        let root = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
-        navigationController.setViewControllers([root], animated: false)
+        navigationController.setViewControllers([savedList, frontPage], animated: false)
 
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
@@ -40,12 +58,41 @@ final class AppCoordinator {
         }
         #endif
 
+        NotificationCenter.default.addObserver(
+            forName: SavedStoriesStore.didChange, object: nil, queue: .main
+        ) { [weak self] notification in
+            let id = notification.object as? Int
+            MainActor.assumeIsolated { self?.savedStoryChanged(id) }
+        }
+
         relativeTimeTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             NotificationCenter.default.post(name: RelativeTime.tick, object: nil)
         }
     }
 
     // MARK: Navigation
+
+    /// The Home Screen quick action that opens the saved list.
+    static let savedStoriesShortcut = "se.lindskogen.hakkerneues.saved"
+
+    func handleShortcut(_ type: String) -> Bool {
+        guard type == Self.savedStoriesShortcut else { return false }
+        navigationController.presentedViewController?.dismiss(animated: false)
+        showSavedStories(animated: false)
+        return true
+    }
+
+    func showSavedStories(animated: Bool = true) {
+        navigationController.popToRootViewController(animated: animated)
+    }
+
+    func showFrontPage(animated: Bool = true) {
+        if navigationController.viewControllers.contains(frontPage) {
+            navigationController.popToViewController(frontPage, animated: animated)
+        } else {
+            navigationController.pushViewController(frontPage, animated: animated)
+        }
+    }
 
     func makeCommentsViewController(id: Int, story: Story?) -> CommentsViewController {
         itemCache.prefetch(id: id)
@@ -168,47 +215,5 @@ extension URL {
               let components = URLComponents(url: self, resolvingAgainstBaseURL: false)
         else { return nil }
         return components.queryItems?.first { $0.name == "id" }?.value.flatMap { Int($0) }
-    }
-}
-
-/// Navigation controller with a hidden bar that keeps the interactive swipe-back gestures.
-///
-/// UIKit disables both pop gestures while the bar is hidden. Taking over their delegates
-/// re-enables them: the edge swipe everywhere, and on iOS 26 also the swipe from anywhere in
-/// the content area. iOS 18–25 only get the edge swipe.
-final class NavigationController: UINavigationController, UIGestureRecognizerDelegate {
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setNavigationBarHidden(true, animated: false)
-        view.backgroundColor = Theme.Color.backgroundDark
-
-        interactivePopGestureRecognizer?.delegate = self
-        if #available(iOS 26, *) {
-            // Apple documents this recognizer as "only for failure requirements", so this may need
-            // revisiting in future iOS versions. Covered by NavigationUITests.
-            interactiveContentPopGestureRecognizer?.delegate = self
-        }
-    }
-
-    override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
-
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        viewControllers.count > 1
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        guard #available(iOS 26, *), gestureRecognizer === interactiveContentPopGestureRecognizer else { return true }
-
-        // Inside a sideways-scrolled view (a code block), dragging right scrolls it back instead.
-        var view = touch.view
-        while let current = view {
-            if let scrollView = current as? UIScrollView,
-               scrollView.contentSize.width > scrollView.bounds.width,
-               scrollView.contentOffset.x > -scrollView.adjustedContentInset.left {
-                return false
-            }
-            view = current.superview
-        }
-        return true
     }
 }

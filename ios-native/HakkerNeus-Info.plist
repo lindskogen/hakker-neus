@@ -19,6 +19,17 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>se.lindskogen.hakkerneues.saved</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Saved Stories</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>heart.fill</string>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

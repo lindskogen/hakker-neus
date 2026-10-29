@@ -1,7 +1,8 @@
 import UIKit
 
 /// The front page (`NewsList.tsx`).
-final class StoryListViewController: UIViewController, UICollectionViewDelegate {
+/// Swiping right in the content area saves a row here, so only the edge swipe goes back (to the saved list).
+final class StoryListViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack {
     private enum Section { case main }
 
     private let feed: TopStoriesFeed
@@ -46,7 +47,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
 
     private func configureCollectionView() {
         var list = UICollectionLayoutListConfiguration(appearance: .plain)
-        list.backgroundColor = Theme.Color.backgroundDark
+        // Clear, so the list doesn't paint over the loading and error states in `backgroundView`.
+        list.backgroundColor = .clear
         list.footerMode = .supplementary
         list.separatorConfiguration.color = .black
         list.separatorConfiguration.bottomSeparatorInsets = .zero
@@ -62,6 +64,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
 
         collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
         collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        collectionView.backgroundColor = Theme.Color.backgroundDark
         collectionView.indicatorStyle = .white
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "stories.list"
@@ -75,13 +78,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
     private func configureDataSource() {
         let cell = UICollectionView.CellRegistration<StoryCell, Story.ID> { [unowned self] cell, indexPath, id in
             guard let story = stories[id] else { return }
-            cell.configure(
-                with: story,
-                backgroundColor: Palette.storyBackground(at: indexPath.item),
-                isSaved: coordinator.savedStories.isSaved(id)
-            )
-            cell.onToggleSaved = { [unowned self] in coordinator.savedStories.toggle(story) }
-            cell.onOpenComments = { [unowned self] in coordinator.showComments(for: story) }
+            coordinator.configure(cell, with: story, backgroundColor: Palette.storyBackground(at: indexPath.item), inSavedList: false)
         }
         let footer = UICollectionView.SupplementaryRegistration<LoadingFooterView>(
             elementKind: UICollectionView.elementKindSectionFooter
@@ -172,11 +169,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
         guard let story = story(at: indexPath) else { return }
-        if let url = story.url {
-            coordinator.open(url)
-        } else {
-            coordinator.showComments(for: story)
-        }
+        coordinator.select(story)
     }
 
     func collectionView(
@@ -189,13 +182,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
               let cell = collectionView.cellForItem(at: indexPath)
         else { return nil }
 
-        return UIContextMenuConfiguration(
-            identifier: story.id as NSNumber,
-            previewProvider: { [unowned self] in coordinator.makePreview(for: story) },
-            actionProvider: { [unowned self, weak cell] _ in
-                coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: true)
-            }
-        )
+        return coordinator.contextMenuConfiguration(for: story, sourceView: cell)
     }
 
     func collectionView(
@@ -203,10 +190,6 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
         willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
         animator: UIContextMenuInteractionCommitAnimating
     ) {
-        guard let preview = animator.previewViewController else { return }
-        animator.preferredCommitStyle = .pop
-        animator.addCompletion { [unowned self] in
-            coordinator.commitPreview(preview)
-        }
+        coordinator.commitContextMenuPreview(animator)
     }
 }
