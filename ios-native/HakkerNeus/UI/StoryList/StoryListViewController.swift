@@ -1,0 +1,195 @@
+import UIKit
+
+/// The front page (`NewsList.tsx`).
+final class StoryListViewController: UIViewController, UICollectionViewDelegate {
+    private enum Section { case main }
+
+    private let feed: TopStoriesFeed
+    private unowned let coordinator: AppCoordinator
+
+    private var collectionView: UICollectionView!
+    private var dataSource: UICollectionViewDiffableDataSource<Section, Story.ID>!
+    private var stories: [Story.ID: Story] = [:]
+    private let stateView = FullPageStateView()
+    private let refreshControl = UIRefreshControl()
+
+    private var isLoadingMore = false {
+        didSet { footer?.isLoading = isLoadingMore }
+    }
+    private weak var footer: LoadingFooterView?
+
+    init(feed: TopStoriesFeed, coordinator: AppCoordinator) {
+        self.feed = feed
+        self.coordinator = coordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = Theme.Color.backgroundDark
+
+        configureCollectionView()
+        configureDataSource()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(savedStoriesChanged(_:)), name: SavedStoriesStore.didChange, object: nil
+        )
+
+        stateView.backgroundColor = Theme.Color.backgroundOrange
+        stateView.state = .loading
+        collectionView.backgroundView = stateView
+        Task { await reload() }
+    }
+
+    private func configureCollectionView() {
+        var list = UICollectionLayoutListConfiguration(appearance: .plain)
+        list.backgroundColor = Theme.Color.backgroundDark
+        list.footerMode = .supplementary
+        list.separatorConfiguration.color = .black
+        list.separatorConfiguration.bottomSeparatorInsets = .zero
+
+        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: UICollectionViewCompositionalLayout.list(using: list))
+        collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        collectionView.indicatorStyle = .white
+        collectionView.delegate = self
+        collectionView.accessibilityIdentifier = "stories.list"
+
+        refreshControl.tintColor = .white
+        refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
+        collectionView.refreshControl = refreshControl
+
+        view.addSubview(collectionView)
+    }
+
+    private func configureDataSource() {
+        let cell = UICollectionView.CellRegistration<StoryCell, Story.ID> { [unowned self] cell, indexPath, id in
+            guard let story = stories[id] else { return }
+            cell.configure(
+                with: story,
+                backgroundColor: Palette.storyBackground(at: indexPath.item),
+                isSaved: coordinator.savedStories.isSaved(id)
+            )
+        }
+        let footer = UICollectionView.SupplementaryRegistration<LoadingFooterView>(
+            elementKind: UICollectionView.elementKindSectionFooter
+        ) { [unowned self] view, _, _ in
+            self.footer = view
+            view.isLoading = isLoadingMore
+        }
+
+        dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, id in
+            collectionView.dequeueConfiguredReusableCell(using: cell, for: indexPath, item: id)
+        }
+        dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
+            collectionView.dequeueConfiguredReusableSupplementary(using: footer, for: indexPath)
+        }
+    }
+
+    // MARK: Loading
+
+    @objc private func refresh() {
+        Task { await reload() }
+    }
+
+    private func reload() async {
+        do {
+            show(try await feed.reload(), replacing: true)
+            collectionView.backgroundView = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            if stories.isEmpty {
+                stateView.backgroundColor = Theme.Color.backgroundDark
+                stateView.state = .error(error)
+            }
+        }
+        refreshControl.endRefreshing()
+    }
+
+    private func loadMore() {
+        guard !isLoadingMore, feed.hasMore, !stories.isEmpty else { return }
+        isLoadingMore = true
+        Task {
+            defer { isLoadingMore = false }
+            // A failed page is retried the next time the end of the list scrolls into view.
+            if let all = try? await feed.loadNextPage() {
+                show(all, replacing: false)
+            }
+        }
+    }
+
+    private func show(_ all: [Story], replacing: Bool) {
+        stories = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
+        var snapshot = NSDiffableDataSourceSnapshot<Section, Story.ID>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(all.map(\.id))
+        if replacing {
+            dataSource.applySnapshotUsingReloadData(snapshot)
+        } else {
+            dataSource.apply(snapshot, animatingDifferences: false)
+        }
+    }
+
+    @objc private func savedStoriesChanged(_ notification: Notification) {
+        guard let id = notification.object as? Int, dataSource.indexPath(for: id) != nil else { return }
+        var snapshot = dataSource.snapshot()
+        snapshot.reconfigureItems([id])
+        dataSource.apply(snapshot, animatingDifferences: false)
+    }
+
+    private func story(at indexPath: IndexPath) -> Story? {
+        dataSource.itemIdentifier(for: indexPath).flatMap { stories[$0] }
+    }
+
+    // MARK: UICollectionViewDelegate
+
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        if indexPath.item >= stories.count - 5 {
+            loadMore()
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
+        guard let story = story(at: indexPath) else { return }
+        if let url = story.url {
+            coordinator.open(url)
+        } else {
+            coordinator.showComments(for: story)
+        }
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        contextMenuConfigurationForItemsAt indexPaths: [IndexPath],
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        guard indexPaths.count == 1, let indexPath = indexPaths.first,
+              let story = story(at: indexPath),
+              let cell = collectionView.cellForItem(at: indexPath)
+        else { return nil }
+
+        return UIContextMenuConfiguration(
+            identifier: story.id as NSNumber,
+            previewProvider: { [unowned self] in coordinator.makePreview(for: story) },
+            actionProvider: { [unowned self, weak cell] _ in
+                coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: true)
+            }
+        )
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
+        animator: UIContextMenuInteractionCommitAnimating
+    ) {
+        guard let preview = animator.previewViewController else { return }
+        animator.preferredCommitStyle = .pop
+        animator.addCompletion { [unowned self] in
+            coordinator.commitPreview(preview)
+        }
+    }
+}

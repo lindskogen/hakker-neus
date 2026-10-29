@@ -4,6 +4,9 @@ import Foundation
 /// Whole stories are stored, not just IDs, so a saved list can be shown offline later.
 @MainActor
 final class SavedStoriesStore {
+    /// Posted after a story is saved or removed. `object` is the story ID as an `Int`.
+    static let didChange = Notification.Name("SavedStoriesStore.didChange")
+
     private let defaults: UserDefaults
     private let key = "savedStories"
     private var stories: [Int: Story]
@@ -24,12 +27,12 @@ final class SavedStoriesStore {
 
     func save(_ story: Story) {
         stories[story.id] = story
-        persist()
+        persist(changed: story.id)
     }
 
     func remove(_ id: Int) {
         stories[id] = nil
-        persist()
+        persist(changed: id)
     }
 
     /// Returns whether the story is saved afterwards.
@@ -43,9 +46,10 @@ final class SavedStoriesStore {
         return true
     }
 
-    private func persist() {
+    private func persist(changed id: Int) {
         if let data = try? JSONEncoder().encode(stories) {
             defaults.set(data, forKey: key)
         }
+        NotificationCenter.default.post(name: Self.didChange, object: id)
     }
 }
