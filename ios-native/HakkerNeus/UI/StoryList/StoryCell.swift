@@ -115,7 +115,6 @@ final class StoryCell: UICollectionViewListCell {
         titleLabel.text = story.title
         scoreLabel.text = "\(story.score)"
         commentCountLabel.text = "\(story.commentCount)"
-        saveActionView.image = UIImage(systemName: isSaved ? "heart.slash.fill" : "heart.fill")
 
         // Fade the saved heart in or out once the row has settled back, like the RN app.
         let heartAlpha: CGFloat = isSaved && showsSavedBadge ? 0.3 : 0
@@ -166,6 +165,9 @@ final class StoryCell: UICollectionViewListCell {
 
         switch pan.state {
         case .began:
+            // Chosen here rather than in configure(), which runs again as soon as the save lands,
+            // while the row is still springing back over this icon.
+            saveActionView.image = UIImage(systemName: isSaved ? "heart.slash.fill" : "heart.fill")
             haptics.prepare()
             armedAction = nil
             apply(swipe)
