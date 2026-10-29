@@ -35,9 +35,9 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(savedStoriesChanged(_:)), name: SavedStoriesStore.didChange, object: nil
-        )
+        for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange] {
+            NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
+        }
 
         stateView.backgroundColor = Theme.Color.backgroundOrange
         stateView.state = .loading
@@ -147,7 +147,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 
-    @objc private func savedStoriesChanged(_ notification: Notification) {
+    /// A story was saved, unsaved or read: refresh its row.
+    @objc private func storyStateChanged(_ notification: Notification) {
         guard let id = notification.object as? Int, dataSource.indexPath(for: id) != nil else { return }
         var snapshot = dataSource.snapshot()
         snapshot.reconfigureItems([id])

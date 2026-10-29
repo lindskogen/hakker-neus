@@ -15,6 +15,7 @@ final class AppCoordinator {
     let client: HNClient
     let itemCache: ItemCache
     let savedStories: SavedStoriesStore
+    let visitedStories: VisitedStoriesStore
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
@@ -23,7 +24,7 @@ final class AppCoordinator {
     init(
         window: UIWindow,
         client: HNClient = LiveHNClient(),
-        savedStories: SavedStoriesStore? = nil,
+        database: Database? = nil,
         defaults: UserDefaults = .standard
     ) {
         self.window = window
@@ -34,13 +35,10 @@ final class AppCoordinator {
         self.client = client
         self.itemCache = ItemCache(client: client)
         self.defaults = defaults
-        self.savedStories = savedStories ?? Self.makeSavedStoriesStore(defaults: defaults)
-    }
-
-    private static func makeSavedStoriesStore(defaults: UserDefaults) -> SavedStoriesStore {
         do {
-            let url = URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite")
-            return try SavedStoriesStore(database: Database(url: url), legacyDefaults: defaults)
+            let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
+            self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
+            self.visitedStories = try VisitedStoriesStore(database: database)
         } catch {
             fatalError("Couldn't open the database: \(error)")
         }
@@ -100,6 +98,7 @@ final class AppCoordinator {
     }
 
     func showComments(for story: Story) {
+        visitedStories.markCommentsSeen(story)
         navigationController.pushViewController(makeCommentsViewController(id: story.id, story: story), animated: true)
     }
 
@@ -175,6 +174,7 @@ final class AppCoordinator {
         }
         if let url = story.url {
             open.append(UIAction(title: "Open Link", subtitle: url.host(), image: UIImage(systemName: "safari")) { [weak self] _ in
+                self?.visitedStories.markOpened(story)
                 self?.open(url)
             })
         }

@@ -143,6 +143,22 @@ final class NavigationUITests: XCTestCase {
         }
     }
 
+    func testOpeningCommentsMarksTheStoryRead() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let list = app.collectionViews["stories.list"]
+        let unread = list.cells.matching(NSPredicate(format: "NOT (value CONTAINS ', read')")).firstMatch
+        XCTAssertTrue(unread.waitForExistence(timeout: 5), "Every visible story is already read")
+        let title = unread.label
+
+        drag(unread, from: 0.8, to: 0.2)
+        XCTAssertTrue(commentsList.waitForExistence(timeout: 5))
+        drag(app.windows.firstMatch, from: 0.0, to: 0.9)
+
+        let row = list.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
+        let read = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value CONTAINS ', read'"), object: row)
+        wait(for: [read], timeout: 5)
+    }
+
     func testShortSwipeDoesNothing() {
         XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
         let value = firstStory.value as? String

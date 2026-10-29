@@ -127,6 +127,8 @@ final class StoryCell: UICollectionViewListCell {
         with story: Story,
         backgroundColor: UIColor,
         isSaved: Bool,
+        isVisited: Bool = false,
+        newComments: Int? = nil,
         showsSavedBadge: Bool = true,
         extraAccessibilityActions: [UIAccessibilityCustomAction] = []
     ) {
@@ -138,8 +140,11 @@ final class StoryCell: UICollectionViewListCell {
         rowView.backgroundColor = backgroundColor
         titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
         titleLabel.text = story.title
-        domainLabel.text = story.displayDomain
-        domainLabel.isHidden = story.displayDomain == nil
+        // Read stories fade back, so unread ones stand out.
+        titleLabel.alpha = isVisited ? 0.55 : 1
+        let details = [story.displayDomain, newComments.map { "\($0) new" }].compactMap { $0 }
+        domainLabel.text = details.joined(separator: " · ")
+        domainLabel.isHidden = details.isEmpty
         scoreLabel.text = "\(story.score)"
         commentCountLabel.text = "\(story.commentCount)"
 
@@ -155,7 +160,10 @@ final class StoryCell: UICollectionViewListCell {
 
         isAccessibilityElement = true
         accessibilityLabel = story.title
-        accessibilityValue = [story.displayDomain, "\(story.score) points", "\(story.commentCount) comments", isSaved ? "saved" : nil]
+        accessibilityValue = [
+            story.displayDomain, "\(story.score) points", "\(story.commentCount) comments",
+            newComments.map { "\($0) new" }, isVisited ? "read" : nil, isSaved ? "saved" : nil,
+        ]
             .compactMap { $0 }
             .joined(separator: ", ")
         accessibilityCustomActions = [

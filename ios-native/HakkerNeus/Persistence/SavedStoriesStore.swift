@@ -21,7 +21,7 @@ final class SavedStoriesStore {
     ///   - legacyDefaults: Where earlier builds kept saved stories; migrated once, then cleared.
     init(database: Database, legacyDefaults: UserDefaults = .standard) throws {
         self.database = database
-        try Self.migrateSchema(database)
+        try Schema.migrate(database)
         try importLegacy(from: legacyDefaults)
         entries = try loadEntries()
     }
@@ -70,28 +70,6 @@ final class SavedStoriesStore {
     }
 
     // MARK: SQL
-
-    private static func migrateSchema(_ database: Database) throws {
-        if database.userVersion < 1 {
-            try database.transaction {
-                try database.execute("""
-                    CREATE TABLE IF NOT EXISTS saved_stories (
-                        id INTEGER PRIMARY KEY,
-                        title TEXT NOT NULL,
-                        author TEXT,
-                        url TEXT,
-                        text TEXT,
-                        score INTEGER NOT NULL,
-                        comment_count INTEGER NOT NULL,
-                        posted_at REAL NOT NULL,
-                        saved_at REAL NOT NULL
-                    );
-                    CREATE INDEX IF NOT EXISTS saved_stories_saved_at ON saved_stories (saved_at DESC);
-                    """)
-                try database.setUserVersion(1)
-            }
-        }
-    }
 
     private func insert(_ entry: Entry) throws {
         let story = entry.story

@@ -62,6 +62,9 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         NotificationCenter.default.addObserver(
             self, selector: #selector(savedStoriesChanged), name: SavedStoriesStore.didChange, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(visitedStoryChanged(_:)), name: VisitedStoriesStore.didChange, object: nil
+        )
         reload(animated: false)
     }
 
@@ -71,6 +74,13 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         let work = DispatchWorkItem { [weak self] in self?.reload(animated: true) }
         pendingReload = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+    }
+
+    @objc private func visitedStoryChanged(_ notification: Notification) {
+        guard let id = notification.object as? Int, dataSource.indexPath(for: id) != nil else { return }
+        var snapshot = dataSource.snapshot()
+        snapshot.reconfigureItems([id])
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
 
     private func reload(animated: Bool) {

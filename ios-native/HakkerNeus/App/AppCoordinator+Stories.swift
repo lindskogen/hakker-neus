@@ -17,6 +17,8 @@ extension AppCoordinator {
             with: story,
             backgroundColor: backgroundColor,
             isSaved: savedStories.isSaved(story.id),
+            isVisited: visitedStories.isVisited(story.id),
+            newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
             extraAccessibilityActions: [jump]
         )
@@ -27,6 +29,7 @@ extension AppCoordinator {
     /// Tapping a row opens the link, or the comments for self posts.
     func select(_ story: Story) {
         if let url = story.url {
+            visitedStories.markOpened(story)
             open(url)
         } else {
             showComments(for: story)
