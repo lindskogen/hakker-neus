@@ -11,6 +11,7 @@ final class StoryCell: UICollectionViewListCell {
     /// The moving part of the row. The swipe actions sit behind it.
     private let rowView = UIView()
     private let titleLabel = UILabel()
+    private let domainLabel = UILabel()
     private let scoreLabel = UILabel()
     private let savedHeartView = UIImageView(image: UIImage(systemName: "heart.fill"))
 
@@ -31,6 +32,14 @@ final class StoryCell: UICollectionViewListCell {
         titleLabel.numberOfLines = 0
         titleLabel.applyTextShadow()
 
+        domainLabel.font = Theme.Font.body(size: 14)
+        domainLabel.textColor = UIColor.white.withAlphaComponent(0.7)
+        domainLabel.applyTextShadow()
+
+        let titleStack = UIStackView(arrangedSubviews: [titleLabel, domainLabel])
+        titleStack.axis = .vertical
+        titleStack.spacing = 4
+
         scoreLabel.font = Theme.Font.body(size: 30)
         scoreLabel.textColor = .white
         scoreLabel.alpha = 0.3
@@ -50,7 +59,7 @@ final class StoryCell: UICollectionViewListCell {
             view.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(view)
         }
-        for view in [titleLabel, scoreLabel, savedHeartView] {
+        for view in [titleStack, scoreLabel, savedHeartView] {
             view.translatesAutoresizingMaskIntoConstraints = false
             rowView.addSubview(view)
         }
@@ -66,10 +75,10 @@ final class StoryCell: UICollectionViewListCell {
             rowView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             minHeight,
 
-            titleLabel.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2),
-            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
-            titleLabel.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
-            titleLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
+            titleStack.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2),
+            titleStack.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
+            titleStack.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
+            titleStack.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
 
             scoreLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding),
             scoreLabel.bottomAnchor.constraint(equalTo: rowView.bottomAnchor, constant: -padding),
@@ -113,6 +122,8 @@ final class StoryCell: UICollectionViewListCell {
         rowView.backgroundColor = backgroundColor
         titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
         titleLabel.text = story.title
+        domainLabel.text = story.displayDomain
+        domainLabel.isHidden = story.displayDomain == nil
         scoreLabel.text = "\(story.score)"
         commentCountLabel.text = "\(story.commentCount)"
 
@@ -128,7 +139,9 @@ final class StoryCell: UICollectionViewListCell {
 
         isAccessibilityElement = true
         accessibilityLabel = story.title
-        accessibilityValue = "\(story.score) points, \(story.commentCount) comments" + (isSaved ? ", saved" : "")
+        accessibilityValue = [story.displayDomain, "\(story.score) points", "\(story.commentCount) comments", isSaved ? "saved" : nil]
+            .compactMap { $0 }
+            .joined(separator: ", ")
         accessibilityCustomActions = [
             UIAccessibilityCustomAction(name: "Open Comments") { [weak self] _ in
                 self?.onOpenComments?()

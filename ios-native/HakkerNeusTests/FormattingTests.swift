@@ -56,3 +56,23 @@ struct HackerNewsURLTests {
         #expect(URL(string: url)!.hackerNewsItemID == nil)
     }
 }
+
+struct StoryDomainTests {
+    private func story(url: String?) -> Story {
+        Story(id: 1, title: "t", author: nil, url: url.flatMap(URL.init(string:)), text: nil, score: 0, commentCount: 0, time: Date())
+    }
+
+    @Test(arguments: [
+        ("https://www.example.com/a/b", "example.com"),
+        ("https://github.com/apple/swift", "github.com"),
+        ("http://blog.example.co.uk", "blog.example.co.uk"),
+        ("https://wwwexample.com", "wwwexample.com"),
+    ])
+    func showsHostWithoutWWW(url: String, domain: String) {
+        #expect(story(url: url).displayDomain == domain)
+    }
+
+    @Test func selfPostsHaveNoDomain() {
+        #expect(story(url: nil).displayDomain == nil)
+    }
+}

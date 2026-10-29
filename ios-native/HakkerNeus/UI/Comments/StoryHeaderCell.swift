@@ -39,12 +39,13 @@ final class StoryHeaderCell: UICollectionViewListCell {
     func configure(with story: Story) {
         titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
         titleLabel.text = story.title
-        authorLabel.text = "by \(story.author ?? "deleted")"
-        authorLabel.isHidden = story.author == nil
+        let byline = [story.author.map { "by \($0)" }, story.displayDomain].compactMap { $0 }
+        authorLabel.text = byline.joined(separator: " · ")
+        authorLabel.isHidden = byline.isEmpty
 
         isAccessibilityElement = true
         accessibilityLabel = story.title
-        accessibilityValue = story.author.map { "by \($0)" }
+        accessibilityValue = byline.joined(separator: ", ")
         accessibilityTraits = story.url == nil ? [.header] : [.header, .link]
         accessibilityIdentifier = "comments.header"
     }

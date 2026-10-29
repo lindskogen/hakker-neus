@@ -13,6 +13,12 @@ struct Story: Hashable, Sendable, Codable, Identifiable {
     let time: Date
 
     var hackerNewsURL: URL { .hackerNewsItem(id) }
+
+    /// The linked site, e.g. "github.com", without a leading "www.". Nil for self posts.
+    var displayDomain: String? {
+        guard let host = url?.host(), !host.isEmpty else { return nil }
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
 }
 
 /// A comment and its replies. `text` is HN's HTML and is nil for deleted comments.
