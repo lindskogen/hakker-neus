@@ -111,6 +111,22 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(commentsList.waitForExistence(timeout: 5))
     }
 
+    func testStoryListScrolls() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let firstTitle = firstStory.label
+
+        let list = app.collectionViews["stories.list"]
+        let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0)
+
+        let scrolled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isHittable == false"),
+            object: list.cells.matching(NSPredicate(format: "label == %@", firstTitle)).firstMatch
+        )
+        wait(for: [scrolled], timeout: 3)
+    }
+
     func testShortSwipeDoesNothing() {
         XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
         let value = firstStory.value as? String

@@ -22,7 +22,7 @@ final class StoryCell: UICollectionViewListCell {
     private var isSaved = false
     private var armedAction: StorySwipe.Action?
     private let haptics = UIImpactFeedbackGenerator(style: .medium)
-    private var swipePan: UIPanGestureRecognizer!
+    private let horizontalOnly = HorizontalPanDelegate()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -84,7 +84,8 @@ final class StoryCell: UICollectionViewListCell {
             commentCountLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
         ])
 
-        swipePan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        let swipePan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        swipePan.delegate = horizontalOnly
         addGestureRecognizer(swipePan)
 
         apply(StorySwipe(translation: 0))
@@ -150,13 +151,6 @@ final class StoryCell: UICollectionViewListCell {
 
     // MARK: Swiping
 
-    /// Only horizontal drags swipe the row; vertical ones scroll the list.
-    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard gestureRecognizer === swipePan else { return super.gestureRecognizerShouldBegin(gestureRecognizer) }
-        let velocity = swipePan.velocity(in: self)
-        return abs(velocity.x) > abs(velocity.y)
-    }
-
     @objc private func handlePan(_ pan: UIPanGestureRecognizer) {
         let swipe = StorySwipe(translation: pan.translation(in: self).x)
 
@@ -202,6 +196,15 @@ final class StoryCell: UICollectionViewListCell {
         UIView.animate(withDuration: 0.35, delay: delay, usingSpringWithDamping: 0.85, initialSpringVelocity: 0, options: [.allowUserInteraction, .beginFromCurrentState]) {
             self.apply(StorySwipe(translation: 0))
         }
+    }
+}
+
+/// Lets a pan begin only for mostly horizontal drags, so vertical drags scroll the list.
+private final class HorizontalPanDelegate: NSObject, UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
+        let velocity = pan.velocity(in: pan.view)
+        return abs(velocity.x) > abs(velocity.y)
     }
 }
 
