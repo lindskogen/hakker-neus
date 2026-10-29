@@ -34,6 +34,8 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     private let refreshControl = RefreshControl()
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
+    private let nextThreadButton = UIButton(type: .system)
+    private let jumpHaptics = UISelectionFeedbackGenerator()
 
     init(id: Int, story: Story?, coordinator: AppCoordinator) {
         self.id = id
@@ -86,6 +88,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         collectionView.refreshControl = refreshControl
 
         view.addSubview(collectionView)
+        configureNextThreadButton()
     }
 
     private func configureDataSource() {
@@ -194,6 +197,13 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         let toReconfigure = reconfigureAll ? snapshot.itemIdentifiers : ids
         snapshot.reconfigureItems(toReconfigure.filter { existing.contains($0) })
         dataSource.apply(snapshot, animatingDifferences: animated)
+
+        let threadCount = visible.lazy.filter { $0.depth == 0 }.count
+        let showsButton: Bool
+        if case .loaded = loadState { showsButton = threadCount > 1 } else { showsButton = false }
+        nextThreadButton.isHidden = !showsButton
+        // Room to scroll the last comment out from under the button.
+        collectionView.contentInset.bottom = showsButton ? 64 : 0
     }
 
     @objc private func updateTimes() {
@@ -211,6 +221,53 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         DispatchQueue.main.async { [weak self] in
             (self?.collectionView.cellForItem(at: indexPath) as? CommentCell)?.flash()
         }
+    }
+
+    // MARK: Next thread
+
+    private func configureNextThreadButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.image = UIImage(systemName: "chevron.down")
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        nextThreadButton.configuration = config
+        nextThreadButton.accessibilityLabel = "Next thread"
+        nextThreadButton.accessibilityIdentifier = "comments.nextThread"
+        nextThreadButton.isHidden = true
+        nextThreadButton.addTarget(self, action: #selector(jumpToNextThread), for: .touchUpInside)
+
+        nextThreadButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(nextThreadButton)
+        NSLayoutConstraint.activate([
+            nextThreadButton.widthAnchor.constraint(equalToConstant: 52),
+            nextThreadButton.heightAnchor.constraint(equalToConstant: 52),
+            nextThreadButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding * 2),
+            nextThreadButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
+        ])
+    }
+
+    /// Scrolls the next top-level comment below the top of the screen up to the top.
+    @objc private func jumpToNextThread() {
+        let visibleTop = collectionView.contentOffset.y + collectionView.adjustedContentInset.top
+        let tops = thread.visible.filter { $0.depth == 0 }.compactMap { comment -> (id: Int, top: CGFloat)? in
+            guard let indexPath = dataSource.indexPath(for: .comment(comment.id)),
+                  let frame = collectionView.layoutAttributesForItem(at: indexPath)?.frame
+            else { return nil }
+            return (comment.id, frame.minY)
+        }
+        guard let next = ThreadJump.next(after: visibleTop, threadTops: tops),
+              let indexPath = dataSource.indexPath(for: .comment(next))
+        else { return }
+
+        jumpHaptics.selectionChanged()
+        collectionView.scrollToItem(at: indexPath, at: .top, animated: !UIAccessibility.isReduceMotionEnabled)
     }
 
     // MARK: Collapsing

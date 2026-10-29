@@ -33,6 +33,17 @@ final class NavigationUITests: XCTestCase {
         XCTAssertTrue(commentsList.waitForExistence(timeout: 5))
     }
 
+    func testLinkStoryMenuCopiesArticleOrCommentsLink() {
+        let list = app.collectionViews["stories.list"]
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        // Link posts show their domain; self posts (one shared link) don't get the extra action.
+        let linkStory = list.cells.matching(NSPredicate(format: "value CONTAINS '.'")).firstMatch
+        linkStory.press(forDuration: 1.2)
+
+        XCTAssertTrue(app.buttons["Copy Link"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Copy Comments Link"].exists)
+    }
+
     func testLongPressMenuOpensComments() {
         openCommentsViaContextMenu()
     }

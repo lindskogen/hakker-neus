@@ -72,6 +72,26 @@ final class CommentRenderingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
     }
 
+    func testNextThreadButtonScrollsToTheNextTopLevelComment() {
+        let button = app.buttons["comments.nextThread"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5))
+
+        // From the top, the first thread is still below the header, so it comes first.
+        button.tap()
+        sleep(1)
+        // Before the tap it sits below the header, at about 190pt.
+        let firstThread = comment(by: "op")
+        XCTAssertLessThan(firstThread.frame.minY, 120, "First thread wasn't scrolled to the top")
+
+        // user3 starts the second top-level thread in the sink. It's near the end of the list,
+        // so it moves up as far as the list can scroll rather than all the way to the top.
+        let secondThread = comment(by: "user3")
+        let before = secondThread.frame.minY
+        button.tap()
+        sleep(1)
+        XCTAssertLessThan(secondThread.frame.minY, before - 100, "Second tap didn't scroll towards the next thread")
+    }
+
     func testTappingBodyTextOutsideLinksCollapses() {
         let cell = comment(by: "user3")
         XCTAssertTrue(cell.waitForExistence(timeout: 5))

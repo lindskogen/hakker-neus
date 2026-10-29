@@ -195,6 +195,12 @@ final class AppCoordinator {
         let copy = UIAction(title: "Copy Link", image: UIImage(systemName: "link")) { _ in
             UIPasteboard.general.url = shareURL
         }
+        // For link posts, the HN discussion is a different URL from the article.
+        let copyComments = story.url == nil ? nil : UIAction(
+            title: "Copy Comments Link", image: UIImage(systemName: "bubble.left.and.text.bubble.right")
+        ) { _ in
+            UIPasteboard.general.url = story.hackerNewsURL
+        }
 
         var user: [UIMenuElement] = []
         if let author = story.author {
@@ -205,7 +211,7 @@ final class AppCoordinator {
 
         return UIMenu(children: [
             UIMenu(options: .displayInline, children: open),
-            UIMenu(options: .displayInline, children: [save, share, copy]),
+            UIMenu(options: .displayInline, children: [save, share, copy] + [copyComments].compactMap { $0 }),
             UIMenu(options: .displayInline, children: user),
         ])
     }
