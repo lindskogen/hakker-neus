@@ -7,7 +7,7 @@ final class CommentCell: UICollectionViewListCell {
     struct Content {
         let comment: Comment
         let depth: Int
-        let body: String
+        let body: CommentBody
         let isOP: Bool
         let isCollapsed: Bool
         let hiddenReplies: Int
@@ -22,7 +22,7 @@ final class CommentCell: UICollectionViewListCell {
     private let opBadge = PaddedLabel()
     private let collapsedLabel = UILabel()
     private let timeLabel = UILabel()
-    private let bodyLabel = UILabel()
+    private let bodyView = CommentBodyView()
     private let stack = UIStackView()
     private var indentConstraint: NSLayoutConstraint!
     private var time: Date?
@@ -49,10 +49,6 @@ final class CommentCell: UICollectionViewListCell {
         timeLabel.textColor = .white
         timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        bodyLabel.font = Theme.Font.body()
-        bodyLabel.textColor = .white
-        bodyLabel.numberOfLines = 0
-
         let author = UIStackView(arrangedSubviews: [authorLabel, opBadge, collapsedLabel])
         author.spacing = 5
         author.alignment = .center
@@ -61,7 +57,7 @@ final class CommentCell: UICollectionViewListCell {
         header.alignment = .center
 
         stack.addArrangedSubview(header)
-        stack.addArrangedSubview(bodyLabel)
+        stack.addArrangedSubview(bodyView)
         stack.axis = .vertical
         stack.spacing = Theme.padding
 
@@ -107,8 +103,11 @@ final class CommentCell: UICollectionViewListCell {
         time = content.comment.time
         updateTime()
 
-        bodyLabel.text = content.body
-        bodyLabel.isHidden = content.isCollapsed
+        // Rebuilding the body is wasted work while collapsed; it's rebuilt on expand.
+        if !content.isCollapsed {
+            bodyView.configure(with: content.body)
+        }
+        bodyView.isHidden = content.isCollapsed
         collapsedLabel.isHidden = !content.isCollapsed || content.hiddenReplies == 0
         collapsedLabel.text = "+\(content.hiddenReplies)"
         stack.alpha = content.isCollapsed ? 0.6 : 1
@@ -117,7 +116,12 @@ final class CommentCell: UICollectionViewListCell {
         accessibilityLabel = "\(author)\(content.isOP ? ", original poster" : ""), \(timeLabel.text ?? "") ago"
         accessibilityValue = content.isCollapsed
             ? "Collapsed, \(content.hiddenReplies) replies hidden"
-            : content.body
+            : content.body.plainText
+    }
+
+    var onLinkTap: ((URL) -> Void)? {
+        get { bodyView.onLinkTap }
+        set { bodyView.onLinkTap = newValue }
     }
 
     func updateTime() {

@@ -35,12 +35,6 @@ struct HTMLTextTests {
     @Test func leavesStrayAmpersandsAlone() {
         #expect(HTMLText.decodeEntities("AT&T; R&D & more &bogus;") == "AT&T; R&D & more &bogus;")
     }
-
-    @Test func plainTextFromCommentHTML() {
-        // From the RN app's CommentsSink fixtures.
-        let html = "&gt; <i>The metro is super efficient.</i><p>Yes.  Both times I was there visiting."
-        #expect(HTMLText.plainText(fromHTML: html) == "> The metro is super efficient.\n\nYes.  Both times I was there visiting.")
-    }
 }
 
 struct HackerNewsURLTests {

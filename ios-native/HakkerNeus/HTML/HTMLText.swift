@@ -1,14 +1,6 @@
 import Foundation
 
 enum HTMLText {
-    /// Interim plain-text rendering of HN comment HTML: paragraphs become blank lines,
-    /// tags are dropped and entities decoded. Replaced by attributed rendering in phase 4.
-    static func plainText(fromHTML html: String) -> String {
-        let paragraphs = html.replacingOccurrences(of: "<p>", with: "\n\n")
-        let stripped = paragraphs.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        return decodeEntities(stripped).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     /// Decodes named entities HN emits plus all numeric (`&#39;`, `&#x27;`) entities.
     static func decodeEntities(_ string: String) -> String {
         guard string.contains("&") else { return string }

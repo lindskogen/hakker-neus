@@ -23,7 +23,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private var story: Story?
     private var thread = CommentThread(comments: [])
     private var commentsByID: [Int: FlatComment] = [:]
-    private var bodies: [Int: String] = [:]
+    private var bodies: [Int: CommentBody] = [:]
     private var loadState = LoadState.loading
 
     private var collectionView: UICollectionView!
@@ -93,6 +93,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         let commentCell = UICollectionView.CellRegistration<CommentCell, Item> { [unowned self] cell, _, item in
             guard case .comment(let id) = item, let content = content(for: id) else { return }
             cell.configure(with: content)
+            cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
         }
 
         dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, item in
@@ -109,7 +110,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         return CommentCell.Content(
             comment: flat.comment,
             depth: flat.depth,
-            body: bodies[id] ?? "",
+            body: bodies[id] ?? CommentBody(blocks: []),
             isOP: flat.comment.author != nil && flat.comment.author == story?.author,
             isCollapsed: thread.isCollapsed(id),
             hiddenReplies: thread.replyCounts[id] ?? 0
@@ -126,10 +127,14 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         do {
             let result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
             let flat = result.comments.flattened()
+            // Parsing every comment's HTML can take a moment on big threads; keep it off the main thread.
+            let parsed = await Task.detached(priority: .userInitiated) {
+                Dictionary(flat.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
+            }.value
             story = result.story
             thread = CommentThread(comments: flat, collapsed: thread.collapsed)
             commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
-            bodies = Dictionary(flat.map { ($0.id, HTMLText.plainText(fromHTML: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
+            bodies = parsed
             loadState = .loaded
         } catch {
             // Keep showing what we have if a refresh fails.
@@ -234,7 +239,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
             toggleCollapsed(comment.id)
         }
 
-        let body = bodies[comment.id] ?? ""
+        let body = bodies[comment.id]?.plainText ?? ""
         let copyText = UIAction(title: "Copy Text", image: UIImage(systemName: "doc.on.doc")) { _ in
             UIPasteboard.general.string = body
         }

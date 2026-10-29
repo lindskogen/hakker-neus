@@ -18,6 +18,10 @@ final class AppCoordinator {
         savedStories: SavedStoriesStore = SavedStoriesStore()
     ) {
         self.window = window
+        #if DEBUG
+        let client = ProcessInfo.processInfo.arguments.contains(CommentsSinkClient.launchArgument)
+            ? CommentsSinkClient(base: client) : client
+        #endif
         self.client = client
         self.itemCache = ItemCache(client: client)
         self.savedStories = savedStories
@@ -29,6 +33,12 @@ final class AppCoordinator {
 
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
+
+        #if DEBUG
+        if client is CommentsSinkClient {
+            showComments(id: CommentsSinkClient.itemID)
+        }
+        #endif
 
         relativeTimeTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             NotificationCenter.default.post(name: RelativeTime.tick, object: nil)
@@ -184,5 +194,21 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         viewControllers.count > 1
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard #available(iOS 26, *), gestureRecognizer === interactiveContentPopGestureRecognizer else { return true }
+
+        // Inside a sideways-scrolled view (a code block), dragging right scrolls it back instead.
+        var view = touch.view
+        while let current = view {
+            if let scrollView = current as? UIScrollView,
+               scrollView.contentSize.width > scrollView.bounds.width,
+               scrollView.contentOffset.x > -scrollView.adjustedContentInset.left {
+                return false
+            }
+            view = current.superview
+        }
+        return true
     }
 }
