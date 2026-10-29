@@ -127,6 +127,22 @@ final class NavigationUITests: XCTestCase {
         wait(for: [scrolled], timeout: 3)
     }
 
+    func testLoadingFooterScrollsWithContent() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let list = app.collectionViews["stories.list"]
+
+        // Reach the end of the first page so the footer is laid out, then scroll back up.
+        for _ in 0..<8 { list.swipeUp(velocity: .fast) }
+        list.swipeDown(velocity: .slow)
+        list.swipeDown(velocity: .slow)
+
+        // Off-screen footers leave the hierarchy; if it's still there it must be below the screen.
+        let footer = app.descendants(matching: .any)["stories.footer"]
+        if footer.exists {
+            XCTAssertGreaterThan(footer.frame.minY, app.windows.firstMatch.frame.maxY, "Footer stuck to the bottom of the screen")
+        }
+    }
+
     func testShortSwipeDoesNothing() {
         XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
         let value = firstStory.value as? String

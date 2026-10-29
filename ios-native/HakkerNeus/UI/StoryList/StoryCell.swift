@@ -218,6 +218,7 @@ final class LoadingFooterView: UICollectionReusableView {
         spinner.hidesWhenStopped = true
         spinner.translatesAutoresizingMaskIntoConstraints = false
         addSubview(spinner)
+        accessibilityIdentifier = "stories.footer"
         NSLayoutConstraint.activate([
             spinner.centerXAnchor.constraint(equalTo: centerXAnchor),
             spinner.topAnchor.constraint(equalTo: topAnchor, constant: Theme.padding * 2),

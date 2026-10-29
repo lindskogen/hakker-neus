@@ -11,7 +11,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
     private var dataSource: UICollectionViewDiffableDataSource<Section, Story.ID>!
     private var stories: [Story.ID: Story] = [:]
     private let stateView = FullPageStateView()
-    private let refreshControl = UIRefreshControl()
+    private let refreshControl = RefreshControl()
 
     private var isLoadingMore = false {
         didSet { footer?.isLoading = isLoadingMore }
@@ -51,13 +51,21 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
         list.separatorConfiguration.color = .black
         list.separatorConfiguration.bottomSeparatorInsets = .zero
 
-        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: UICollectionViewCompositionalLayout.list(using: list))
+        let layout = UICollectionViewCompositionalLayout { _, environment in
+            let section = NSCollectionLayoutSection.list(using: list, layoutEnvironment: environment)
+            // Plain lists pin footers to the screen; the loading footer should scroll with the rows.
+            for item in section.boundarySupplementaryItems {
+                item.pinToVisibleBounds = false
+            }
+            return section
+        }
+
+        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
         collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         collectionView.indicatorStyle = .white
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "stories.list"
 
-        refreshControl.tintColor = .white
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         collectionView.refreshControl = refreshControl
 
@@ -97,18 +105,24 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
     }
 
     private func reload() async {
+        let update: () -> Void
         do {
-            show(try await feed.reload(), replacing: true)
-            collectionView.backgroundView = nil
+            let all = try await feed.reload()
+            update = { [self] in
+                show(all, replacing: true)
+                collectionView.backgroundView = nil
+            }
         } catch is CancellationError {
             return
         } catch {
-            if stories.isEmpty {
-                stateView.backgroundColor = Theme.Color.backgroundDark
-                stateView.state = .error(error)
+            update = { [self] in
+                if stories.isEmpty {
+                    stateView.backgroundColor = Theme.Color.backgroundDark
+                    stateView.state = .error(error)
+                }
             }
         }
-        refreshControl.endRefreshing()
+        refreshControl.endRefreshing(applying: update)
     }
 
     private func loadMore() {
@@ -129,10 +143,11 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate 
         snapshot.appendSections([.main])
         snapshot.appendItems(all.map(\.id))
         if replacing {
-            dataSource.applySnapshotUsingReloadData(snapshot)
-        } else {
-            dataSource.apply(snapshot, animatingDifferences: false)
+            // Scores and comment counts change between loads; refresh rows that stay.
+            let existing = Set(dataSource.snapshot().itemIdentifiers)
+            snapshot.reconfigureItems(all.map(\.id).filter(existing.contains))
         }
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
 
     @objc private func savedStoriesChanged(_ notification: Notification) {

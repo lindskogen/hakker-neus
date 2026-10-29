@@ -28,7 +28,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
 
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
-    private let refreshControl = UIRefreshControl()
+    private let refreshControl = RefreshControl()
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
 
     init(id: Int, story: Story?, coordinator: AppCoordinator) {
@@ -73,7 +73,6 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "comments.list"
 
-        refreshControl.tintColor = .white
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         collectionView.refreshControl = refreshControl
 
@@ -125,6 +124,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     }
 
     private func load(forceRefresh: Bool) async {
+        let update: () -> Void
         do {
             let result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
             let flat = result.comments.flattened()
@@ -132,17 +132,23 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
             let parsed = await Task.detached(priority: .userInitiated) {
                 Dictionary(flat.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
             }.value
-            story = result.story
-            thread = CommentThread(comments: flat, collapsed: thread.collapsed)
-            commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
-            bodies = parsed
-            loadState = .loaded
+
+            update = { [self] in
+                story = result.story
+                thread = CommentThread(comments: flat, collapsed: thread.collapsed)
+                commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
+                bodies = parsed
+                loadState = .loaded
+                applySnapshot(animated: false, reconfigureAll: true)
+            }
         } catch {
-            // Keep showing what we have if a refresh fails.
-            if commentsByID.isEmpty { loadState = .failed(error) }
+            update = { [self] in
+                // Keep showing what we have if a refresh fails.
+                if commentsByID.isEmpty { loadState = .failed(error) }
+                applySnapshot(animated: false, reconfigureAll: true)
+            }
         }
-        refreshControl.endRefreshing()
-        applySnapshot(animated: false, reconfigureAll: true)
+        refreshControl.endRefreshing(applying: update)
     }
 
     private func applySnapshot(animated: Bool, reconfigureAll: Bool = false, reconfiguring ids: [Item] = []) {
