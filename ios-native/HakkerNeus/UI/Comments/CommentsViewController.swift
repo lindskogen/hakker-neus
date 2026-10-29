@@ -29,6 +29,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     private let refreshControl = UIRefreshControl()
+    private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
 
     init(id: Int, story: Story?, coordinator: AppCoordinator) {
         self.id = id
@@ -174,6 +175,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
 
     private func toggleCollapsed(_ id: Int) {
         thread.toggle(id)
+        collapseHaptics.impactOccurred()
         applySnapshot(animated: !UIAccessibility.isReduceMotionEnabled, reconfiguring: [.comment(id)])
 
         // Collapsing from the middle of a long thread can leave the comment above the screen.
