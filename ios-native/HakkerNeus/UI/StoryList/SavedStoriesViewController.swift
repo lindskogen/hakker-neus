@@ -11,6 +11,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     private var dataSource: UICollectionViewDiffableDataSource<Section, Story.ID>!
     private var stories: [Story.ID: Story] = [:]
     private let emptyView = FullPageStateView()
+    private let topFill = TopFillView()
     private var pendingReload: DispatchWorkItem?
 
     init(coordinator: AppCoordinator) {
@@ -40,6 +41,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "saved.list"
         view.addSubview(collectionView)
+        topFill.install(in: collectionView)
 
         emptyView.state = .message(systemImage: "heart", text: "No saved stories")
         emptyView.isAccessibilityElement = true
@@ -96,6 +98,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         dataSource.apply(snapshot, animatingDifferences: animated && !UIAccessibility.isReduceMotionEnabled)
 
         collectionView.backgroundView = all.isEmpty ? emptyView : nil
+        topFill.color = all.isEmpty ? nil : Palette.savedStoryBackground(at: 0)
     }
 
     private func story(at indexPath: IndexPath) -> Story? {

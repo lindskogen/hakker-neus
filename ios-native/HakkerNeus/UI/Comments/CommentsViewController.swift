@@ -33,6 +33,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     private let refreshControl = RefreshControl()
+    private let topFill = TopFillView()
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
     private let nextThreadButton = UIButton(type: .system)
     private let jumpHaptics = UISelectionFeedbackGenerator()
@@ -88,6 +89,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         collectionView.refreshControl = refreshControl
 
         view.addSubview(collectionView)
+        topFill.install(in: collectionView)
         configureNextThreadButton()
     }
 
@@ -180,6 +182,9 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     }
 
     private func applySnapshot(animated: Bool, reconfigureAll: Bool = false, reconfiguring ids: [Item] = []) {
+        // The orange header reaches up under the clock.
+        topFill.color = story == nil ? nil : Theme.Color.backgroundOrange
+
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         if story != nil {
             snapshot.appendSections([.header])

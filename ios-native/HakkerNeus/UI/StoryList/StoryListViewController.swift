@@ -13,6 +13,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     private var stories: [Story.ID: Story] = [:]
     private let stateView = FullPageStateView()
     private let refreshControl = RefreshControl()
+    private let topFill = TopFillView()
 
     private var isLoadingMore = false {
         didSet { footer?.isLoading = isLoadingMore }
@@ -73,6 +74,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         collectionView.refreshControl = refreshControl
 
         view.addSubview(collectionView)
+        topFill.install(in: collectionView)
+        topFill.color = Palette.storyBackground(at: 0)
     }
 
     private func configureDataSource() {
