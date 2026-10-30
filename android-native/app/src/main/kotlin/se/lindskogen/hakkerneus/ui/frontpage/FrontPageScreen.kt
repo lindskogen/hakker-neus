@@ -67,7 +67,7 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 /** The front page (`NewsList.tsx`). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, openSaved: () -> Unit) {
+fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
     val model: FrontPageViewModel = viewModel()
     val state by model.state.collectAsStateWithLifecycle()
     val saved by AppContainer.saved.collectAsState()
@@ -132,26 +132,6 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, ope
             }
         }
 
-        // Lower-left menu button to the saved stories / profile screen.
-        CornerButton(HnIcons.menu, "Profile and saved stories", openSaved, Modifier.align(Alignment.BottomStart))
-    }
-}
-
-/** The round button in the lower-left corner: the menu on the front page, close on the profile. */
-@Composable
-fun CornerButton(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    SmallFloatingActionButton(
-        onClick = onClick,
-        shape = CircleShape,
-        containerColor = Color(0xE6404040),
-        contentColor = Color.White,
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(start = 20.dp, bottom = HN.padding)
-            .size(52.dp)
-            .semantics { contentDescription = label },
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
     }
 }
 
