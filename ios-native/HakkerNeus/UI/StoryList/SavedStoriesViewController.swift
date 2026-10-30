@@ -13,6 +13,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     private let emptyView = FullPageStateView()
     private let topFill = TopFillView()
     private weak var profileHeader: ProfileHeaderView?
+    private let frontPageButton = UIButton(type: .system)
     private var pendingReload: DispatchWorkItem?
 
     init(coordinator: AppCoordinator) {
@@ -52,6 +53,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         collectionView.accessibilityIdentifier = "saved.list"
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
+        configureFrontPageButton()
         // The dark profile header is first, so it's what reaches up under the clock.
         topFill.color = Theme.Color.backgroundDark
 
@@ -96,6 +98,37 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             MainActor.assumeIsolated { self?.configureProfileHeader() }
         }
         reload(animated: false)
+    }
+
+    /// Lower-left button back to the front page, in the same place as the front page's
+    /// menu button that opens this screen.
+    private func configureFrontPageButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.image = UIImage(systemName: "xmark")
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        frontPageButton.configuration = config
+        frontPageButton.accessibilityLabel = "Front Page"
+        frontPageButton.accessibilityIdentifier = "saved.frontPage"
+        frontPageButton.addAction(UIAction { [unowned self] _ in coordinator.showFrontPage() }, for: .touchUpInside)
+
+        frontPageButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(frontPageButton)
+        NSLayoutConstraint.activate([
+            frontPageButton.widthAnchor.constraint(equalToConstant: 52),
+            frontPageButton.heightAnchor.constraint(equalToConstant: 52),
+            frontPageButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2),
+            frontPageButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
+        ])
+        // Room to scroll the last row out from under the button.
+        collectionView.contentInset.bottom = 64
     }
 
     @objc private func savedStoriesChanged() {

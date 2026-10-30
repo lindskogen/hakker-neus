@@ -115,12 +115,12 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             config = .filled()
             config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
         }
-        config.image = UIImage(systemName: "heart.fill")
+        config.image = UIImage(systemName: "line.3.horizontal")
         config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
         savedButton.configuration = config
-        savedButton.accessibilityLabel = "Saved Stories"
+        savedButton.accessibilityLabel = "Profile and Saved Stories"
         savedButton.accessibilityIdentifier = "stories.saved"
         savedButton.addAction(UIAction { [unowned self] _ in coordinator.showSavedStories() }, for: .touchUpInside)
 
