@@ -40,10 +40,13 @@ import androidx.navigation.toRoute
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.ui.comments.CommentsScreen
 import se.lindskogen.hakkerneus.ui.frontpage.FrontPageScreen
+import se.lindskogen.hakkerneus.ui.saved.SavedScreen
+import se.lindskogen.hakkerneus.ui.settings.SettingsScreen
 import se.lindskogen.hakkerneus.ui.theme.HN
 
 @Serializable object FrontPage
 @Serializable object Saved
+@Serializable object Settings
 @Serializable data class Comments(val id: Long)
 
 private enum class CornerMode { Menu, Close, Hidden }
@@ -66,7 +69,7 @@ fun AppNavigation() {
         composable<FrontPage> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
             FrontPageScreen(
-                openComments = { nav.navigate(Comments(it.id)) },
+                openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
                 openItem = { nav.navigate(Comments(it)) },
             )
             }
@@ -77,7 +80,18 @@ fun AppNavigation() {
             }
         }
         composable<Saved> {
-            Placeholder("Saved stories", "The saved list and profile arrive in A4.")
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                SavedScreen(
+                    username = null,
+                    openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
+                    openItem = { nav.navigate(Comments(it)) },
+                    openSettings = { nav.navigate(Settings) },
+                    signIn = {},
+                )
+            }
+        }
+        composable<Settings> {
+            SettingsScreen(back = { nav.popBackStack() }, account = {})
         }
     }
     }
@@ -114,18 +128,6 @@ fun AppNavigation() {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun Placeholder(title: String, detail: String) {
-    Column(Modifier.fillMaxSize().background(HN.backgroundDark)) {
-        Box(Modifier.fillMaxWidth().background(HN.backgroundOrange).statusBarsPadding().padding(HN.padding, 20.dp)) {
-            Text(title, style = HN.titleStyle())
-        }
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(detail, style = HN.body.copy(color = Color.White.copy(alpha = 0.4f)))
         }
     }
 }

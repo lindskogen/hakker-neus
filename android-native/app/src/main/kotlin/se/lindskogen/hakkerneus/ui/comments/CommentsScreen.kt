@@ -128,6 +128,20 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
             }
         }
 
+        state.offlineCopyFrom?.let { savedAt ->
+            Text(
+                "Offline · saved ${RelativeTime.format(savedAt)} ago",
+                style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 6.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xEB1F1F1F))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
+
         // Next top-level thread, Apollo-style.
         if (visible.count { it.depth == 0 } > 1) {
             SmallFloatingActionButton(

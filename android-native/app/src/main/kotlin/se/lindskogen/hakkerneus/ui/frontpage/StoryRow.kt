@@ -64,7 +64,16 @@ class StoryRowActions(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun StoryRow(story: Story, background: Color, isSaved: Boolean, actions: StoryRowActions, modifier: Modifier = Modifier) {
+fun StoryRow(
+    story: Story,
+    background: Color,
+    isSaved: Boolean,
+    actions: StoryRowActions,
+    modifier: Modifier = Modifier,
+    isVisited: Boolean = false,
+    newComments: Int? = null,
+    showsSavedBadge: Boolean = true,
+) {
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -159,12 +168,18 @@ fun StoryRow(story: Story, background: Color, isSaved: Boolean, actions: StoryRo
                 .combinedClickable(onClick = { actions.open(story) }, onLongClick = { menuOpen = true }),
         ) {
             Column(Modifier.padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp)) {
-                Text(story.title, style = HN.titleStyle(), modifier = Modifier.sharedStory("title-${story.id}", bounds = false))
-                story.displayDomain?.let {
-                    Text(it, style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f)), maxLines = 1)
+                // Read stories fade back, so unread ones stand out.
+                Text(
+                    story.title,
+                    style = HN.titleStyle(),
+                    modifier = Modifier.sharedStory("title-${story.id}", bounds = false).alpha(if (isVisited) 0.55f else 1f),
+                )
+                val details = listOfNotNull(story.displayDomain, newComments?.let { "$it new" })
+                if (details.isNotEmpty()) {
+                    Text(details.joinToString(" · "), style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f)), maxLines = 1)
                 }
             }
-            if (isSaved) {
+            if (isSaved && showsSavedBadge) {
                 Icon(
                     HnIcons.heart, contentDescription = "Saved", tint = Color.White.copy(alpha = 0.3f),
                     modifier = Modifier.align(Alignment.TopEnd).padding(HN.padding).size(26.dp),

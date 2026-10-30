@@ -25,6 +25,8 @@ data class CommentsState(
     val error: String? = null,
     /** A comment to scroll to once loaded (after following a link to it). */
     val focusCommentId: Long? = null,
+    /** Set when showing a saved copy because loading failed: when it was saved (seconds). */
+    val offlineCopyFrom: Long? = null,
 )
 
 class CommentsViewModel(private var id: Long) : ViewModel() {
@@ -47,12 +49,23 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
     private fun load() {
         viewModelScope.launch {
             try {
-                var result = AppContainer.client.item(id)
+                var offlineFrom: Long? = null
+                suspend fun fetch(itemId: Long) = try {
+                    AppContainer.client.item(itemId).also { if (it.parentStoryId == null) AppContainer.offline.save(itemId, it) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // No network: the copy saved the last time this thread loaded.
+                    val saved = withContext(Dispatchers.IO) { AppContainer.offline.item(itemId) } ?: throw e
+                    offlineFrom = saved.second
+                    saved.first
+                }
+                var result = fetch(id)
                 result.parentStoryId?.let { storyId ->
                     // A link to a comment: show its story, focused on the comment.
                     _state.update { it.copy(focusCommentId = id) }
                     id = storyId
-                    result = AppContainer.client.item(storyId)
+                    result = fetch(storyId)
                 }
                 val flat = result.comments.flattened()
                 // Parsing every comment's HTML can take a moment on big threads.
@@ -70,6 +83,7 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
                         isLoading = false,
                         isRefreshing = false,
                         error = null,
+                        offlineCopyFrom = offlineFrom,
                     )
                 }
             } catch (e: CancellationException) {

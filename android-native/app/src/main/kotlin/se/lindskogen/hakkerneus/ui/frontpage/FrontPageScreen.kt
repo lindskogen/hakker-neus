@@ -52,6 +52,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import se.lindskogen.hakkerneus.AppContainer
@@ -70,13 +72,18 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
     val model: FrontPageViewModel = viewModel()
     val state by model.state.collectAsStateWithLifecycle()
-    val saved by AppContainer.saved.collectAsState()
+    val savedEntries by AppContainer.saved.entries.collectAsState()
+    val saved = savedEntries.mapTo(HashSet()) { it.story.id }
+    val visits by AppContainer.visited.visits.collectAsState()
     val context = LocalContext.current
-    val listState = rememberLazyListState()
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
+    // Remember the list and where it's scrolled when leaving the app, to show it again next launch.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.saveForNextLaunch(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }
 
     val actions = remember {
         StoryRowActions(
             open = { story ->
+                AppContainer.visited.markOpened(story)
                 val url = story.url
                 when {
                     url == null -> openComments(story)
@@ -85,7 +92,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
                 }
             },
             openComments = openComments,
-            toggleSaved = AppContainer::toggleSaved,
+            toggleSaved = { AppContainer.saved.toggle(it) },
             share = { context.share(it.url ?: it.hackerNewsUrl, it.title) },
             copyLink = { context.copyToClipboard(it.url ?: it.hackerNewsUrl) },
             copyCommentsLink = { context.copyToClipboard(it.hackerNewsUrl) },
@@ -118,7 +125,12 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     itemsIndexed(state.stories, key = { _, story -> story.id }) { index, story ->
-                        StoryRow(story, Palette.storyBackground(index), story.id in saved, actions)
+                        visits.size // re-read when visits change
+                        StoryRow(
+                            story, Palette.storyBackground(index), story.id in saved, actions,
+                            isVisited = AppContainer.visited.isVisited(story.id),
+                            newComments = AppContainer.visited.newCommentCount(story),
+                        )
                         HorizontalDivider(thickness = 0.5.dp, color = Color.Black)
                     }
                     if (state.isLoadingMore) {

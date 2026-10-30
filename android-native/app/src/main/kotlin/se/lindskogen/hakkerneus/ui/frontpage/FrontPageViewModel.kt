@@ -24,8 +24,28 @@ class FrontPageViewModel : ViewModel() {
     private val _state = MutableStateFlow(FrontPageState())
     val state: StateFlow<FrontPageState> = _state
 
+    /** Where the list was scrolled last launch, if it was restored. */
+    var restoredIndex = 0
+        private set
+    var restoredOffset = 0
+        private set
+
     init {
-        load(refreshing = false)
+        // Show the front page as it was last time, unchanged; pull to refresh gets a new ranking.
+        val saved = FrontPageMemory.load()
+        if (saved != null) {
+            feed.restore(saved.snapshot)
+            restoredIndex = saved.snapshot.stories.indexOfFirst { it.id == saved.anchorId }.coerceAtLeast(0)
+            restoredOffset = saved.anchorOffset
+            show(feed.stories)
+        } else {
+            load(refreshing = false)
+        }
+    }
+
+    fun saveForNextLaunch(firstIndex: Int, firstOffset: Int) {
+        val snapshot = feed.snapshot ?: return
+        FrontPageMemory.save(FrontPageMemory.Saved(snapshot, snapshot.stories.getOrNull(firstIndex)?.id, firstOffset))
     }
 
     fun refresh() = load(refreshing = true)
