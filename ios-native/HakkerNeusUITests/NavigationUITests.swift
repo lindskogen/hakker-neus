@@ -8,6 +8,7 @@ final class NavigationUITests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["-NoStateRestoration"]
         app.launch()
     }
 

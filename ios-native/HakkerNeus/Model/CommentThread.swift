@@ -11,8 +11,9 @@ struct CommentThread {
     init(comments: [FlatComment], collapsed: Set<Int> = []) {
         self.comments = comments
         self.replyCounts = Self.countReplies(comments)
-        // Drop collapsed IDs that no longer exist, e.g. after a refresh.
-        self.collapsed = collapsed.intersection(comments.map(\.id))
+        // Drop collapsed IDs that no longer exist, e.g. after a refresh. With no comments yet
+        // (a screen being restored before it has loaded) keep them for when they arrive.
+        self.collapsed = comments.isEmpty ? collapsed : collapsed.intersection(comments.map(\.id))
     }
 
     /// Comments to show: collapsed comments stay visible but their replies are hidden.

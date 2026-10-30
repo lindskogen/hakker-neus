@@ -8,6 +8,7 @@ final class SavedStoriesUITests: XCTestCase {
     override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["-NoStateRestoration"]
         app.launch()
         XCTAssertTrue(frontPage.cells.firstMatch.waitForExistence(timeout: 15))
     }

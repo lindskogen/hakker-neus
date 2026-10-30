@@ -105,6 +105,32 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         dataSource.itemIdentifier(for: indexPath).flatMap { stories[$0] }
     }
 
+
+    // MARK: Restoration
+
+    /// Where to scroll back to once the stories are showing, when restoring after a relaunch.
+    var pendingAnchor: RestorationState.ScrollAnchor?
+
+    var scrollAnchor: RestorationState.ScrollAnchor? {
+        guard isViewLoaded, let (indexPath, offset) = collectionView.topAnchorItem,
+              let id = dataSource.itemIdentifier(for: indexPath)
+        else { return nil }
+        return .init(id: id, offset: offset)
+    }
+
+    private func applyPendingAnchor() {
+        guard let anchor = pendingAnchor, view.window != nil, collectionView.bounds.height > 0 else { return }
+        pendingAnchor = nil
+        if let indexPath = dataSource.indexPath(for: anchor.id) {
+            collectionView.scroll(toAnchor: indexPath, offset: anchor.offset)
+        }
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if !stories.isEmpty { applyPendingAnchor() }
+    }
+
     // MARK: UICollectionViewDelegate
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {

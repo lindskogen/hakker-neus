@@ -19,7 +19,7 @@ final class AppCoordinator {
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
-    private lazy var savedList = SavedStoriesViewController(coordinator: self)
+    private(set) lazy var savedList = SavedStoriesViewController(coordinator: self)
 
     init(
         window: UIWindow,
@@ -44,8 +44,19 @@ final class AppCoordinator {
         }
     }
 
-    func start() {
-        navigationController.setViewControllers([savedList, frontPage], animated: false)
+    /// - Parameter state: Screens to restore from the previous launch, if any.
+    func start(restoring state: RestorationState? = nil) {
+        var stack: [UIViewController] = [savedList]
+        if state?.showsFrontPage ?? true {
+            stack.append(frontPage)
+        }
+        savedList.pendingAnchor = state?.savedListAnchor
+        frontPage.pendingAnchor = state?.frontPageAnchor
+        for screen in state?.comments ?? [] {
+            itemCache.prefetch(id: screen.itemID)
+            stack.append(CommentsViewController(id: screen.itemID, story: screen.story, coordinator: self, restoring: screen))
+        }
+        navigationController.setViewControllers(stack, animated: false)
 
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
@@ -66,6 +77,17 @@ final class AppCoordinator {
         relativeTimeTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             NotificationCenter.default.post(name: RelativeTime.tick, object: nil)
         }
+    }
+
+    /// What's on screen now, for the next launch.
+    var restorationState: RestorationState {
+        let stack = navigationController.viewControllers
+        return RestorationState(
+            showsFrontPage: stack.contains(frontPage),
+            frontPageAnchor: frontPage.scrollAnchor,
+            savedListAnchor: savedList.scrollAnchor,
+            comments: stack.compactMap { ($0 as? CommentsViewController)?.restorationState }
+        )
     }
 
     // MARK: Navigation

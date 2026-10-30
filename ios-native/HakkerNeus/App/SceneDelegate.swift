@@ -16,13 +16,28 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.backgroundColor = Theme.Color.backgroundDark
 
         let coordinator = AppCoordinator(window: window)
-        coordinator.start()
+        coordinator.start(restoring: Self.restorationState(for: session))
         if let shortcut = connectionOptions.shortcutItem {
             _ = coordinator.handleShortcut(shortcut.type)
         }
 
         self.window = window
         self.coordinator = coordinator
+    }
+
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        coordinator?.restorationState.save()
+    }
+
+    private static func restorationState(for session: UISceneSession) -> RestorationState? {
+        #if DEBUG
+        // UI tests start from a clean slate unless they're testing restoration.
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-NoStateRestoration") || arguments.contains(CommentsSinkClient.launchArgument) {
+            return nil
+        }
+        #endif
+        return RestorationState.load()
     }
 
     func windowScene(

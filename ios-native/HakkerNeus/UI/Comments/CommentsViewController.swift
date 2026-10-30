@@ -25,6 +25,8 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private var storyBody: CommentBody?
     /// A comment to scroll to and highlight once its story has loaded.
     private var focusCommentID: Int?
+    /// Where to scroll back to once loaded, when restoring after a relaunch.
+    private var pendingAnchor: RestorationState.ScrollAnchor?
     private var thread = CommentThread(comments: [])
     private var commentsByID: [Int: FlatComment] = [:]
     private var bodies: [Int: CommentBody] = [:]
@@ -38,11 +40,25 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
     private let nextThreadButton = UIButton(type: .system)
     private let jumpHaptics = UISelectionFeedbackGenerator()
 
-    init(id: Int, story: Story?, coordinator: AppCoordinator) {
+    init(id: Int, story: Story?, coordinator: AppCoordinator, restoring restored: RestorationState.CommentsScreen? = nil) {
         self.id = id
         self.story = story
         self.coordinator = coordinator
+        if let restored {
+            pendingAnchor = restored.anchor
+            thread = CommentThread(comments: [], collapsed: Set(restored.collapsed))
+        }
         super.init(nibName: nil, bundle: nil)
+    }
+
+    /// This screen's place, for state restoration.
+    var restorationState: RestorationState.CommentsScreen {
+        var anchor: RestorationState.ScrollAnchor?
+        if isViewLoaded, let (indexPath, offset) = collectionView.topAnchorItem,
+           case .comment(let commentID) = dataSource.itemIdentifier(for: indexPath) {
+            anchor = .init(id: commentID, offset: offset)
+        }
+        return .init(itemID: id, story: story, anchor: anchor, collapsed: Array(thread.collapsed))
     }
 
     @available(*, unavailable)
@@ -169,6 +185,11 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
                 if let focus = focusCommentID {
                     focusCommentID = nil
                     reveal(focus)
+                } else if let anchor = pendingAnchor {
+                    pendingAnchor = nil
+                    if let indexPath = dataSource.indexPath(for: .comment(anchor.id)) {
+                        collectionView.scroll(toAnchor: indexPath, offset: anchor.offset)
+                    }
                 }
             }
         } catch {
