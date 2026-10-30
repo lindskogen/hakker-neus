@@ -19,6 +19,8 @@ final class AppCoordinator {
     let offlineItems: OfflineItemStore
     let settings: AppSettings
     let session = HNSession()
+    /// Unsent comment drafts, by the ID of what they reply to.
+    var drafts: [Int: String] = [:]
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
@@ -142,6 +144,17 @@ final class AppCoordinator {
         let signIn = UINavigationController(rootViewController: screen)
         signIn.overrideUserInterfaceStyle = .dark
         topViewController.present(signIn, animated: true)
+    }
+
+    /// Opens the composer, signing in first if needed.
+    func compose(_ target: ComposeViewController.Target, onPosted: @escaping (Comment) -> Void) {
+        guard session.isSignedIn else {
+            showSignIn { [weak self] in self?.compose(target, onPosted: onPosted) }
+            return
+        }
+        let compose = UINavigationController(rootViewController: ComposeViewController(coordinator: self, target: target, onPosted: onPosted))
+        compose.overrideUserInterfaceStyle = .dark
+        topViewController.present(compose, animated: true)
     }
 
     func showError(_ message: String) {

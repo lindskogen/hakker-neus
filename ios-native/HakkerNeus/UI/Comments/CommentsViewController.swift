@@ -37,6 +37,14 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
     private let offlineBanner = OfflineBanner()
+    private let composeButton = UIButton(type: .system)
+    /// The compose button sits above the next-thread button, or in its place when that's hidden.
+    private var composeAboveNextThread: NSLayoutConstraint!
+    private var composeAtBottom: NSLayoutConstraint!
+    /// The thread as last loaded, before local replies are merged in.
+    private var serverResult: StoryWithComments?
+    /// Comments posted from here that Algolia may not have yet, with what they reply to.
+    private var localReplies: [(parent: Int, comment: Comment)] = []
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
     private let nextThreadButton = UIButton(type: .system)
     private let jumpHaptics = UISelectionFeedbackGenerator()
@@ -133,6 +141,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
         configureNextThreadButton()
+        configureComposeButton()
         offlineBanner.install(in: view)
     }
 
@@ -212,11 +221,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
                 await load(forceRefresh: forceRefresh)
                 return
             }
-            let flat = result.comments.flattened()
-            // Parsing every comment's HTML can take a moment on big threads; keep it off the main thread.
-            let parsed = await Task.detached(priority: .userInitiated) {
-                Dictionary(flat.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
-            }.value
+            let (flat, parsed) = await build(result)
 
             update = { [self] in
                 if let offlineCopyDate {
@@ -224,6 +229,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
                 } else {
                     offlineBanner.hide()
                 }
+                serverResult = result
                 story = result.story
                 storyBody = result.story.text.map { CommentBody(html: $0) }
                 thread = CommentThread(comments: flat, collapsed: thread.collapsed)
@@ -258,6 +264,105 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         refreshControl.endRefreshing(applying: update)
     }
 
+    /// Flattens the thread, with local replies merged in, and parses each comment's HTML
+    /// off the main thread (big threads take a moment).
+    private func build(_ result: StoryWithComments) async -> (flat: [FlatComment], parsed: [Int: CommentBody]) {
+        let comments = Self.merge(localReplies, into: result.comments, storyID: result.story.id)
+        let flat = comments.flattened()
+        let parsed = await Task.detached(priority: .userInitiated) {
+            Dictionary(flat.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
+        }.value
+        return (flat, parsed)
+    }
+
+    // MARK: Replying
+
+    private func compose(replyingTo parent: Int, context: String) {
+        coordinator.compose(.init(parentID: parent, storyID: id, context: context)) { [weak self] comment in
+            self?.didPost(comment, replyingTo: parent)
+        }
+    }
+
+    private func composeOnStory() {
+        compose(replyingTo: id, context: story?.title ?? "")
+    }
+
+    /// Shows a just-posted comment right away, since Algolia takes a while to catch up.
+    private func didPost(_ comment: Comment, replyingTo parent: Int) {
+        localReplies.append((parent, comment))
+        guard let result = serverResult else { return }
+        Task {
+            let (flat, parsed) = await build(result)
+            thread = CommentThread(comments: flat, collapsed: thread.collapsed)
+            thread.expandAncestors(of: comment.id)
+            commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
+            bodies = parsed
+            applySnapshot(animated: !UIAccessibility.isReduceMotionEnabled)
+            reveal(comment.id)
+        }
+    }
+
+    /// Inserts local replies under their parents (newest first, as on HN), unless the thread
+    /// from the server already has them.
+    static func merge(_ local: [(parent: Int, comment: Comment)], into comments: [Comment], storyID: Int) -> [Comment] {
+        var comments = comments
+        for (parent, reply) in local where !contains(comments, reply) {
+            comments = parent == storyID ? [reply] + comments : insert(reply, under: parent, in: comments)
+        }
+        return comments
+    }
+
+    private static func insert(_ reply: Comment, under parent: Int, in comments: [Comment]) -> [Comment] {
+        comments.map { comment in
+            Comment(
+                id: comment.id, author: comment.author, text: comment.text, time: comment.time,
+                children: comment.id == parent ? [reply] + comment.children : insert(reply, under: parent, in: comment.children)
+            )
+        }
+    }
+
+    /// The same comment, by ID or (for local stand-ins) by author and text.
+    private static func contains(_ comments: [Comment], _ reply: Comment) -> Bool {
+        let replyText = CommentBody(html: reply.text ?? "").plainText
+        func matches(_ comment: Comment) -> Bool {
+            comment.id == reply.id
+                || (comment.author == reply.author && CommentBody(html: comment.text ?? "").plainText == replyText)
+        }
+        func search(_ comments: [Comment]) -> Bool {
+            comments.contains { matches($0) || search($0.children) }
+        }
+        return search(comments)
+    }
+
+    private func configureComposeButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.image = UIImage(systemName: "square.and.pencil")
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 17, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        composeButton.configuration = config
+        composeButton.accessibilityLabel = "Comment"
+        composeButton.accessibilityIdentifier = "comments.compose"
+        composeButton.addAction(UIAction { [unowned self] _ in composeOnStory() }, for: .touchUpInside)
+
+        composeButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(composeButton)
+        composeAboveNextThread = composeButton.bottomAnchor.constraint(equalTo: nextThreadButton.topAnchor, constant: -Theme.padding)
+        composeAtBottom = composeButton.bottomAnchor.constraint(equalTo: nextThreadButton.bottomAnchor)
+        NSLayoutConstraint.activate([
+            composeButton.widthAnchor.constraint(equalToConstant: 52),
+            composeButton.heightAnchor.constraint(equalToConstant: 52),
+            composeButton.centerXAnchor.constraint(equalTo: nextThreadButton.centerXAnchor),
+            composeAtBottom,
+        ])
+    }
+
     private func applySnapshot(animated: Bool, reconfigureAll: Bool = false, reconfiguring ids: [Item] = []) {
         // The orange header reaches up under the clock.
         topFill.color = story == nil ? nil : Theme.Color.backgroundOrange
@@ -284,8 +389,11 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         let showsButton: Bool
         if case .loaded = loadState { showsButton = threadCount > 1 } else { showsButton = false }
         nextThreadButton.isHidden = !showsButton
-        // Room to scroll the last comment out from under the button.
-        collectionView.contentInset.bottom = showsButton ? 64 : 0
+        if case .loaded = loadState { composeButton.isHidden = false } else { composeButton.isHidden = true }
+        composeAboveNextThread.isActive = showsButton
+        composeAtBottom.isActive = !showsButton
+        // Room to scroll the last comment out from under the buttons.
+        collectionView.contentInset.bottom = composeButton.isHidden ? 0 : (showsButton ? 126 : 64)
     }
 
     @objc private func updateTimes() {
@@ -399,7 +507,13 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         case .story:
             guard let story else { return nil }
             return UIContextMenuConfiguration(actionProvider: { [unowned self, weak cell] _ in
-                coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: false)
+                let comment = UIAction(title: "Comment", image: UIImage(systemName: "square.and.pencil")) { [unowned self] _ in
+                    composeOnStory()
+                }
+                return UIMenu(children: [
+                    UIMenu(options: .displayInline, children: [comment]),
+                    coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: false),
+                ])
             })
         case .comment(let id):
             guard let flat = commentsByID[id] else { return nil }
@@ -423,6 +537,9 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         }
 
         let body = bodies[comment.id]?.plainText ?? ""
+        let reply = UIAction(title: "Reply", image: UIImage(systemName: "arrowshape.turn.up.left")) { [unowned self] _ in
+            compose(replyingTo: comment.id, context: "\(comment.author ?? "deleted"): \(body.prefix(140))")
+        }
         let copyText = UIAction(title: "Copy Text", image: UIImage(systemName: "doc.on.doc")) { _ in
             UIPasteboard.general.string = body
         }
@@ -442,7 +559,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         }
 
         return UIMenu(children: [
-            UIMenu(options: .displayInline, children: [collapse]),
+            UIMenu(options: .displayInline, children: [reply, collapse]),
             UIMenu(options: .displayInline, children: [share, copyText, copyLink]),
             UIMenu(options: .displayInline, children: user),
         ])

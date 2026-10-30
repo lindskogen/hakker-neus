@@ -24,6 +24,20 @@ final class HNSession {
         }
     }
 
+    enum CommentError: LocalizedError {
+        /// HN said no; the message is HN's own (e.g. "You're posting too fast").
+        case rejected(String)
+        /// No reply form: the thread may be locked or too old.
+        case cannotReply
+
+        var errorDescription: String? {
+            switch self {
+            case .rejected(let message): message
+            case .cannotReply: "Hacker News doesn't allow replying here."
+            }
+        }
+    }
+
     struct VoteState: Equatable {
         var isUpvoted: Bool
         /// HN only allows undoing a vote for a while.
@@ -135,6 +149,83 @@ final class HNSession {
         let location = response.value(forHTTPHeaderField: "Location") ?? ""
         if location.contains("login") { throw VoteError.sessionExpired }
         guard (300..<400).contains(response.statusCode) else { throw VoteError.failed }
+    }
+
+    // MARK: Commenting
+
+    /// Posts a comment on a story (`parent == story`) or a reply to a comment.
+    /// Returns the new comment's ID when HN reveals it.
+    @discardableResult
+    func postComment(parent: Int, story: Int, text: String) async throws -> Int? {
+        // The form with the per-session `hmac`: on the story page for top-level comments,
+        // on the reply page for replies.
+        let page: String
+        if parent == story {
+            page = try await itemPage(story)
+        } else {
+            var components = URLComponents(url: Self.base.appending(path: "reply"), resolvingAgainstBaseURL: false)!
+            components.queryItems = [
+                URLQueryItem(name: "id", value: String(parent)),
+                URLQueryItem(name: "goto", value: "item?id=\(story)"),
+            ]
+            page = try await fetchPage(components.url!)
+        }
+        guard let hmac = Self.hiddenField("hmac", in: page) else {
+            if page.contains("name=\"acct\"") { throw VoteError.sessionExpired }
+            throw CommentError.cannotReply
+        }
+
+        var request = URLRequest(url: Self.base.appending(path: "comment"))
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.formBody(["parent": String(parent), "goto": "item?id=\(story)", "hmac": hmac, "text": text])
+        authorize(&request)
+        let (data, response) = try await transport.send(request)
+
+        // Success redirects back to the thread; anything else is a page explaining why not.
+        if (300..<400).contains(response.statusCode) {
+            let location = response.value(forHTTPHeaderField: "Location") ?? ""
+            if location.contains("login") { throw VoteError.sessionExpired }
+            return location.range(of: #"#(\d+)"#, options: .regularExpression)
+                .flatMap { Int(location[$0].dropFirst()) }
+        }
+        throw CommentError.rejected(Self.message(in: String(decoding: data, as: UTF8.self)))
+    }
+
+    static func hiddenField(_ name: String, in page: String) -> String? {
+        let pattern = "name=[\"']\(name)[\"'][^>]*value=[\"']([^\"']+)[\"']"
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: page, range: NSRange(page.startIndex..., in: page)),
+              let range = Range(match.range(at: 1), in: page)
+        else { return nil }
+        return String(page[range])
+    }
+
+    /// HN's rejection pages are short; their text is the reason.
+    static func message(in page: String) -> String {
+        let text = HTMLText.decodeEntities(
+            page.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+        )
+        .components(separatedBy: .whitespacesAndNewlines)
+        .filter { !$0.isEmpty }
+        .joined(separator: " ")
+        let known = ["You're posting too fast", "Please confirm", "too long", "Please try again"]
+        if let phrase = known.first(where: { text.localizedCaseInsensitiveContains($0) }),
+           let range = text.range(of: phrase, options: .caseInsensitive) {
+            return String(text[range.lowerBound...].prefix(200))
+        }
+        return text.isEmpty ? "Hacker News didn't accept the comment." : String(text.prefix(200))
+    }
+
+    private func fetchPage(_ url: URL) async throws -> String {
+        var request = URLRequest(url: url)
+        authorize(&request)
+        let (data, response) = try await transport.send(request)
+        if (300..<400).contains(response.statusCode),
+           response.value(forHTTPHeaderField: "Location")?.contains("login") == true {
+            throw VoteError.sessionExpired
+        }
+        return String(decoding: data, as: UTF8.self)
     }
 
     private func itemPage(_ id: Int) async throws -> String {

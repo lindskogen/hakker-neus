@@ -38,18 +38,18 @@ struct CSVTests {
         #expect(abs(first.savedAt.timeIntervalSince1970 - 1792937184.56488) < 0.01)
 
         let ask = result.entries[1].story
-        #expect(ask.title == "Ask HN: Commas, \\"quotes\\"?")
+        #expect(ask.title == "Ask HN: Commas, \"quotes\"?")
         #expect(ask.url == nil)
-        #expect(ask.text == "Line one\\nline two")
+        #expect(ask.text == "Line one\nline two")
     }
 
     @Test func exportReadsBackTheSame() {
         let entries: [SavedStoriesStore.Entry] = [
-            .init(story: .stub(id: 1, title: "A, \\"quoted\\" title"), savedAt: Date(timeIntervalSince1970: 1_800_000_000.123456)),
+            .init(story: .stub(id: 1, title: "A, \"quoted\" title"), savedAt: Date(timeIntervalSince1970: 1_800_000_000.123456)),
         ]
         let back = BookmarksCSV.read(BookmarksCSV.write(entries)).entries
-        #expect(back.map(\\.story.id) == [1])
-        #expect(back.first?.story.title == "A, \\"quoted\\" title")
+        #expect(back.map(\.story.id) == [1])
+        #expect(back.first?.story.title == "A, \"quoted\" title")
         #expect(abs((back.first?.savedAt.timeIntervalSince1970 ?? 0) - 1_800_000_000.123456) < 0.001)
     }
 }
