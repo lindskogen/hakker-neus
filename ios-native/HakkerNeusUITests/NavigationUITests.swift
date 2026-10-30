@@ -171,6 +171,34 @@ final class NavigationUITests: XCTestCase {
         wait(for: [read], timeout: 5)
     }
 
+    private func tapStatusBar() {
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.015)).tap()
+    }
+
+    func testTappingTheStatusBarScrollsToTop() {
+        XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
+        let topTitle = firstStory.label
+        let list = app.collectionViews["stories.list"]
+        for _ in 0..<3 { list.swipeUp(velocity: .fast) }
+        let top = list.cells.matching(NSPredicate(format: "label == %@", topTitle)).firstMatch
+        XCTAssertFalse(top.isHittable)
+
+        tapStatusBar()
+        let backAtTop = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: top)
+        wait(for: [backAtTop], timeout: 3)
+
+        // Also on a comments screen, where code blocks and comment text are scroll views too.
+        drag(top, from: 0.8, to: 0.2)
+        XCTAssertTrue(commentsList.waitForExistence(timeout: 5))
+        let header = commentsList.descendants(matching: .any)["comments.header"]
+        XCTAssertTrue(header.waitForExistence(timeout: 10))
+        for _ in 0..<3 { commentsList.swipeUp(velocity: .fast) }
+        XCTAssertFalse(header.isHittable)
+        tapStatusBar()
+        let headerBack = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: header)
+        wait(for: [headerBack], timeout: 3)
+    }
+
     func testShortSwipeDoesNothing() {
         XCTAssertTrue(firstStory.waitForExistence(timeout: 15))
         let value = firstStory.value as? String
