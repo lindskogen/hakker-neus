@@ -49,8 +49,24 @@ final class AppCoordinator {
         }
     }
 
+    #if DEBUG
+    /// Debug builds import a `seed_bookmarks.csv` dropped into the app's Documents folder
+    /// (e.g. with `xcrun devicectl device copy to`), then delete it.
+    private func importSeedBookmarks() {
+        let url = URL.documentsDirectory.appending(path: "seed_bookmarks.csv")
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        let result = BookmarksCSV.read(text)
+        let merged = try? savedStories.merge(result.entries)
+        try? FileManager.default.removeItem(at: url)
+        NSLog("Seeded saved stories from %@: %@, skipped %d", url.lastPathComponent, String(describing: merged), result.skipped)
+    }
+    #endif
+
     /// - Parameter state: Screens to restore from the previous launch, if any.
     func start(restoring state: RestorationState? = nil) {
+        #if DEBUG
+        importSeedBookmarks()
+        #endif
         var stack: [UIViewController] = [savedList]
         if state?.showsFrontPage ?? true {
             stack.append(frontPage)
