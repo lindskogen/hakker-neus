@@ -1,0 +1,34 @@
+package se.lindskogen.hakkerneus.ui
+
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import androidx.browser.customtabs.CustomTabColorSchemeParams
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.graphics.toArgb
+import android.net.Uri
+import se.lindskogen.hakkerneus.ui.theme.HN
+
+/** Opens a link in a Chrome Custom Tab, coloured like the app. */
+fun Context.openInBrowser(url: String) {
+    val colors = CustomTabColorSchemeParams.Builder().setToolbarColor(HN.backgroundDark.toArgb()).build()
+    CustomTabsIntent.Builder()
+        .setDefaultColorSchemeParams(colors)
+        .setShowTitle(true)
+        .build()
+        .launchUrl(this, Uri.parse(url))
+}
+
+fun Context.share(url: String, title: String? = null) {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, url)
+        title?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
+    }
+    startActivity(Intent.createChooser(send, null))
+}
+
+fun Context.copyToClipboard(text: String, label: String = "Link") {
+    getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
+}
