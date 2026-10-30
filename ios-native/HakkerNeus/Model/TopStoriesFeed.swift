@@ -19,6 +19,28 @@ final class TopStoriesFeed {
     private(set) var stories: [Story] = []
     var hasMore: Bool { nextOffset < ids.count }
 
+    /// Everything needed to show the same list again after a relaunch.
+    struct Snapshot: Codable, Equatable {
+        var ids: [Int]
+        var nextOffset: Int
+        var stories: [Story]
+    }
+
+    /// Nil until something has loaded.
+    var snapshot: Snapshot? {
+        stories.isEmpty ? nil : Snapshot(ids: ids, nextOffset: nextOffset, stories: stories)
+    }
+
+    /// Shows a saved list again; paging continues from the same ranking.
+    func restore(_ snapshot: Snapshot) {
+        generation += 1
+        pageTask?.cancel()
+        pageTask = nil
+        ids = snapshot.ids
+        nextOffset = min(snapshot.nextOffset, snapshot.ids.count)
+        stories = snapshot.stories
+    }
+
     init(client: HNClient, pageSize: Int = TopStoriesFeed.pageSize) {
         self.client = client
         self.pageSize = pageSize

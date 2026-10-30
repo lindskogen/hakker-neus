@@ -40,10 +40,15 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
 
-        stateView.backgroundColor = Theme.Color.backgroundOrange
-        stateView.state = .loading
-        collectionView.backgroundView = stateView
-        Task { await reload() }
+        if feed.stories.isEmpty {
+            stateView.backgroundColor = Theme.Color.backgroundOrange
+            stateView.state = .loading
+            collectionView.backgroundView = stateView
+            Task { await reload() }
+        } else {
+            // Restored from the last launch: show it as it was; pull to refresh gets a new ranking.
+            show(feed.stories, replacing: true)
+        }
     }
 
     private func configureCollectionView() {
@@ -168,6 +173,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     /// Where to scroll back to once the stories are showing, when restoring after a relaunch.
     var pendingAnchor: RestorationState.ScrollAnchor?
+
+    /// The loaded front page, so the next launch can show the same list.
+    var feedSnapshot: TopStoriesFeed.Snapshot? { feed.snapshot }
+
+    func restoreFeed(_ snapshot: TopStoriesFeed.Snapshot) {
+        feed.restore(snapshot)
+    }
 
     var scrollAnchor: RestorationState.ScrollAnchor? {
         guard isViewLoaded, let (indexPath, offset) = collectionView.topAnchorItem,

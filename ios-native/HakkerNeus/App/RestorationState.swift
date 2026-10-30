@@ -20,6 +20,8 @@ struct RestorationState: Codable, Equatable {
     }
 
     var showsFrontPage = true
+    /// The front page as it was loaded, so it comes back unchanged rather than re-ranked.
+    var frontPageFeed: TopStoriesFeed.Snapshot?
     var frontPageAnchor: ScrollAnchor?
     var savedListAnchor: ScrollAnchor?
     /// Comments screens on top of the lists, bottom to top.
@@ -35,8 +37,15 @@ struct RestorationState: Codable, Equatable {
         defaults.data(forKey: defaultsKey).flatMap { try? JSONDecoder().decode(Self.self, from: $0) }
     }
 
-    init(showsFrontPage: Bool = true, frontPageAnchor: ScrollAnchor? = nil, savedListAnchor: ScrollAnchor? = nil, comments: [CommentsScreen] = []) {
+    init(
+        showsFrontPage: Bool = true,
+        frontPageFeed: TopStoriesFeed.Snapshot? = nil,
+        frontPageAnchor: ScrollAnchor? = nil,
+        savedListAnchor: ScrollAnchor? = nil,
+        comments: [CommentsScreen] = []
+    ) {
         self.showsFrontPage = showsFrontPage
+        self.frontPageFeed = frontPageFeed
         self.frontPageAnchor = frontPageAnchor
         self.savedListAnchor = savedListAnchor
         self.comments = comments

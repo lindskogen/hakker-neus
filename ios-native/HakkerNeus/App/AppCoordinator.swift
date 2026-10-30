@@ -51,6 +51,9 @@ final class AppCoordinator {
             stack.append(frontPage)
         }
         savedList.pendingAnchor = state?.savedListAnchor
+        if let feed = state?.frontPageFeed {
+            frontPage.restoreFeed(feed)
+        }
         frontPage.pendingAnchor = state?.frontPageAnchor
         for screen in state?.comments ?? [] {
             itemCache.prefetch(id: screen.itemID)
@@ -84,6 +87,7 @@ final class AppCoordinator {
         let stack = navigationController.viewControllers
         return RestorationState(
             showsFrontPage: stack.contains(frontPage),
+            frontPageFeed: frontPage.feedSnapshot,
             frontPageAnchor: frontPage.scrollAnchor,
             savedListAnchor: savedList.scrollAnchor,
             comments: stack.compactMap { ($0 as? CommentsViewController)?.restorationState }

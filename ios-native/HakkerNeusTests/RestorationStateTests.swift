@@ -7,6 +7,7 @@ struct RestorationStateTests {
         let defaults = UserDefaults(suiteName: UUID().uuidString)!
         let state = RestorationState(
             showsFrontPage: false,
+            frontPageFeed: .init(ids: [1, 2, 3], nextOffset: 2, stories: [.stub(id: 1), .stub(id: 2)]),
             frontPageAnchor: .init(id: 1, offset: -12.5),
             savedListAnchor: nil,
             comments: [

@@ -22,6 +22,42 @@ final class StateRestorationUITests: XCTestCase {
             .label
     }
 
+    /// Label of the story nearest the top of the screen.
+    private func topStoryLabel() -> String? {
+        let windowTop = app.windows.firstMatch.frame.minY
+        return frontPage.cells.allElementsBoundByIndex
+            .filter { $0.frame.maxY > windowTop + 70 }
+            .min { $0.frame.minY < $1.frame.minY }?
+            .label
+    }
+
+    func testFrontPageComesBackUnchangedAndAtTheSamePlace() throws {
+        app.launchArguments = ["-NoStateRestoration"]
+        app.launch()
+        XCTAssertTrue(frontPage.cells.firstMatch.waitForExistence(timeout: 15))
+        for _ in 0..<4 { frontPage.swipeUp(velocity: .slow) }
+        sleep(2)
+        let expected = try XCTUnwrap(topStoryLabel())
+
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+
+        XCTAssertTrue(frontPage.cells.firstMatch.waitForExistence(timeout: 10))
+        let restored = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in self.topStoryLabel() == expected },
+            object: nil
+        )
+        wait(for: [restored], timeout: 10)
+
+        // Back to the top for other runs.
+        for _ in 0..<6 { frontPage.swipeDown(velocity: .fast) }
+        XCUIDevice.shared.press(.home)
+        sleep(1)
+    }
+
     func testCommentsScreenAndScrollPositionSurviveARelaunch() throws {
         app.launchArguments = ["-NoStateRestoration"]
         app.launch()

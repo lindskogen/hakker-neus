@@ -37,6 +37,26 @@ struct TopStoriesFeedTests {
         #expect(await client.idRequests == 2)
     }
 
+    @Test func restoresASnapshotAndKeepsPagingTheSameRanking() async throws {
+        let client = StubClient.withStories([5, 3, 9, 1, 7])
+        let original = TopStoriesFeed(client: client, pageSize: 2)
+        try await original.reload()
+        let snapshot = try #require(original.snapshot)
+
+        // The live ranking has moved on since; the restored feed keeps the saved one.
+        await client.setIDs([7, 1, 9, 3, 5])
+        let restored = TopStoriesFeed(client: client, pageSize: 2)
+        restored.restore(snapshot)
+
+        #expect(restored.stories.map(\.id) == [5, 3])
+        #expect(try await restored.loadNextPage().map(\.id) == [5, 3, 9, 1])
+        #expect(await client.idRequests == 1)
+    }
+
+    @Test func nothingToSnapshotBeforeLoading() {
+        #expect(TopStoriesFeed(client: StubClient(ids: [])).snapshot == nil)
+    }
+
     @Test func concurrentLoadsShareOneRequest() async throws {
         let client = StubClient.withStories(Array(1...6))
         let feed = TopStoriesFeed(client: client, pageSize: 2)
