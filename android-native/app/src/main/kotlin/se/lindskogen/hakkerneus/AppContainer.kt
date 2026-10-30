@@ -41,6 +41,8 @@ object AppContainer {
         private set
     lateinit var session: HnSession
         private set
+    lateinit var hidden: se.lindskogen.hakkerneus.persistence.HiddenStoriesStore
+        private set
 
     /** Unsent comment drafts, by the ID of what they reply to. */
     val drafts = mutableMapOf<Long, String>()
@@ -130,6 +132,7 @@ object AppContainer {
         visited = VisitedStoriesStore(db)
         offline = OfflineItemStore(db)
         session = HnSession(appContext)
+        hidden = se.lindskogen.hakkerneus.persistence.HiddenStoriesStore(appContext)
         cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
         CodeBlockStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
         CodeBlockStyle.size = settings.getString("codeSize", null)?.let { name -> CodeBlockStyle.Size.entries.find { it.name == name } } ?: CodeBlockStyle.Size.Medium

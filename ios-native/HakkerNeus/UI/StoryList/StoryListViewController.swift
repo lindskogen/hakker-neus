@@ -22,6 +22,16 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     }
     private weak var footer: LoadingFooterView?
 
+    /// Above the corner button: hides the read stories, then briefly offers to undo that.
+    private let hideReadButton = UIButton(type: .system)
+    private var hideReadLeading: NSLayoutConstraint!
+    private var hideReadTrailing: NSLayoutConstraint!
+    /// The stories the button just hid, while it offers to undo.
+    private var justHidden: [Int]?
+    private var undoTimer: Timer?
+    /// Everything the feed has loaded, hidden stories included.
+    private var feedStories: [Story] = []
+
     init(feed: TopStoriesFeed, coordinator: AppCoordinator) {
         self.feed = feed
         self.coordinator = coordinator
@@ -38,7 +48,9 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
+        configureHideReadButton()
         NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(placeHideReadButton), name: AppSettings.cornerButtonSideDidChange, object: nil)
         for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
@@ -140,7 +152,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     }
 
     private func loadMore() {
-        guard !isLoadingMore, feed.hasMore, !stories.isEmpty else { return }
+        guard !isLoadingMore, feed.hasMore, !feedStories.isEmpty else { return }
         isLoadingMore = true
         Task {
             defer { isLoadingMore = false }
@@ -151,17 +163,103 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         }
     }
 
-    private func show(_ all: [Story], replacing: Bool) {
-        stories = Dictionary(all.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
+    private func show(_ all: [Story], replacing: Bool, animated: Bool = false) {
+        feedStories = all
+        let shown = all.filter { !coordinator.hiddenStories.isHidden($0.id) }
+        stories = Dictionary(shown.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
         var snapshot = NSDiffableDataSourceSnapshot<Section, Story.ID>()
         snapshot.appendSections([.main])
-        snapshot.appendItems(all.map(\.id))
-        if replacing {
-            // Scores and comment counts change between loads; refresh rows that stay.
+        snapshot.appendItems(shown.map(\.id))
+        // Row colours depend on position, so rows that stay are refreshed when others go;
+        // and scores and comment counts change between loads.
+        if replacing || animated {
             let existing = Set(dataSource.snapshot().itemIdentifiers)
-            snapshot.reconfigureItems(all.map(\.id).filter(existing.contains))
+            snapshot.reconfigureItems(shown.map(\.id).filter(existing.contains))
         }
-        dataSource.apply(snapshot, animatingDifferences: false)
+        dataSource.apply(snapshot, animatingDifferences: animated && !UIAccessibility.isReduceMotionEnabled)
+        updateHideReadButton()
+        // Hiding can leave too few rows to scroll to the end, where the next page loads.
+        if shown.count < 15 { loadMore() }
+    }
+
+    // MARK: Hide read stories
+
+    private func configureHideReadButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 16, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        if #available(iOS 26, *) {
+            config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
+        }
+        hideReadButton.configuration = config
+        hideReadButton.accessibilityIdentifier = "hideRead"
+        hideReadButton.alpha = 0
+        hideReadButton.isHidden = true
+        hideReadButton.addAction(UIAction { [unowned self] _ in hideReadTapped() }, for: .touchUpInside)
+
+        hideReadButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hideReadButton)
+        // Stacked above the corner button (52pt, 10pt off the bottom), on the same side.
+        NSLayoutConstraint.activate([
+            hideReadButton.widthAnchor.constraint(equalToConstant: 44),
+            hideReadButton.heightAnchor.constraint(equalToConstant: 44),
+            hideReadButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -(Theme.padding + 52 + Theme.padding)),
+        ])
+        hideReadLeading = hideReadButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2 + 26)
+        hideReadTrailing = hideReadButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -(Theme.padding * 2 + 26))
+        placeHideReadButton()
+        updateHideReadButton()
+    }
+
+    @objc private func placeHideReadButton() {
+        let onLeft = coordinator.settings.cornerButtonOnLeft
+        hideReadLeading.isActive = onLeft
+        hideReadTrailing.isActive = !onLeft
+    }
+
+    /// Shown while there are read stories to hide, or while offering to undo.
+    private func updateHideReadButton() {
+        let isUndo = justHidden != nil
+        let hasRead = stories.keys.contains { coordinator.visitedStories.isVisited($0) }
+        let visible = isUndo || hasRead
+        hideReadButton.configuration?.image = UIImage(systemName: isUndo ? "arrow.uturn.backward" : "eye.slash")
+        hideReadButton.accessibilityLabel = isUndo ? "Undo Hide Read Stories" : "Hide Read Stories"
+        guard visible == hideReadButton.isHidden else { return }
+        if visible { hideReadButton.isHidden = false }
+        UIView.animate(withDuration: 0.2, animations: {
+            self.hideReadButton.alpha = visible ? 1 : 0
+        }, completion: { _ in
+            if !visible, self.hideReadButton.alpha == 0 { self.hideReadButton.isHidden = true }
+        })
+    }
+
+    private func hideReadTapped() {
+        undoTimer?.invalidate()
+        if let hidden = justHidden {
+            justHidden = nil
+            coordinator.hiddenStories.unhide(hidden)
+        } else {
+            let read = feedStories.map(\.id).filter { stories[$0] != nil && coordinator.visitedStories.isVisited($0) }
+            guard !read.isEmpty else { return }
+            coordinator.hiddenStories.hide(read)
+            justHidden = read
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            UIAccessibility.post(notification: .announcement, argument: read.count == 1 ? "Hid 1 read story" : "Hid \(read.count) read stories")
+            undoTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.justHidden = nil
+                    self?.updateHideReadButton()
+                }
+            }
+        }
+        show(feedStories, replacing: false, animated: true)
     }
 
     @objc private func colorThemeChanged() {
@@ -182,6 +280,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             snapshot.reconfigureItems(snapshot.itemIdentifiers)
         }
         dataSource.apply(snapshot, animatingDifferences: false)
+        updateHideReadButton()
     }
 
     private func story(at indexPath: IndexPath) -> Story? {

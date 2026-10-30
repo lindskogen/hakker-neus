@@ -1,5 +1,12 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -78,6 +85,17 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
     val saved = savedEntries.mapTo(HashSet()) { it.story.id }
     val visits by AppContainer.visited.visits.collectAsState()
     val upvoted by AppContainer.session.upvoted.collectAsState()
+    val hidden by AppContainer.hidden.ids.collectAsState()
+    // Stories hidden with the hide-read button stay out of the list.
+    val shown = remember(state.stories, hidden) { state.stories.filterNot { it.id in hidden } }
+    /** What the button just hid, while it offers to undo. */
+    var justHidden by remember { mutableStateOf<List<Long>?>(null) }
+    LaunchedEffect(justHidden) {
+        if (justHidden != null) {
+            delay(5000)
+            justHidden = null
+        }
+    }
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
@@ -111,7 +129,8 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
             last >= listState.layoutInfo.totalItemsCount - 5
         }
     }
-    LaunchedEffect(nearEnd, state.stories.size) { if (nearEnd) model.loadMore() }
+    // Hiding can leave too few rows to scroll to the end, where the next page loads.
+    LaunchedEffect(nearEnd, state.stories.size, shown.size) { if (nearEnd || (state.stories.isNotEmpty() && shown.size < 15)) model.loadMore() }
 
     Box(Modifier.fillMaxSize().background(HN.backgroundDark)) {
         // The first row's colour reaches up behind the status bar.
@@ -129,7 +148,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                     ),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    itemsIndexed(state.stories, key = { _, story -> story.id }) { index, story ->
+                    itemsIndexed(shown, key = { _, story -> story.id }) { index, story ->
                         visits.size // re-read when visits change
                         StoryRow(
                             story, Palette.storyBackground(index), story.id in saved, actions,
@@ -151,6 +170,48 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
             }
         }
 
+
+        // Above the corner button, same side: hides read stories, then briefly offers to undo.
+        visits.size // re-read when visits change
+        val hasRead = shown.any { AppContainer.visited.isVisited(it.id) }
+        val onLeft = AppContainer.cornerButtonOnLeft
+        AnimatedVisibility(
+            visible = justHidden != null || hasRead,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
+        ) {
+            val undo = justHidden != null
+            SmallFloatingActionButton(
+                onClick = {
+                    val previous = justHidden
+                    if (previous != null) {
+                        justHidden = null
+                        AppContainer.hidden.unhide(previous)
+                    } else {
+                        val read = shown.map { it.id }.filter { AppContainer.visited.isVisited(it) }
+                        if (read.isNotEmpty()) {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            AppContainer.hidden.hide(read)
+                            justHidden = read
+                        }
+                    }
+                },
+                shape = CircleShape,
+                containerColor = Color(0xE6404040),
+                contentColor = Color.White,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    // Centred over the 52dp corner button, 20dp in and 10dp up.
+                    .padding(start = if (onLeft) 24.dp else 0.dp, end = if (onLeft) 0.dp else 24.dp, bottom = HN.padding + 52.dp + HN.padding)
+                    .size(44.dp)
+                    .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
+            ) {
+                Crossfade(undo, label = "hide-read") { isUndo ->
+                    Icon(if (isUndo) HnIcons.undo else HnIcons.eyeSlash, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
     }
 }
 

@@ -150,4 +150,35 @@ class OfflineItemStore(private val db: Database) {
     }
 }
 
+/**
+ * Front-page stories hidden with the hide-read button, as on iOS. They stay hidden across
+ * refreshes; only the most recent few thousand are kept.
+ */
+class HiddenStoriesStore(context: android.content.Context) {
+    private val prefs = context.getSharedPreferences("hidden", android.content.Context.MODE_PRIVATE)
+    private val limit = 3000
+    /** Oldest first. */
+    private var order: List<Long> = prefs.getString("ids", "")!!.split(',').mapNotNull { it.toLongOrNull() }
+
+    private val _ids = MutableStateFlow(order.toSet())
+    val ids: StateFlow<Set<Long>> = _ids
+
+    fun hide(ids: List<Long>) {
+        val current = _ids.value
+        order = (order + ids.filter { it !in current }).takeLast(limit)
+        save()
+    }
+
+    fun unhide(ids: List<Long>) {
+        val remove = ids.toSet()
+        order = order.filter { it !in remove }
+        save()
+    }
+
+    private fun save() {
+        _ids.value = order.toSet()
+        prefs.edit().putString("ids", order.joinToString(",")).apply()
+    }
+}
+
 private fun android.database.Cursor.getStringOrNull(index: Int): String? = if (isNull(index)) null else getString(index)

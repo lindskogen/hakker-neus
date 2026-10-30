@@ -16,6 +16,7 @@ final class AppCoordinator {
     let itemCache: ItemCache
     let savedStories: SavedStoriesStore
     let visitedStories: VisitedStoriesStore
+    let hiddenStories: HiddenStoriesStore
     let offlineItems: OfflineItemStore
     let settings: AppSettings
     let session = HNSession()
@@ -42,6 +43,7 @@ final class AppCoordinator {
         self.itemCache = ItemCache(client: client)
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
+        self.hiddenStories = HiddenStoriesStore(defaults: defaults)
         ColorTheme.current = settings.colorTheme
         CodeBlockStyle.current = settings.codeBlockStyle
         do {
