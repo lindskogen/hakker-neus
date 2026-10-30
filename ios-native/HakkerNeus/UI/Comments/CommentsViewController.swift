@@ -36,6 +36,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
+    private let offlineBanner = OfflineBanner()
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
     private let nextThreadButton = UIButton(type: .system)
     private let jumpHaptics = UISelectionFeedbackGenerator()
@@ -116,6 +117,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
         configureNextThreadButton()
+        offlineBanner.install(in: view)
     }
 
     private func configureDataSource() {
@@ -168,7 +170,19 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     private func load(forceRefresh: Bool) async {
         let update: () -> Void
         do {
-            let result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
+            let result: StoryWithComments
+            var offlineCopyDate: Date?
+            do {
+                result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
+                if result.parentStoryID == nil {
+                    coordinator.offlineItems.save(result, id: id)
+                }
+            } catch {
+                // No network: fall back to the copy saved the last time this thread loaded.
+                guard let saved = coordinator.offlineItems.item(id: id) else { throw error }
+                result = saved.item
+                offlineCopyDate = saved.fetchedAt
+            }
             if let storyID = result.parentStoryID {
                 // A link to a comment: show its story, focused on the comment.
                 focusCommentID = id
@@ -183,6 +197,11 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             }.value
 
             update = { [self] in
+                if let offlineCopyDate {
+                    offlineBanner.show("Offline · saved \(RelativeTime.string(from: offlineCopyDate)) ago")
+                } else {
+                    offlineBanner.hide()
+                }
                 story = result.story
                 storyBody = result.story.text.map { CommentBody(html: $0) }
                 thread = CommentThread(comments: flat, collapsed: thread.collapsed)
@@ -206,7 +225,11 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         } catch {
             update = { [self] in
                 // Keep showing what we have if a refresh fails.
-                if commentsByID.isEmpty { loadState = .failed(error) }
+                if commentsByID.isEmpty {
+                    loadState = .failed(error)
+                } else {
+                    offlineBanner.show("Offline · couldn't refresh", hideAfter: 2.5)
+                }
                 applySnapshot(animated: false, reconfigureAll: true)
             }
         }

@@ -16,6 +16,7 @@ final class AppCoordinator {
     let itemCache: ItemCache
     let savedStories: SavedStoriesStore
     let visitedStories: VisitedStoriesStore
+    let offlineItems: OfflineItemStore
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
@@ -39,6 +40,7 @@ final class AppCoordinator {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
             self.visitedStories = try VisitedStoriesStore(database: database)
+            self.offlineItems = try OfflineItemStore(database: database)
         } catch {
             fatalError("Couldn't open the database: \(error)")
         }

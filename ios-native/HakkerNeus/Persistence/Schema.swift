@@ -27,6 +27,14 @@ enum Schema {
             seen_comment_count INTEGER
         );
         """,
+        // 3: Offline copies of comment threads, as StoryWithComments JSON.
+        """
+        CREATE TABLE IF NOT EXISTS item_cache (
+            id INTEGER PRIMARY KEY,
+            json TEXT NOT NULL,
+            fetched_at REAL NOT NULL
+        );
+        """,
     ]
 
     /// Runs any migrations the database hasn't had yet. Safe to call repeatedly.

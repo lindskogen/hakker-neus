@@ -22,7 +22,7 @@ struct Story: Hashable, Sendable, Codable, Identifiable {
 }
 
 /// A comment and its replies. `text` is HN's HTML and is nil for deleted comments.
-struct Comment: Hashable, Sendable, Identifiable {
+struct Comment: Hashable, Sendable, Codable, Identifiable {
     let id: Int
     let author: String?
     let text: String?
@@ -42,7 +42,7 @@ struct FlatComment: Hashable, Sendable, Identifiable {
 
 /// An item together with its comment tree, as shown on the comments screen.
 /// The item may itself be a comment when following an HN link to a comment.
-struct StoryWithComments: Hashable, Sendable {
+struct StoryWithComments: Hashable, Sendable, Codable {
     let story: Story
     let comments: [Comment]
     /// Set when the item is a comment: the story it belongs to.

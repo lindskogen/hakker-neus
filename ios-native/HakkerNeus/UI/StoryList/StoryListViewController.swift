@@ -14,6 +14,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     private let stateView = FullPageStateView()
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
+    private let offlineBanner = OfflineBanner()
 
     private var isLoadingMore = false {
         didSet { footer?.isLoading = isLoadingMore }
@@ -80,6 +81,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
+        offlineBanner.install(in: view)
         topFill.color = Palette.storyBackground(at: 0)
     }
 
@@ -125,6 +127,9 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
                 if stories.isEmpty {
                     stateView.backgroundColor = Theme.Color.backgroundDark
                     stateView.state = .error(error)
+                } else {
+                    // Keep the stories that are showing; just say why they didn't change.
+                    offlineBanner.show("Offline · couldn't refresh", hideAfter: 2.5)
                 }
             }
         }
