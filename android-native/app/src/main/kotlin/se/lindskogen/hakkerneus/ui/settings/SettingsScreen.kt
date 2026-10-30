@@ -113,3 +113,27 @@ fun Row(title: String, color: Color = Color.White, onClick: () -> Unit) {
 fun Footer(text: String) {
     Text(text, style = HN.body.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.5f)), modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 }
+
+/** Settings > Hacker News Account: who's signed in, or a way to sign in. */
+@Composable
+fun AccountSection(signIn: () -> Unit) {
+    val username by AppContainer.session.username.collectAsState()
+    var confirm by remember { mutableStateOf(false) }
+    Section("Hacker News account")
+    val name = username
+    if (name != null) {
+        Text("Signed in as $name", style = HN.body, modifier = Modifier.fillMaxWidth().background(Color(0xFF26292E)).padding(horizontal = 20.dp, vertical = 14.dp))
+        Row("Sign Out", color = Color(0xFFFF6B5E)) { confirm = true }
+    } else {
+        Row("Sign In…", color = HN.backgroundOrange, onClick = signIn)
+        Footer("Sign in to vote and comment.")
+    }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false },
+            confirmButton = { TextButton(onClick = { confirm = false; AppContainer.session.signOut() }) { Text("Sign Out") } },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
+            title = { Text("Sign out of $name?") },
+        )
+    }
+}

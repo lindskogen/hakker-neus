@@ -11,7 +11,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.data.CommentThread
+import kotlinx.coroutines.flow.drop
+import se.lindskogen.hakkerneus.data.Comment
 import se.lindskogen.hakkerneus.data.Story
+import se.lindskogen.hakkerneus.data.StoryWithComments
 import se.lindskogen.hakkerneus.data.flattened
 import se.lindskogen.hakkerneus.html.CommentBody
 
@@ -33,8 +36,50 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
     private val _state = MutableStateFlow(CommentsState(story = AppContainer.knownStories[id]))
     val state: StateFlow<CommentsState> = _state
 
+    /** The thread as last loaded, before local replies are merged in. */
+    private var serverResult: StoryWithComments? = null
+
     init {
         load()
+        // Comments posted from the app show up straight away, until Algolia has them.
+        viewModelScope.launch {
+            AppContainer.localReplies.drop(1).collect { replies ->
+                val result = serverResult ?: return@collect
+                rebuild(result, offlineFrom = _state.value.offlineCopyFrom, focus = replies.lastOrNull { it.storyId == id }?.comment?.id)
+            }
+        }
+        // Whether the user already upvoted this story, from HN.
+        viewModelScope.launch {
+            val session = AppContainer.session
+            if (!session.isSignedIn) return@launch
+            val upvoted = runCatching { session.isUpvotedOnHn(id) }.getOrNull() ?: return@launch
+            if (upvoted != id in session.upvoted.value) session.setLocalVote(id, upvoted, counted = true)
+        }
+    }
+
+    val storyId: Long get() = id
+
+    private suspend fun rebuild(result: StoryWithComments, offlineFrom: Long?, focus: Long? = null) {
+        val local = AppContainer.localReplies.value.filter { it.storyId == result.story.id }
+        val flat = mergeLocalReplies(local, result.comments, result.story.id).flattened()
+        // Parsing every comment's HTML can take a moment on big threads.
+        val bodies = withContext(Dispatchers.Default) { flat.associate { it.id to CommentBody.parse(it.comment.text ?: "") } }
+        _state.update { current ->
+            val target = focus ?: current.focusCommentId
+            var thread = CommentThread(flat, current.thread.collapsed)
+            target?.let { thread = thread.expandingAncestors(it) }
+            current.copy(
+                story = result.story,
+                storyBody = result.story.text?.let(CommentBody::parse),
+                thread = thread,
+                bodies = bodies,
+                isLoading = false,
+                isRefreshing = false,
+                error = null,
+                offlineCopyFrom = offlineFrom,
+                focusCommentId = target,
+            )
+        }
     }
 
     fun refresh() {
@@ -67,25 +112,8 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
                     id = storyId
                     result = fetch(storyId)
                 }
-                val flat = result.comments.flattened()
-                // Parsing every comment's HTML can take a moment on big threads.
-                val bodies = withContext(Dispatchers.Default) {
-                    flat.associate { it.id to CommentBody.parse(it.comment.text ?: "") }
-                }
-                _state.update { current ->
-                    var thread = CommentThread(flat, current.thread.collapsed)
-                    current.focusCommentId?.let { thread = thread.expandingAncestors(it) }
-                    current.copy(
-                        story = result.story,
-                        storyBody = result.story.text?.let(CommentBody::parse),
-                        thread = thread,
-                        bodies = bodies,
-                        isLoading = false,
-                        isRefreshing = false,
-                        error = null,
-                        offlineCopyFrom = offlineFrom,
-                    )
-                }
+                serverResult = result
+                rebuild(result, offlineFrom)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -96,4 +124,26 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
             }
         }
     }
+}
+
+/**
+ * Inserts local replies under their parents (newest first, as on HN), or at the top for comments
+ * on the story, unless the server's thread already has them (same ID, or same author and text).
+ */
+fun mergeLocalReplies(local: List<AppContainer.LocalReply>, comments: List<Comment>, storyId: Long): List<Comment> {
+    fun contains(list: List<Comment>, reply: Comment): Boolean {
+        val text = CommentBody.parse(reply.text ?: "").plainText
+        return list.any {
+            it.id == reply.id || (it.author == reply.author && CommentBody.parse(it.text ?: "").plainText == text) || contains(it.children, reply)
+        }
+    }
+    fun insert(list: List<Comment>, reply: Comment, parent: Long): List<Comment> = list.map {
+        it.copy(children = if (it.id == parent) listOf(reply) + it.children else insert(it.children, reply, parent))
+    }
+    var merged = comments
+    for (reply in local) {
+        if (contains(merged, reply.comment)) continue
+        merged = if (reply.parentId == storyId) listOf(reply.comment) + merged else insert(merged, reply.comment, reply.parentId)
+    }
+    return merged
 }

@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.data.FlatComment
 import se.lindskogen.hakkerneus.data.HackerNewsLink
 import se.lindskogen.hakkerneus.data.RelativeTime
@@ -77,7 +79,7 @@ private const val MAX_INDENT_DEPTH = 8
 /** A story with its comment tree (`CommentsList.tsx`). Tapping a comment collapses its replies. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
+fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, story: Long, context: String) -> Unit) {
     val model: CommentsViewModel = viewModel(key = "comments-$id") { CommentsViewModel(id) }
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -91,6 +93,7 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
         }
     }
 
+    val upvoted by AppContainer.session.upvoted.collectAsState()
     val visible = state.thread.visible
     // List positions: 0 is the header, comments follow.
     LaunchedEffect(state.focusCommentId, visible.size) {
@@ -105,7 +108,9 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
     Box(Modifier.fillMaxSize().background(HN.backgroundDark)) {
         PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = model::refresh) {
             LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
-                item(key = "header") { StoryHeader(id, state.story, state.storyBody, openLink) }
+                item(key = "header") {
+                    StoryHeader(id, state.story, state.storyBody, openLink, isUpvoted = state.story?.id in upvoted)
+                }
                 when {
                     state.isLoading && visible.isEmpty() -> item { Status { CircularProgressIndicator(color = Color.White) } }
                     state.error != null -> item { Status { Message(HnIcons.error, state.error!!, HN.backgroundRed.copy(alpha = 0.5f)) } }
@@ -118,6 +123,10 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
                             isCollapsed = state.thread.isCollapsed(flat.id),
                             hiddenReplies = state.thread.replyCounts[flat.id] ?: 0,
                             onToggle = { model.toggleCollapsed(flat.id) },
+                            onReply = {
+                                val body = state.bodies[flat.id]?.plainText.orEmpty().take(140)
+                                compose(flat.id, model.storyId, "${flat.comment.author ?: "deleted"}: $body")
+                            },
                             onLink = openLink,
                             onShare = { context.share(flat.comment.hackerNewsUrl) },
                             onCopyText = { context.copyToClipboard(state.bodies[flat.id]?.plainText ?: "", "Comment") },
@@ -140,6 +149,22 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
                     .background(Color(0xEB1F1F1F))
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             )
+        }
+
+        // Comment on the story, above the next-thread button.
+        if (!state.isLoading) {
+            SmallFloatingActionButton(
+                onClick = { compose(model.storyId, model.storyId, state.story?.title.orEmpty()) },
+                shape = CircleShape,
+                containerColor = Color(0xE6404040),
+                contentColor = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 20.dp, bottom = if (visible.count { it.depth == 0 } > 1) HN.padding + 62.dp else HN.padding)
+                    .size(52.dp)
+                    .semantics { contentDescription = "Comment" },
+            ) { Icon(HnIcons.compose, contentDescription = null, modifier = Modifier.size(20.dp)) }
         }
 
         // Next top-level thread, Apollo-style.
@@ -166,7 +191,7 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
 
 /** Orange header with the title, reaching up behind the status bar. */
 @Composable
-private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (String) -> Unit) {
+private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (String) -> Unit, isUpvoted: Boolean) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -180,7 +205,8 @@ private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (St
     ) {
         Text(story?.title ?: "", style = HN.titleStyle(), modifier = Modifier.sharedStory("title-$id", bounds = false).semantics { heading() })
         if (story != null) {
-            val byline = listOfNotNull("${story.score} points", story.author?.let { "by $it" }, story.displayDomain)
+            val score = AppContainer.session.displayedScore(story.id, story.score)
+            val byline = listOfNotNull(if (isUpvoted) "▲ $score points" else "$score points", story.author?.let { "by $it" }, story.displayDomain)
             Text(byline.joinToString(" · "), style = HN.body)
         }
         if (body != null && body.blocks.isNotEmpty()) {
@@ -199,6 +225,7 @@ private fun CommentRow(
     isCollapsed: Boolean,
     hiddenReplies: Int,
     onToggle: () -> Unit,
+    onReply: () -> Unit,
     onLink: (String) -> Unit,
     onShare: () -> Unit,
     onCopyText: () -> Unit,
@@ -241,6 +268,7 @@ private fun CommentRow(
         }
 
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(text = { Text("Reply") }, onClick = { menuOpen = false; onReply() })
             DropdownMenuItem(text = { Text(if (isCollapsed) "Expand Thread" else "Collapse Thread") }, onClick = { menuOpen = false; onToggle() })
             DropdownMenuItem(text = { Text("Share") }, onClick = { menuOpen = false; onShare() })
             DropdownMenuItem(text = { Text("Copy Text") }, onClick = { menuOpen = false; onCopyText() })

@@ -59,6 +59,7 @@ fun SavedScreen(
     openSettings: () -> Unit,
     signIn: () -> Unit,
 ) {
+    val upvoted by AppContainer.session.upvoted.collectAsState()
     val entries by AppContainer.saved.entries.collectAsState()
     val visits by AppContainer.visited.visits.collectAsState()
     val context = LocalContext.current
@@ -75,6 +76,7 @@ fun SavedScreen(
             },
             openComments = openComments,
             toggleSaved = { AppContainer.saved.toggle(it) },
+            toggleUpvote = { AppContainer.toggleVote(it, signIn) },
             share = { context.share(it.url ?: it.hackerNewsUrl, it.title) },
             copyLink = { context.copyToClipboard(it.url ?: it.hackerNewsUrl) },
             copyCommentsLink = { context.copyToClipboard(it.hackerNewsUrl) },
@@ -111,6 +113,8 @@ fun SavedScreen(
                     entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,
+                    isUpvoted = entry.story.id in upvoted,
+                    score = AppContainer.session.displayedScore(entry.story.id, entry.story.score),
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = Color.Black)
             }

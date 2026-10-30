@@ -46,6 +46,7 @@ import se.lindskogen.hakkerneus.data.Story
 import se.lindskogen.hakkerneus.ui.HnIcons
 import se.lindskogen.hakkerneus.ui.sharedStory
 import se.lindskogen.hakkerneus.ui.theme.HN
+import se.lindskogen.hakkerneus.ui.theme.Palette
 import kotlin.math.roundToInt
 
 /** Actions a row offers, from taps, swipes, the long-press menu and accessibility. */
@@ -53,6 +54,7 @@ class StoryRowActions(
     val open: (Story) -> Unit,
     val openComments: (Story) -> Unit,
     val toggleSaved: (Story) -> Unit,
+    val toggleUpvote: (Story) -> Unit,
     val share: (Story) -> Unit,
     val copyLink: (Story) -> Unit,
     val copyCommentsLink: (Story) -> Unit,
@@ -73,6 +75,8 @@ fun StoryRow(
     isVisited: Boolean = false,
     newComments: Int? = null,
     showsSavedBadge: Boolean = true,
+    isUpvoted: Boolean = false,
+    score: Int = story.score,
 ) {
     val density = LocalDensity.current
     val view = LocalView.current
@@ -82,7 +86,9 @@ fun StoryRow(
     var armed by remember { mutableStateOf<StorySwipe.Action?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var savedAtSwipeStart by remember { mutableStateOf(isSaved) }
+    var upvotedAtSwipeStart by remember { mutableStateOf(isUpvoted) }
     val swipe = StorySwipe(offset.value)
+    val upvoteStage = swipe.armedAction(canUpvote = true) == StorySwipe.Action.Upvote
 
     fun settle(after: Long = 0) = scope.launch {
         delay(after)
@@ -97,13 +103,19 @@ fun StoryRow(
                 customActions = listOf(
                     CustomAccessibilityAction("Open comments") { actions.openComments(story); true },
                     CustomAccessibilityAction(if (isSaved) "Unsave" else "Save") { actions.toggleSaved(story); true },
+                    CustomAccessibilityAction(if (isUpvoted) "Unvote" else "Upvote") { actions.toggleUpvote(story); true },
                 )
             },
     ) {
-        // Behind the row: the heart on the left, the comment count on the right.
-        Box(Modifier.matchParentSize()) {
+        // Behind the row: the heart on the left (an up arrow on blue at the upvote stage),
+        // the comment count on the right.
+        Box(Modifier.matchParentSize().background(if (upvoteStage) Color(Palette.tableau10[0]) else Color.Transparent)) {
             Icon(
-                if (savedAtSwipeStart) HnIcons.heartBroken else HnIcons.heart,
+                when {
+                    upvoteStage -> if (upvotedAtSwipeStart) HnIcons.undo else HnIcons.arrowUp
+                    savedAtSwipeStart -> HnIcons.heartBroken
+                    else -> HnIcons.heart
+                },
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier
@@ -138,13 +150,14 @@ fun StoryRow(
                             translation = 0f
                             armed = null
                             savedAtSwipeStart = isSaved
+                            upvotedAtSwipeStart = isUpvoted
                         },
                         onHorizontalDrag = { change, dx ->
                             change.consume()
                             translation += dx / density.density
-                            val next = StorySwipe.forTranslation(translation, canUpvote = false)
+                            val next = StorySwipe.forTranslation(translation, canUpvote = true)
                             scope.launch { offset.snapTo(next.offset) }
-                            val action = next.armedAction(canUpvote = false)
+                            val action = next.armedAction(canUpvote = true)
                             if (action != armed) {
                                 armed = action
                                 if (action != null) {
@@ -158,7 +171,8 @@ fun StoryRow(
                             when (armed) {
                                 StorySwipe.Action.Comments -> { actions.openComments(story); settle() }
                                 StorySwipe.Action.Save -> { actions.toggleSaved(story); settle(after = 100) }
-                                StorySwipe.Action.Upvote, null -> settle()
+                                StorySwipe.Action.Upvote -> { actions.toggleUpvote(story); settle(after = 100) }
+                                null -> settle()
                             }
                             armed = null
                         },
@@ -186,8 +200,8 @@ fun StoryRow(
                 )
             }
             Text(
-                "${story.score}",
-                style = HN.body.copy(fontSize = 30.sp, lineHeight = 34.sp, color = Color.White.copy(alpha = 0.3f)),
+                if (isUpvoted) "▲ $score" else "$score",
+                style = HN.body.copy(fontSize = 30.sp, lineHeight = 34.sp, color = Color.White.copy(alpha = if (isUpvoted) 0.85f else 0.3f)),
                 modifier = Modifier.align(Alignment.BottomEnd).padding(HN.padding),
             )
 
@@ -197,6 +211,7 @@ fun StoryRow(
                 }
                 item("Comments (${story.commentCount})") { actions.openComments(story) }()
                 if (story.url != null) item("Open Link") { actions.open(story) }()
+                item(if (isUpvoted) "Unvote" else "Upvote") { actions.toggleUpvote(story) }()
                 item(if (isSaved) "Unsave" else "Save") { actions.toggleSaved(story) }()
                 item("Share") { actions.share(story) }()
                 item("Copy Link") { actions.copyLink(story) }()

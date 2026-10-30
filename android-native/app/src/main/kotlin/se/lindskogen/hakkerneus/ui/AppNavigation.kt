@@ -39,7 +39,11 @@ import kotlinx.serialization.Serializable
 import androidx.navigation.toRoute
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.ui.comments.CommentsScreen
+import androidx.compose.runtime.collectAsState
+import se.lindskogen.hakkerneus.account.ComposeScreen
+import se.lindskogen.hakkerneus.account.SignInScreen
 import se.lindskogen.hakkerneus.ui.frontpage.FrontPageScreen
+import se.lindskogen.hakkerneus.ui.settings.AccountSection
 import se.lindskogen.hakkerneus.ui.saved.SavedScreen
 import se.lindskogen.hakkerneus.ui.settings.SettingsScreen
 import se.lindskogen.hakkerneus.ui.theme.HN
@@ -47,6 +51,8 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 @Serializable object FrontPage
 @Serializable object Saved
 @Serializable object Settings
+@Serializable object SignIn
+@Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
 
 private enum class CornerMode { Menu, Close, Hidden }
@@ -71,27 +77,43 @@ fun AppNavigation() {
             FrontPageScreen(
                 openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
                 openItem = { nav.navigate(Comments(it)) },
+                signIn = { nav.navigate(SignIn) },
             )
             }
         }
         composable<Comments> { entry ->
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-                CommentsScreen(entry.toRoute<Comments>().id, openItem = { nav.navigate(Comments(it)) })
+                CommentsScreen(
+                    entry.toRoute<Comments>().id,
+                    openItem = { nav.navigate(Comments(it)) },
+                    compose = { parent, story, context ->
+                        val open = { nav.navigate(Compose(parent, story, context)) }
+                        if (AppContainer.session.isSignedIn) open() else { AppContainer.afterSignIn = open; nav.navigate(SignIn) }
+                    },
+                )
             }
         }
         composable<Saved> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                val username by AppContainer.session.username.collectAsState()
                 SavedScreen(
-                    username = null,
+                    username = username,
                     openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
                     openItem = { nav.navigate(Comments(it)) },
                     openSettings = { nav.navigate(Settings) },
-                    signIn = {},
+                    signIn = { nav.navigate(SignIn) },
                 )
             }
         }
         composable<Settings> {
-            SettingsScreen(back = { nav.popBackStack() }, account = {})
+            SettingsScreen(back = { nav.popBackStack() }, account = { AccountSection(signIn = { nav.navigate(SignIn) }) })
+        }
+        composable<SignIn> {
+            SignInScreen(done = { nav.popBackStack() })
+        }
+        composable<Compose> { entry ->
+            val route = entry.toRoute<Compose>()
+            ComposeScreen(route.parent, route.story, route.context, done = { nav.popBackStack() })
         }
     }
     }

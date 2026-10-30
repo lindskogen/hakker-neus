@@ -69,12 +69,13 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 /** The front page (`NewsList.tsx`). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
+fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit) {
     val model: FrontPageViewModel = viewModel()
     val state by model.state.collectAsStateWithLifecycle()
     val savedEntries by AppContainer.saved.entries.collectAsState()
     val saved = savedEntries.mapTo(HashSet()) { it.story.id }
     val visits by AppContainer.visited.visits.collectAsState()
+    val upvoted by AppContainer.session.upvoted.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
     // Remember the list and where it's scrolled when leaving the app, to show it again next launch.
@@ -93,6 +94,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
             },
             openComments = openComments,
             toggleSaved = { AppContainer.saved.toggle(it) },
+            toggleUpvote = { AppContainer.toggleVote(it, signIn) },
             share = { context.share(it.url ?: it.hackerNewsUrl, it.title) },
             copyLink = { context.copyToClipboard(it.url ?: it.hackerNewsUrl) },
             copyCommentsLink = { context.copyToClipboard(it.hackerNewsUrl) },
@@ -130,6 +132,8 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit) {
                             story, Palette.storyBackground(index), story.id in saved, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             newComments = AppContainer.visited.newCommentCount(story),
+                            isUpvoted = story.id in upvoted,
+                            score = AppContainer.session.displayedScore(story.id, story.score),
                         )
                         HorizontalDivider(thickness = 0.5.dp, color = Color.Black)
                     }
