@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import se.lindskogen.hakkerneus.ui.UserMenuItem
+import se.lindskogen.hakkerneus.ui.openUser
+import androidx.compose.ui.platform.LocalContext
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
@@ -80,6 +83,7 @@ fun StoryRow(
     isUpvoted: Boolean = false,
     score: Int = story.score,
 ) {
+    val context = LocalContext.current
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -230,6 +234,7 @@ fun StoryRow(
                 item("Share") { actions.share(story) }()
                 item("Copy Link") { actions.copyLink(story) }()
                 if (story.url != null) item("Copy Comments Link") { actions.copyCommentsLink(story) }()
+                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
             }
         }
     }

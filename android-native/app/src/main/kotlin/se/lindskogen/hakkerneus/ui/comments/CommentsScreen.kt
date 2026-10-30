@@ -1,5 +1,7 @@
 package se.lindskogen.hakkerneus.ui.comments
 
+import se.lindskogen.hakkerneus.ui.UserMenuItem
+import se.lindskogen.hakkerneus.ui.openUser
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -231,6 +233,7 @@ private fun StoryHeader(
     isUpvoted: Boolean,
     menu: (Story) -> List<Pair<String, () -> Unit>>,
 ) {
+    val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     Column(
         Modifier
@@ -264,6 +267,7 @@ private fun StoryHeader(
                 for ((title, action) in menu(story)) {
                     DropdownMenuItem(text = { Text(title) }, onClick = { menuOpen = false; action() })
                 }
+                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
             }
         }
     }
@@ -284,6 +288,7 @@ private fun CommentRow(
     onCopyText: () -> Unit,
     onCopyLink: () -> Unit,
 ) {
+    val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     val indent = (HN.padding * minOf(flat.depth, MAX_INDENT_DEPTH))
     val author = flat.comment.author ?: "deleted"
@@ -342,6 +347,7 @@ private fun CommentRow(
             DropdownMenuItem(text = { Text("Share") }, onClick = { menuOpen = false; onShare() })
             DropdownMenuItem(text = { Text("Copy Text") }, onClick = { menuOpen = false; onCopyText() })
             DropdownMenuItem(text = { Text("Copy Link") }, onClick = { menuOpen = false; onCopyLink() })
+            flat.comment.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
         }
     }
 }

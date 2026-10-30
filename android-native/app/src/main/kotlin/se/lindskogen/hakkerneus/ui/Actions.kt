@@ -32,3 +32,6 @@ fun Context.share(url: String, title: String? = null) {
 fun Context.copyToClipboard(text: String, label: String = "Link") {
     getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(label, text))
 }
+
+/** An HN user's page (karma, about, submissions), as on iOS. */
+fun Context.openUser(name: String) = openInBrowser("https://news.ycombinator.com/user?id=" + android.net.Uri.encode(name))

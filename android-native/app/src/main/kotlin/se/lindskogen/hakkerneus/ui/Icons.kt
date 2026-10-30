@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.ui
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -11,6 +14,7 @@ object HnIcons {
     // Arc flags written out in full: Compose's parser misreads the compact "01" form of the RN SVG.
     val heart = icon("M12 21a1 1 0 0 1-.71-.29l-7.77-7.78a5.26 5.26 0 0 1 0-7.4 5.24 5.24 0 0 1 7.4 0L12 6.61l1.08-1.08a5.24 5.24 0 0 1 7.4 0 5.26 5.26 0 0 1 0 7.4l-7.77 7.78A1 1 0 0 1 12 21z")
     val heartBroken = icon("M12 21a1 1 0 0 1-.71-.29l-7.77-7.78a5.26 5.26 0 0 1 0-7.4 5.24 5.24 0 0 1 7.4 0L12 6.61l-1.5 3.39 2.5 1.5-2 4 4-5-2.5-1.5 1.58-3.47a5.24 5.24 0 0 1 7.4 0 5.26 5.26 0 0 1 0 7.4l-7.77 7.78A1 1 0 0 1 12 21z")
+    val person = icon("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z")
     val gear = icon("M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.47.47 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z")
     val chevronDown = icon("M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z")
     val menu = icon("M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z")
@@ -24,4 +28,16 @@ object HnIcons {
     private fun icon(path: String) = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
         .addPath(PathParser().parsePathString(path).toNodes(), fill = SolidColor(Color.White))
         .build()
+}
+
+/** The author's entry at the end of a menu: their name, opening their HN user page. */
+@Composable
+fun UserMenuItem(name: String, onClick: () -> Unit) {
+    androidx.compose.material3.HorizontalDivider()
+    androidx.compose.material3.DropdownMenuItem(
+        text = { androidx.compose.material3.Text(name) },
+        leadingIcon = { androidx.compose.material3.Icon(HnIcons.person, contentDescription = null) },
+        onClick = onClick,
+        modifier = androidx.compose.ui.Modifier.semantics { contentDescription = "User page for $name" },
+    )
 }
