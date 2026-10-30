@@ -119,6 +119,29 @@ final class AppCoordinator {
 
     // MARK: Navigation
 
+    /// `hakkerneus://item?id=123` opens an item; `hakkerneus://open?url=<HN or other link>`
+    /// opens a link the way a tap in a comment would. For other apps and Shortcuts, since
+    /// universal links for news.ycombinator.com would need HN's cooperation.
+    @discardableResult
+    func handleAppURL(_ url: URL) -> Bool {
+        guard url.scheme == "hakkerneus",
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        else { return false }
+        let query = components.queryItems ?? []
+        navigationController.presentedViewController?.dismiss(animated: false)
+        switch url.host() {
+        case "item":
+            guard let id = query.first(where: { $0.name == "id" })?.value.flatMap({ Int($0) }) else { return false }
+            showComments(id: id)
+        case "open":
+            guard let link = query.first(where: { $0.name == "url" })?.value.flatMap(URL.init(string:)) else { return false }
+            open(link)
+        default:
+            return false
+        }
+        return true
+    }
+
     /// The Home Screen quick action that opens the saved list.
     static let savedStoriesShortcut = "se.lindskogen.hakkerneues.saved"
 

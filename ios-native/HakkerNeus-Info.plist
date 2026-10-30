@@ -30,6 +30,21 @@
 			<string>heart.fill</string>
 		</dict>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>se.lindskogen.hakkerneues</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>hakkerneus</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>se.lindskogen.hakkerneues.item</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

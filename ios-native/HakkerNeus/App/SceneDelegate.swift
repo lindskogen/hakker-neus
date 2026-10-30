@@ -20,9 +20,18 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if let shortcut = connectionOptions.shortcutItem {
             _ = coordinator.handleShortcut(shortcut.type)
         }
+        for context in connectionOptions.urlContexts {
+            coordinator.handleAppURL(context.url)
+        }
 
         self.window = window
         self.coordinator = coordinator
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        for context in URLContexts {
+            coordinator?.handleAppURL(context.url)
+        }
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
