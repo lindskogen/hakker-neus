@@ -7,6 +7,28 @@ import Foundation
 final class HNSession {
     /// Posted when someone signs in or out.
     static let didChange = Notification.Name("HNSession.didChange")
+    /// Posted when a story's vote changes. `object` is the story ID as an `Int`.
+    static let votesChanged = Notification.Name("HNSession.votesChanged")
+
+    enum VoteError: LocalizedError {
+        case sessionExpired
+        case noVoteLink
+        case failed
+
+        var errorDescription: String? {
+            switch self {
+            case .sessionExpired: "Your Hacker News session has expired. Sign in again."
+            case .noVoteLink: "Hacker News doesn't allow voting on this right now."
+            case .failed: "The vote didn't go through. Try again."
+            }
+        }
+    }
+
+    struct VoteState: Equatable {
+        var isUpvoted: Bool
+        /// HN only allows undoing a vote for a while.
+        var canUnvote: Bool
+    }
 
     enum SignInError: LocalizedError, Equatable {
         case badLogin
@@ -28,10 +50,17 @@ final class HNSession {
 
     private let transport: SessionTransport
     private(set) var cookie: String?
+    private let defaults: UserDefaults
+    /// Stories the signed-in user has upvoted, as far as the app knows.
+    private var upvoted: Set<Int>
+    /// Votes cast since the story's score was loaded, which that score doesn't include yet.
+    private var uncountedVotes: Set<Int> = []
 
-    init(transport: SessionTransport = NoRedirectTransport()) {
+    init(transport: SessionTransport = NoRedirectTransport(), defaults: UserDefaults = .standard) {
         self.transport = transport
+        self.defaults = defaults
         cookie = Keychain.string(for: Self.cookieKey)
+        upvoted = Set(defaults.array(forKey: "hn.upvoted") as? [Int] ?? [])
     }
 
     /// The signed-in username, read from the cookie (`username&token`).
@@ -64,7 +93,79 @@ final class HNSession {
     }
 
     func signOut() {
+        upvoted = []
+        uncountedVotes = []
+        defaults.removeObject(forKey: "hn.upvoted")
         setCookie(nil)
+    }
+
+    // MARK: Voting
+
+    func isUpvoted(_ id: Int) -> Bool { upvoted.contains(id) }
+
+    /// The score to show: the loaded one, plus a vote cast since it was loaded.
+    func displayedScore(for story: Story) -> Int {
+        story.score + (uncountedVotes.contains(story.id) ? 1 : 0)
+    }
+
+    /// Records a vote locally (for optimistic UI and rollback).
+    func setLocalVote(_ id: Int, upvoted isUp: Bool, counted: Bool = false) {
+        if isUp { upvoted.insert(id) } else { upvoted.remove(id) }
+        if isUp && !counted { uncountedVotes.insert(id) } else { uncountedVotes.remove(id) }
+        defaults.set(Array(upvoted), forKey: "hn.upvoted")
+        NotificationCenter.default.post(name: Self.votesChanged, object: id)
+    }
+
+    /// Whether the user has voted on an item, read from its HN page.
+    func voteState(for id: Int) async throws -> VoteState {
+        Self.voteState(for: id, in: try await itemPage(id))
+    }
+
+    /// Upvotes, or undoes an upvote, using the per-session link on the item's page.
+    func vote(_ id: Int, up: Bool) async throws {
+        let page = try await itemPage(id)
+        guard let path = Self.voteLink(for: id, how: up ? "up" : "un", in: page),
+              let url = URL(string: path, relativeTo: Self.base)
+        else { throw VoteError.noVoteLink }
+
+        var request = URLRequest(url: url)
+        authorize(&request)
+        let (_, response) = try await transport.send(request)
+        // Success redirects back to the item; an expired session redirects to the login page.
+        let location = response.value(forHTTPHeaderField: "Location") ?? ""
+        if location.contains("login") { throw VoteError.sessionExpired }
+        guard (300..<400).contains(response.statusCode) else { throw VoteError.failed }
+    }
+
+    private func itemPage(_ id: Int) async throws -> String {
+        var components = URLComponents(url: Self.base.appending(path: "item"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "id", value: String(id))]
+        var request = URLRequest(url: components.url!)
+        authorize(&request)
+        let (data, response) = try await transport.send(request)
+        if (300..<400).contains(response.statusCode),
+           response.value(forHTTPHeaderField: "Location")?.contains("login") == true {
+            throw VoteError.sessionExpired
+        }
+        return String(decoding: data, as: UTF8.self)
+    }
+
+    /// The `vote?id=…&how=…&auth=…` link for an item, with HTML entities decoded.
+    /// Pages fetched without a session have no `auth` token, so there's no usable link.
+    static func voteLink(for id: Int, how: String, in page: String) -> String? {
+        let pattern = "href='(vote\\?id=\(id)&amp;how=\(how)&amp;auth=[^']+)'"
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: page, range: NSRange(page.startIndex..., in: page)),
+              let range = Range(match.range(at: 1), in: page)
+        else { return nil }
+        return HTMLText.decodeEntities(String(page[range]))
+    }
+
+    static func voteState(for id: Int, in page: String) -> VoteState {
+        let canUnvote = voteLink(for: id, how: "un", in: page) != nil
+        // A voted item's up arrow gets the "nosee" class, even once it can no longer be undone.
+        let hiddenArrow = page.range(of: "id='up_\(id)'[^>]*nosee|nosee[^>]*id='up_\(id)'", options: .regularExpression) != nil
+        return VoteState(isUpvoted: canUnvote || hiddenArrow, canUnvote: canUnvote)
     }
 
     /// Adds the session cookie to a request to news.ycombinator.com.

@@ -89,7 +89,23 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             self.applySnapshot(animated: false, reconfigureAll: true)
         }
 
+        NotificationCenter.default.addObserver(
+            forName: HNSession.votesChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.applySnapshot(animated: false, reconfiguring: [.story]) }
+        }
+
         Task { await load(forceRefresh: false) }
+        Task { await syncVoteState() }
+    }
+
+    /// Whether the user already voted on this story, from HN, when signed in.
+    private func syncVoteState() async {
+        let session = coordinator.session
+        guard session.isSignedIn, let state = try? await session.voteState(for: id),
+              state.isUpvoted != session.isUpvoted(id)
+        else { return }
+        session.setLocalVote(id, upvoted: state.isUpvoted, counted: true)
     }
 
     private func configureCollectionView() {
@@ -122,7 +138,13 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
 
     private func configureDataSource() {
         let storyCell = UICollectionView.CellRegistration<StoryHeaderCell, Item> { [unowned self] cell, _, _ in
-            if let story { cell.configure(with: story, body: storyBody) }
+            if let story {
+                cell.configure(
+                    with: story, body: storyBody,
+                    score: coordinator.session.displayedScore(for: story),
+                    isUpvoted: coordinator.session.isUpvoted(story.id)
+                )
+            }
             cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
             cell.linkMenu = { [unowned self] url, source in coordinator.linkMenu(for: url, sourceView: source) }
         }

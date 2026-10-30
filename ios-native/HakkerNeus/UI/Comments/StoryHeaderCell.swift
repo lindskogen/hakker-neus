@@ -56,7 +56,7 @@ final class StoryHeaderCell: UICollectionViewListCell {
     /// The title, for the transition from a story row.
     var titleView: UIView { titleLabel }
 
-    func configure(with story: Story, body: CommentBody?) {
+    func configure(with story: Story, body: CommentBody?, score: Int? = nil, isUpvoted: Bool = false) {
         if let body, !body.blocks.isEmpty {
             bodyView.configure(with: body)
             bodyView.isHidden = false
@@ -66,7 +66,8 @@ final class StoryHeaderCell: UICollectionViewListCell {
 
         titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
         titleLabel.text = story.title
-        let byline = [story.author.map { "by \($0)" }, story.displayDomain].compactMap { $0 }
+        let points = score.map { isUpvoted ? "▲ \($0) points" : "\($0) points" }
+        let byline = [points, story.author.map { "by \($0)" }, story.displayDomain].compactMap { $0 }
         authorLabel.text = byline.joined(separator: " · ")
         authorLabel.isHidden = byline.isEmpty
 

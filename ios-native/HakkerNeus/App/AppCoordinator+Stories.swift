@@ -17,6 +17,8 @@ extension AppCoordinator {
             with: story,
             backgroundColor: backgroundColor,
             isSaved: savedStories.isSaved(story.id),
+            isUpvoted: session.isUpvoted(story.id),
+            score: session.displayedScore(for: story),
             isVisited: visitedStories.isVisited(story.id),
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,

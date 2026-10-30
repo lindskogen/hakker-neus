@@ -87,9 +87,9 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         NotificationCenter.default.addObserver(
             self, selector: #selector(savedStoriesChanged), name: SavedStoriesStore.didChange, object: nil
         )
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(visitedStoryChanged(_:)), name: VisitedStoriesStore.didChange, object: nil
-        )
+        for name in [VisitedStoriesStore.didChange, HNSession.votesChanged] {
+            NotificationCenter.default.addObserver(self, selector: #selector(visitedStoryChanged(_:)), name: name, object: nil)
+        }
         NotificationCenter.default.addObserver(
             forName: HNSession.didChange, object: nil, queue: .main
         ) { [weak self] _ in

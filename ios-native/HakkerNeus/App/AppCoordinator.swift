@@ -127,13 +127,53 @@ final class AppCoordinator {
         return true
     }
 
-    /// Presents the sign-in screen over whatever is showing.
-    func showSignIn() {
-        let signIn = UINavigationController(rootViewController: SignInViewController(coordinator: self))
-        signIn.overrideUserInterfaceStyle = .dark
+    /// The topmost presented screen, to present over.
+    private var topViewController: UIViewController {
         var top: UIViewController = navigationController
         while let presented = top.presentedViewController { top = presented }
-        top.present(signIn, animated: true)
+        return top
+    }
+
+    /// Presents the sign-in screen over whatever is showing.
+    /// - Parameter then: Runs after a successful sign-in.
+    func showSignIn(then: (() -> Void)? = nil) {
+        let screen = SignInViewController(coordinator: self)
+        screen.onSignedIn = then
+        let signIn = UINavigationController(rootViewController: screen)
+        signIn.overrideUserInterfaceStyle = .dark
+        topViewController.present(signIn, animated: true)
+    }
+
+    func showError(_ message: String) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        topViewController.present(alert, animated: true)
+    }
+
+    /// Upvotes the story, or undoes the upvote. Updates the UI straight away and rolls it back
+    /// if HN refuses; asks to sign in first when needed.
+    func toggleVote(_ story: Story) {
+        guard session.isSignedIn else {
+            showSignIn { [weak self] in self?.toggleVote(story) }
+            return
+        }
+        let wasUpvoted = session.isUpvoted(story.id)
+        session.setLocalVote(story.id, upvoted: !wasUpvoted)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+        Task {
+            do {
+                try await session.vote(story.id, up: !wasUpvoted)
+            } catch {
+                session.setLocalVote(story.id, upvoted: wasUpvoted, counted: true)
+                if case HNSession.VoteError.sessionExpired = error {
+                    session.signOut()
+                    showSignIn { [weak self] in self?.toggleVote(story) }
+                } else {
+                    showError(error.localizedDescription)
+                }
+            }
+        }
     }
 
     func showSettings() {
@@ -265,6 +305,14 @@ final class AppCoordinator {
             })
         }
 
+        let isUpvoted = session.isUpvoted(story.id)
+        let vote = UIAction(
+            title: isUpvoted ? "Unvote" : "Upvote",
+            image: UIImage(systemName: isUpvoted ? "arrow.uturn.down" : "arrow.up")
+        ) { [weak self] _ in
+            self?.toggleVote(story)
+        }
+
         let isSaved = savedStories.isSaved(story.id)
         let save = UIAction(
             title: isSaved ? "Unsave" : "Save",
@@ -297,7 +345,8 @@ final class AppCoordinator {
 
         return UIMenu(children: [
             UIMenu(options: .displayInline, children: open),
-            UIMenu(options: .displayInline, children: [save, share, copy] + [copyComments].compactMap { $0 }),
+            UIMenu(options: .displayInline, children: [vote, save]),
+            UIMenu(options: .displayInline, children: [share, copy] + [copyComments].compactMap { $0 }),
             UIMenu(options: .displayInline, children: user),
         ])
     }

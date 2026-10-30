@@ -130,6 +130,8 @@ final class StoryCell: UICollectionViewListCell {
         with story: Story,
         backgroundColor: UIColor,
         isSaved: Bool,
+        isUpvoted: Bool = false,
+        score: Int? = nil,
         isVisited: Bool = false,
         newComments: Int? = nil,
         showsSavedBadge: Bool = true,
@@ -148,7 +150,9 @@ final class StoryCell: UICollectionViewListCell {
         let details = [story.displayDomain, newComments.map { "\($0) new" }].compactMap { $0 }
         domainLabel.text = details.joined(separator: " · ")
         domainLabel.isHidden = details.isEmpty
-        scoreLabel.text = "\(story.score)"
+        let score = score ?? story.score
+        scoreLabel.text = isUpvoted ? "▲ \(score)" : "\(score)"
+        scoreLabel.alpha = isUpvoted ? 0.85 : 0.3
         commentCountLabel.text = "\(story.commentCount)"
 
         // Fade the saved heart in or out once the row has settled back, like the RN app.
@@ -164,7 +168,7 @@ final class StoryCell: UICollectionViewListCell {
         isAccessibilityElement = true
         accessibilityLabel = story.title
         accessibilityValue = [
-            story.displayDomain, "\(story.score) points", "\(story.commentCount) comments",
+            story.displayDomain, "\(score) points", isUpvoted ? "upvoted" : nil, "\(story.commentCount) comments",
             newComments.map { "\($0) new" }, isVisited ? "read" : nil, isSaved ? "saved" : nil,
         ]
             .compactMap { $0 }

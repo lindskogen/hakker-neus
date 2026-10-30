@@ -37,7 +37,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
-        for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange] {
+        for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
 

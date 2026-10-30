@@ -4,6 +4,8 @@ import UIKit
 /// Username and password for news.ycombinator.com. Works with Password AutoFill.
 final class SignInViewController: UIViewController, UITextFieldDelegate {
     private unowned let coordinator: AppCoordinator
+    /// Called after signing in, e.g. to carry out the vote that asked for it.
+    var onSignedIn: (() -> Void)?
     private let usernameField = UITextField()
     private let passwordField = UITextField()
     private let signInButton = UIButton(type: .system)
@@ -119,7 +121,8 @@ final class SignInViewController: UIViewController, UITextFieldDelegate {
             defer { setBusy(false) }
             do {
                 try await coordinator.session.signIn(username: username, password: password)
-                dismiss(animated: true)
+                let onSignedIn = onSignedIn
+                dismiss(animated: true) { onSignedIn?() }
             } catch let error as HNSession.SignInError {
                 show(error: error.localizedDescription)
                 websiteButton.isHidden = error != .captcha
