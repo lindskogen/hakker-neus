@@ -16,6 +16,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
     private let offlineBanner = OfflineBanner()
+    private let savedButton = UIButton(type: .system)
 
     private var isLoadingMore = false {
         didSet { footer?.isLoading = isLoadingMore }
@@ -81,6 +82,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
         offlineBanner.install(in: view)
+        configureSavedButton()
         topFill.color = Palette.storyBackground(at: 0)
     }
 
@@ -102,6 +104,36 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
             collectionView.dequeueConfiguredReusableSupplementary(using: footer, for: indexPath)
         }
+    }
+
+    /// Lower-left button to the saved stories / profile screen (the edge swipe still works too).
+    private func configureSavedButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.image = UIImage(systemName: "heart.fill")
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        savedButton.configuration = config
+        savedButton.accessibilityLabel = "Saved Stories"
+        savedButton.accessibilityIdentifier = "stories.saved"
+        savedButton.addAction(UIAction { [unowned self] _ in coordinator.showSavedStories() }, for: .touchUpInside)
+
+        savedButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(savedButton)
+        NSLayoutConstraint.activate([
+            savedButton.widthAnchor.constraint(equalToConstant: 52),
+            savedButton.heightAnchor.constraint(equalToConstant: 52),
+            savedButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2),
+            savedButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
+        ])
+        // Room to scroll the last row out from under the button.
+        collectionView.contentInset.bottom = 64
     }
 
     // MARK: Loading
