@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -15,6 +17,27 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    // Release signing comes from a key kept outside the repo, when it's there.
+    val releaseKey = File(System.getProperty("user.home"), ".android/hakkerneus-release.properties")
+    signingConfigs {
+        if (releaseKey.exists()) {
+            val props = Properties().apply { releaseKey.inputStream().use(::load) }
+            create("release") {
+                storeFile = File(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+        }
     }
 
     buildFeatures {
