@@ -32,21 +32,22 @@ final class CommentCell: UICollectionViewListCell {
 
         topBorder.backgroundColor = UIColor.white.withAlphaComponent(0.2)
 
+        // Author and age stay quiet so the comment text leads.
         authorLabel.font = Theme.Font.medium(size: 13)
-        authorLabel.textColor = .white
+        authorLabel.textColor = UIColor.white.withAlphaComponent(0.55)
 
         opBadge.text = "OP"
         opBadge.font = Theme.Font.bold(size: 8, maximum: 14)
-        opBadge.textColor = .white
+        opBadge.textColor = UIColor.white.withAlphaComponent(0.75)
         opBadge.backgroundColor = UIColor.white.withAlphaComponent(0.13)
         opBadge.layer.cornerRadius = 3
         opBadge.clipsToBounds = true
 
         collapsedLabel.font = Theme.Font.medium(size: 13)
-        collapsedLabel.textColor = UIColor.white.withAlphaComponent(0.5)
+        collapsedLabel.textColor = UIColor.white.withAlphaComponent(0.4)
 
         timeLabel.font = Theme.Font.body(size: 13, style: .footnote)
-        timeLabel.textColor = .white
+        timeLabel.textColor = UIColor.white.withAlphaComponent(0.4)
         timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         for label in [authorLabel, opBadge, collapsedLabel, timeLabel] {

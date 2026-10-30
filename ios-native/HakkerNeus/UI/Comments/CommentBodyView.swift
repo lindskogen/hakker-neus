@@ -132,11 +132,12 @@ extension LinkTextView: UITextViewDelegate {
     }
 }
 
-/// A `<pre><code>` block: unwrapped Menlo text that scrolls sideways inside a hairline border.
+/// A `<pre><code>` block: Menlo text inside a hairline border that scrolls sideways, or wraps
+/// if that's turned on in Settings.
 final class CodeBlockView: UIView {
     let scrollView = UIScrollView()
 
-    init(code: String) {
+    init(code: String, style: CodeBlockStyle = .current) {
         super.init(frame: .zero)
 
         layer.borderWidth = 1 / max(traitCollection.displayScale, 1)
@@ -144,11 +145,12 @@ final class CodeBlockView: UIView {
 
         let label = UILabel()
         label.text = code
-        label.font = Theme.Font.monospaced()
+        label.font = Theme.Font.monospaced(size: style.size.pointSize)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = .white
         label.numberOfLines = 0
-        label.lineBreakMode = .byClipping
+        label.lineBreakMode = style.wrapsLines ? .byWordWrapping : .byClipping
+        scrollView.isScrollEnabled = !style.wrapsLines
 
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.alwaysBounceHorizontal = false
@@ -176,9 +178,11 @@ final class CodeBlockView: UIView {
             label.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: padding),
             label.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -padding),
 
-            // Height follows the code; width scrolls.
+            // Height follows the code; width scrolls, or is the block's width when wrapping.
             scrollView.frameLayoutGuide.heightAnchor.constraint(equalTo: content.heightAnchor),
-            content.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.widthAnchor),
+            style.wrapsLines
+                ? content.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+                : content.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.widthAnchor),
         ])
     }
 

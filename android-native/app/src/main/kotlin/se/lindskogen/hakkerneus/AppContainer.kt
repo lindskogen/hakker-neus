@@ -17,6 +17,7 @@ import se.lindskogen.hakkerneus.persistence.Database
 import se.lindskogen.hakkerneus.persistence.OfflineItemStore
 import se.lindskogen.hakkerneus.persistence.SavedStoriesStore
 import se.lindskogen.hakkerneus.persistence.VisitedStoriesStore
+import se.lindskogen.hakkerneus.ui.comments.CodeBlockStyle
 import se.lindskogen.hakkerneus.ui.theme.ColorTheme
 import se.lindskogen.hakkerneus.ui.theme.Palette
 
@@ -88,6 +89,13 @@ object AppContainer {
         settings.edit().putString("colorTheme", theme.name).apply()
     }
 
+    /** Code block wrapping and size, remembered. */
+    fun setCodeBlockStyle(wrapsLines: Boolean = CodeBlockStyle.wrapsLines, size: CodeBlockStyle.Size = CodeBlockStyle.size) {
+        CodeBlockStyle.wrapsLines = wrapsLines
+        CodeBlockStyle.size = size
+        settings.edit().putBoolean("codeWrapsLines", wrapsLines).putString("codeSize", size.name).apply()
+    }
+
     fun init(context: Context) {
         if (::saved.isInitialized) return
         appContext = context.applicationContext
@@ -96,6 +104,8 @@ object AppContainer {
         visited = VisitedStoriesStore(db)
         offline = OfflineItemStore(db)
         session = HnSession(appContext)
+        CodeBlockStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
+        CodeBlockStyle.size = settings.getString("codeSize", null)?.let { name -> CodeBlockStyle.Size.entries.find { it.name == name } } ?: CodeBlockStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange
     }
 }

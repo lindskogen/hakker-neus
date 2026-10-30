@@ -85,7 +85,12 @@ private const val MAX_INDENT_DEPTH = 8
 /** A story with its comment tree (`CommentsList.tsx`). Tapping a comment collapses its replies. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, story: Long, context: String) -> Unit) {
+fun CommentsScreen(
+    id: Long,
+    openItem: (Long) -> Unit,
+    compose: (parent: Long, story: Long, context: String) -> Unit,
+    signIn: () -> Unit,
+) {
     val model: CommentsViewModel = viewModel(key = "comments-$id") { CommentsViewModel(id) }
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -116,7 +121,21 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, s
         PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = model::refresh) {
             LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
                 item(key = "header") {
-                    StoryHeader(id, state.story, state.storyBody, openLink, isUpvoted = state.story?.id in upvoted)
+                    val saved by AppContainer.saved.entries.collectAsState()
+                    StoryHeader(
+                        id, state.story, state.storyBody, openLink, isUpvoted = state.story?.id in upvoted,
+                        menu = { story ->
+                            listOfNotNull(
+                                "Comment" to { compose(story.id, story.id, story.title) },
+                                story.url?.let { url -> "Open Link" to { context.openInBrowser(url) } },
+                                (if (story.id in upvoted) "Unvote" else "Upvote") to { AppContainer.toggleVote(story, signIn) },
+                                (if (saved.any { it.story.id == story.id }) "Unsave" else "Save") to { AppContainer.saved.toggle(story) },
+                                "Share" to { context.share(story.url ?: story.hackerNewsUrl, story.title) },
+                                "Copy Link" to { context.copyToClipboard(story.url ?: story.hackerNewsUrl) },
+                                story.url?.let { "Copy Comments Link" to { context.copyToClipboard(story.hackerNewsUrl) } },
+                            )
+                        },
+                    )
                 }
                 when {
                     state.isLoading && visible.isEmpty() -> item { Status { CircularProgressIndicator(color = Color.White) } }
@@ -204,7 +223,15 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, s
 
 /** Orange header with the title, reaching up behind the status bar. */
 @Composable
-private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (String) -> Unit, isUpvoted: Boolean) {
+private fun StoryHeader(
+    id: Long,
+    story: Story?,
+    body: CommentBody?,
+    onLink: (String) -> Unit,
+    isUpvoted: Boolean,
+    menu: (Story) -> List<Pair<String, () -> Unit>>,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxWidth()
@@ -212,7 +239,13 @@ private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (St
             .background(HN.accent)
             .statusBarsPadding()
             .heightIn(min = 100.dp)
-            .combinedClickable(enabled = story?.url != null, onClick = { story?.url?.let(onLink) })
+            .combinedClickable(
+                enabled = story != null,
+                onClickLabel = if (story?.url != null) "Open link" else null,
+                onClick = { story?.url?.let(onLink) },
+                onLongClickLabel = "More actions",
+                onLongClick = { menuOpen = true },
+            )
             .padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
@@ -225,6 +258,13 @@ private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (St
         if (body != null && body.blocks.isNotEmpty()) {
             Spacer(Modifier.height(5.dp))
             CommentText(body, onLink)
+        }
+        if (story != null) {
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                for ((title, action) in menu(story)) {
+                    DropdownMenuItem(text = { Text(title) }, onClick = { menuOpen = false; action() })
+                }
+            }
         }
     }
 }
@@ -276,20 +316,21 @@ private fun CommentRow(
                 verticalArrangement = Arrangement.spacedBy(HN.padding),
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text(author, style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                    // Author and age stay quiet so the comment text leads.
+                    Text(author, style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.55f)), maxLines = 1)
                     if (isOp) {
                         Text(
                             "OP",
                             // Read as "original poster" rather than "op".
                             modifier = Modifier.semantics { contentDescription = "original poster" }.clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.13f)).padding(2.dp),
-                            style = HN.body.copy(fontSize = 8.sp, lineHeight = 10.sp, fontWeight = FontWeight.Bold),
+                            style = HN.body.copy(fontSize = 8.sp, lineHeight = 10.sp, fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.75f)),
                         )
                     }
                     if (isCollapsed && hiddenReplies > 0) {
-                        Text("+$hiddenReplies", modifier = Modifier.clearAndSetSemantics {}, style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.5f)))
+                        Text("+$hiddenReplies", modifier = Modifier.clearAndSetSemantics {}, style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.4f)))
                     }
                     Spacer(Modifier.weight(1f))
-                    Text(RelativeTime.format(flat.comment.time), style = HN.body.copy(fontSize = 13.sp))
+                    Text(RelativeTime.format(flat.comment.time), style = HN.body.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.4f)))
                 }
                 if (!isCollapsed && body != null) CommentText(body, onLink)
             }

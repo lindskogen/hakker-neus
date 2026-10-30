@@ -525,10 +525,10 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
                 let comment = UIAction(title: "Comment", image: UIImage(systemName: "square.and.pencil")) { [unowned self] _ in
                     composeOnStory()
                 }
-                return UIMenu(children: [
-                    UIMenu(options: .displayInline, children: [comment]),
-                    coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: false),
-                ])
+                // The story menu's sections go in directly: nested as a menu of its own, it showed
+                // as an untitled, empty-looking row.
+                let storyMenu = coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: false)
+                return UIMenu(children: [UIMenu(options: .displayInline, children: [comment])] + storyMenu.children)
             })
         case .comment(let id):
             guard let flat = commentsByID[id] else { return nil }

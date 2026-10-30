@@ -4,7 +4,7 @@ import UIKit
 /// how much is saved, and the way into settings.
 final class ProfileHeaderView: UICollectionReusableView {
     var onSettings: (() -> Void)?
-    /// Tapping "Not signed in".
+    /// Tapping "Sign in", shown when signed out.
     var onSignIn: (() -> Void)?
     private var isSignedIn = false
 
@@ -30,7 +30,13 @@ final class ProfileHeaderView: UICollectionReusableView {
         config.image = UIImage(systemName: "gearshape")
         config.preferredSymbolConfigurationForImage = .init(pointSize: 20, weight: .regular)
         config.baseForegroundColor = .white
+        // No built-in insets, so the gear sits as far from the right edge as the name does
+        // from the left; the button stays 44pt wide for tapping, with the gear at its trailing edge.
+        config.contentInsets = .zero
         settingsButton.configuration = config
+        settingsButton.contentHorizontalAlignment = .trailing
+        settingsButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        settingsButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         settingsButton.accessibilityLabel = "Settings"
         settingsButton.accessibilityIdentifier = "saved.settings"
         settingsButton.addAction(UIAction { [weak self] _ in self?.onSettings?() }, for: .touchUpInside)
@@ -68,8 +74,9 @@ final class ProfileHeaderView: UICollectionReusableView {
     /// - Parameter username: The signed-in HN user, or nil.
     func configure(username: String?, savedCount: Int) {
         isSignedIn = username != nil
-        nameLabel.text = username ?? "Not signed in"
-        nameLabel.alpha = username == nil ? 0.6 : 1
+        // Signed out, the name's place is an obvious way to sign in.
+        nameLabel.text = username ?? "Sign in"
+        nameLabel.textColor = username == nil ? Theme.Color.accent : .white
         nameLabel.accessibilityTraits = username == nil ? [.header, .button] : .header
         nameLabel.accessibilityHint = username == nil ? "Signs in to Hacker News" : nil
         detailLabel.text = savedCount == 1 ? "1 saved story" : "\(savedCount) saved stories"

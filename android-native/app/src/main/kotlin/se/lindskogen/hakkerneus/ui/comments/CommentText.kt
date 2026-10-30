@@ -28,7 +28,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 
 /**
  * Renders a parsed comment: paragraphs with italics and tappable links, and code blocks that
- * scroll sideways. Taps outside links fall through to the comment (to collapse it).
+ * scroll sideways (or wrap, per Settings). Taps outside links fall through to the comment (to collapse it).
  */
 @Composable
 fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier = Modifier) {
@@ -36,16 +36,20 @@ fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier 
         for (block in body.blocks) {
             when (block) {
                 is CommentBody.Block.Paragraph -> Text(paragraph(block.runs, onLink), style = HN.body)
-                is CommentBody.Block.Code -> Text(
-                    block.text,
-                    style = HN.body.copy(fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 19.sp),
-                    softWrap = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(0.5.dp, Color.White.copy(alpha = 0.25f))
-                        .horizontalScroll(rememberScrollState())
-                        .padding(HN.padding),
-                )
+                is CommentBody.Block.Code -> {
+                    val size = CodeBlockStyle.size.sp
+                    val wraps = CodeBlockStyle.wrapsLines
+                    Text(
+                        block.text,
+                        style = HN.body.copy(fontFamily = FontFamily.Monospace, fontSize = size.sp, lineHeight = (size + 5).sp),
+                        softWrap = wraps,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(0.5.dp, Color.White.copy(alpha = 0.25f))
+                            .then(if (wraps) Modifier else Modifier.horizontalScroll(rememberScrollState()))
+                            .padding(HN.padding),
+                    )
+                }
             }
         }
     }

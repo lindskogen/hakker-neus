@@ -42,6 +42,7 @@ final class AppCoordinator {
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
         ColorTheme.current = settings.colorTheme
+        CodeBlockStyle.current = settings.codeBlockStyle
         do {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
@@ -391,12 +392,8 @@ final class AppCoordinator {
             })
         }
 
-        return UIMenu(children: [
-            UIMenu(options: .displayInline, children: open),
-            UIMenu(options: .displayInline, children: [vote, save]),
-            UIMenu(options: .displayInline, children: [share, copy] + [copyComments].compactMap { $0 }),
-            UIMenu(options: .displayInline, children: user),
-        ])
+        let sections: [[UIMenuElement]] = [open, [vote, save], [share, copy] + [copyComments].compactMap { $0 }, user]
+        return UIMenu(children: sections.filter { !$0.isEmpty }.map { UIMenu(options: .displayInline, children: $0) })
     }
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -90,15 +91,15 @@ fun SavedScreen(
         LazyColumn(contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
             item(key = "profile") {
                 Row(
-                    Modifier.fillMaxWidth().statusBarsPadding().padding(start = HN.padding, end = 4.dp, top = 20.dp, bottom = 20.dp),
+                    Modifier.fillMaxWidth().statusBarsPadding().padding(start = HN.padding, end = HN.padding, top = 20.dp, bottom = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
+                        // Signed out, the name's place is an obvious way to sign in.
                         Text(
-                            username ?: "Not signed in",
-                            style = HN.titleStyle(),
+                            username ?: "Sign in",
+                            style = HN.titleStyle().copy(color = if (username == null) HN.accent else Color.White),
                             modifier = Modifier
-                                .alpha(if (username == null) 0.6f else 1f)
                                 .semantics { heading() }
                                 .then(if (username == null) Modifier.clickable(onClickLabel = "Sign in", onClick = signIn) else Modifier),
                         )
@@ -107,7 +108,8 @@ fun SavedScreen(
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
                     }
-                    IconButton(onClick = openSettings) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
+                    // 48dp to tap, with the gear at its right edge so the margins match the name's.
+                    IconButton(onClick = openSettings, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
                 }
             }
             itemsIndexed(entries, key = { _, entry -> entry.story.id }) { index, entry ->

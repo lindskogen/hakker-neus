@@ -11,6 +11,8 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case exportCSV
         case readerMode
         case theme(ColorTheme)
+        case codeWrap
+        case codeSize
     }
 
     private struct Section {
@@ -36,6 +38,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 rows: [.importCSV, .exportCSV]
             ),
             Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
+            Section(title: "Code in Comments", footer: "Unwrapped code scrolls sideways.", rows: [.codeWrap, .codeSize]),
             Section(
                 title: "Links",
                 footer: "Articles open in Reader mode when the page supports it.",
@@ -123,6 +126,28 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             content.image = UIImage(systemName: "circle.fill")
             content.imageProperties.tintColor = Palette.accent(theme: theme)
             cell.accessoryType = theme == coordinator.settings.colorTheme ? .checkmark : .none
+        case .codeWrap:
+            content.text = "Wrap Long Lines"
+            let toggle = UISwitch()
+            toggle.isOn = coordinator.settings.codeBlockStyle.wrapsLines
+            toggle.addAction(UIAction { [weak self, weak toggle] _ in
+                self?.coordinator.settings.codeBlockStyle.wrapsLines = toggle?.isOn ?? false
+            }, for: .valueChanged)
+            cell.accessoryView = toggle
+            cell.selectionStyle = .none
+        case .codeSize:
+            content.text = "Text Size"
+            let sizes = CodeBlockStyle.Size.allCases
+            let picker = UISegmentedControl(items: sizes.map(\.title))
+            picker.selectedSegmentIndex = sizes.firstIndex(of: coordinator.settings.codeBlockStyle.size) ?? 1
+            picker.addAction(UIAction { [weak self, weak picker] _ in
+                guard let index = picker?.selectedSegmentIndex, sizes.indices.contains(index) else { return }
+                self?.coordinator.settings.codeBlockStyle.size = sizes[index]
+            }, for: .valueChanged)
+            // Accessory views are laid out by frame, not Auto Layout.
+            picker.sizeToFit()
+            cell.accessoryView = picker
+            cell.selectionStyle = .none
         }
         cell.contentConfiguration = content
         return cell
@@ -149,7 +174,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
-        case .readerMode:
+        case .readerMode, .codeWrap, .codeSize:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme

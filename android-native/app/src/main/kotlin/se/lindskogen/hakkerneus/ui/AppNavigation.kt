@@ -112,6 +112,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                         val open = { nav.navigate(Compose(parent, story, context)) }
                         if (AppContainer.session.isSignedIn) open() else { AppContainer.afterSignIn = open; nav.navigate(SignIn) }
                     },
+                    signIn = { nav.navigate(SignIn) },
                 )
             }
         }
