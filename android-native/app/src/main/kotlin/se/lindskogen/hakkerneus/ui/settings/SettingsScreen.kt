@@ -42,7 +42,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.ui.semantics.Role
-import se.lindskogen.hakkerneus.ui.comments.CodeBlockStyle
+import se.lindskogen.hakkerneus.ui.comments.CommentTextStyle
 import se.lindskogen.hakkerneus.ui.theme.ColorTheme
 import se.lindskogen.hakkerneus.ui.theme.HN
 import se.lindskogen.hakkerneus.ui.theme.Palette
@@ -107,15 +107,15 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                 Switch(checked = AppContainer.cornerButtonOnLeft, onCheckedChange = null)
             }
             Footer("Puts the button in the lower-left corner instead of the lower-right.")
-            Section("Code in comments")
+            Section("Comments")
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().background(Color(0xFF26292E))
-                    .toggleable(value = CodeBlockStyle.wrapsLines, role = Role.Switch) { AppContainer.setCodeBlockStyle(wrapsLines = it) }
+                    .toggleable(value = CommentTextStyle.wrapsLines, role = Role.Switch) { AppContainer.setCommentTextStyle(wrapsLines = it) }
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
-                Text("Wrap long lines", style = HN.body, modifier = Modifier.weight(1f))
-                Switch(checked = CodeBlockStyle.wrapsLines, onCheckedChange = null)
+                Text("Wrap code lines", style = HN.body, modifier = Modifier.weight(1f))
+                Switch(checked = CommentTextStyle.wrapsLines, onCheckedChange = null)
             }
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().background(Color(0xFF26292E)).padding(horizontal = 20.dp, vertical = 8.dp),
@@ -123,18 +123,18 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
             ) {
                 Text("Text size", style = HN.body, modifier = Modifier.weight(1f))
                 SingleChoiceSegmentedButtonRow {
-                    val sizes = CodeBlockStyle.Size.entries
+                    val sizes = CommentTextStyle.Size.entries
                     sizes.forEachIndexed { index, size ->
                         SegmentedButton(
-                            selected = CodeBlockStyle.size == size,
-                            onClick = { AppContainer.setCodeBlockStyle(size = size) },
+                            selected = CommentTextStyle.size == size,
+                            onClick = { AppContainer.setCommentTextStyle(size = size) },
                             shape = SegmentedButtonDefaults.itemShape(index, sizes.size),
                             icon = {},
                         ) { Text(size.title, fontSize = 13.sp) }
                     }
                 }
             }
-            Footer("Unwrapped code scrolls sideways.")
+            Footer("Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.")
         }
     }
 

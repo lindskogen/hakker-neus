@@ -45,7 +45,7 @@ final class AppCoordinator {
         self.settings = AppSettings(defaults: defaults)
         self.hiddenStories = HiddenStoriesStore(defaults: defaults)
         ColorTheme.current = settings.colorTheme
-        CodeBlockStyle.current = settings.codeBlockStyle
+        CommentTextStyle.current = settings.commentTextStyle
         do {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)

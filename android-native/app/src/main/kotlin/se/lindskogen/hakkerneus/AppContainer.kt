@@ -19,7 +19,7 @@ import se.lindskogen.hakkerneus.persistence.Database
 import se.lindskogen.hakkerneus.persistence.OfflineItemStore
 import se.lindskogen.hakkerneus.persistence.SavedStoriesStore
 import se.lindskogen.hakkerneus.persistence.VisitedStoriesStore
-import se.lindskogen.hakkerneus.ui.comments.CodeBlockStyle
+import se.lindskogen.hakkerneus.ui.comments.CommentTextStyle
 import se.lindskogen.hakkerneus.ui.theme.ColorTheme
 import se.lindskogen.hakkerneus.ui.theme.Palette
 
@@ -118,9 +118,9 @@ object AppContainer {
     }
 
     /** Code block wrapping and size, remembered. */
-    fun setCodeBlockStyle(wrapsLines: Boolean = CodeBlockStyle.wrapsLines, size: CodeBlockStyle.Size = CodeBlockStyle.size) {
-        CodeBlockStyle.wrapsLines = wrapsLines
-        CodeBlockStyle.size = size
+    fun setCommentTextStyle(wrapsLines: Boolean = CommentTextStyle.wrapsLines, size: CommentTextStyle.Size = CommentTextStyle.size) {
+        CommentTextStyle.wrapsLines = wrapsLines
+        CommentTextStyle.size = size
         settings.edit().putBoolean("codeWrapsLines", wrapsLines).putString("codeSize", size.name).apply()
     }
 
@@ -134,8 +134,8 @@ object AppContainer {
         session = HnSession(appContext)
         hidden = se.lindskogen.hakkerneus.persistence.HiddenStoriesStore(appContext)
         cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
-        CodeBlockStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
-        CodeBlockStyle.size = settings.getString("codeSize", null)?.let { name -> CodeBlockStyle.Size.entries.find { it.name == name } } ?: CodeBlockStyle.Size.Medium
+        CommentTextStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
+        CommentTextStyle.size = settings.getString("codeSize", null)?.let { name -> CommentTextStyle.Size.entries.find { it.name == name } } ?: CommentTextStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange
         // Themes picked before icons followed them (Android shows no prompt, so just fix it).
         useLauncherIcon(Palette.theme)

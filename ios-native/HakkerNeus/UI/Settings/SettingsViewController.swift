@@ -40,7 +40,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             ),
             Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
             Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
-            Section(title: "Code in Comments", footer: "Unwrapped code scrolls sideways.", rows: [.codeWrap, .codeSize]),
+            Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
             Section(
                 title: "Links",
                 footer: "Articles open in Reader mode when the page supports it.",
@@ -129,11 +129,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             content.imageProperties.tintColor = Palette.accent(theme: theme)
             cell.accessoryType = theme == coordinator.settings.colorTheme ? .checkmark : .none
         case .codeWrap:
-            content.text = "Wrap Long Lines"
+            content.text = "Wrap Code Lines"
             let toggle = UISwitch()
-            toggle.isOn = coordinator.settings.codeBlockStyle.wrapsLines
+            toggle.isOn = coordinator.settings.commentTextStyle.wrapsLines
             toggle.addAction(UIAction { [weak self, weak toggle] _ in
-                self?.coordinator.settings.codeBlockStyle.wrapsLines = toggle?.isOn ?? false
+                self?.coordinator.settings.commentTextStyle.wrapsLines = toggle?.isOn ?? false
             }, for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
@@ -148,12 +148,12 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             cell.selectionStyle = .none
         case .codeSize:
             content.text = "Text Size"
-            let sizes = CodeBlockStyle.Size.allCases
+            let sizes = CommentTextStyle.Size.allCases
             let picker = UISegmentedControl(items: sizes.map(\.title))
-            picker.selectedSegmentIndex = sizes.firstIndex(of: coordinator.settings.codeBlockStyle.size) ?? 1
+            picker.selectedSegmentIndex = sizes.firstIndex(of: coordinator.settings.commentTextStyle.size) ?? 1
             picker.addAction(UIAction { [weak self, weak picker] _ in
                 guard let index = picker?.selectedSegmentIndex, sizes.indices.contains(index) else { return }
-                self?.coordinator.settings.codeBlockStyle.size = sizes[index]
+                self?.coordinator.settings.commentTextStyle.size = sizes[index]
             }, for: .valueChanged)
             // Accessory views are laid out by frame, not Auto Layout.
             picker.sizeToFit()

@@ -28,17 +28,20 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 
 /**
  * Renders a parsed comment: paragraphs with italics and tappable links, and code blocks that
- * scroll sideways (or wrap, per Settings). Taps outside links fall through to the comment (to collapse it).
+ * scroll sideways (or wrap), at the text size from Settings. Taps outside links fall through to the comment (to collapse it).
  */
 @Composable
 fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(HN.padding)) {
         for (block in body.blocks) {
             when (block) {
-                is CommentBody.Block.Paragraph -> Text(paragraph(block.runs, onLink), style = HN.body)
+                is CommentBody.Block.Paragraph -> {
+                    val size = CommentTextStyle.size.points
+                    Text(paragraph(block.runs, onLink), style = HN.body.copy(fontSize = size.sp, lineHeight = (size + 6).sp))
+                }
                 is CommentBody.Block.Code -> {
-                    val size = CodeBlockStyle.size.sp
-                    val wraps = CodeBlockStyle.wrapsLines
+                    val size = CommentTextStyle.size.codePoints
+                    val wraps = CommentTextStyle.wrapsLines
                     Text(
                         block.text,
                         style = HN.body.copy(fontFamily = FontFamily.Monospace, fontSize = size.sp, lineHeight = (size + 5).sp),

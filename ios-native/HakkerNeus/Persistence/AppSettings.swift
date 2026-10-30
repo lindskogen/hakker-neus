@@ -33,18 +33,18 @@ final class AppSettings {
         }
     }
 
-    /// How code blocks in comments look; also sets `CodeBlockStyle.current`.
-    var codeBlockStyle: CodeBlockStyle {
+    /// Comment text size and code wrapping; also sets `CommentTextStyle.current`.
+    var commentTextStyle: CommentTextStyle {
         get {
-            CodeBlockStyle(
+            CommentTextStyle(
                 wrapsLines: defaults.bool(forKey: "codeWrapsLines"),
-                size: defaults.string(forKey: "codeSize").flatMap(CodeBlockStyle.Size.init(rawValue:)) ?? .medium
+                size: defaults.string(forKey: "codeSize").flatMap(CommentTextStyle.Size.init(rawValue:)) ?? .medium
             )
         }
         set {
             defaults.set(newValue.wrapsLines, forKey: "codeWrapsLines")
             defaults.set(newValue.size.rawValue, forKey: "codeSize")
-            CodeBlockStyle.current = newValue
+            CommentTextStyle.current = newValue
         }
     }
 
@@ -55,8 +55,8 @@ final class AppSettings {
     }
 }
 
-/// Code blocks in comments: unwrapped (scrolling sideways) or wrapped, and their text size.
-struct CodeBlockStyle: Equatable {
+/// Comment (and self-post) text: its size, and whether code blocks wrap or scroll sideways.
+struct CommentTextStyle: Equatable {
     enum Size: String, CaseIterable {
         case small, medium, large
 
@@ -68,20 +68,23 @@ struct CodeBlockStyle: Equatable {
             }
         }
 
-        /// Point size before Dynamic Type scaling; medium is the original 14.
-        var pointSize: CGFloat {
+        /// Body text point size before Dynamic Type scaling; medium is the original 16.
+        var bodyPointSize: CGFloat {
             switch self {
-            case .small: 12
-            case .medium: 14
-            case .large: 16
+            case .small: 14
+            case .medium: 16
+            case .large: 18
             }
         }
+
+        /// Code is set 2pt smaller than the text around it (medium: the original 14).
+        var codePointSize: CGFloat { bodyPointSize - 2 }
     }
 
     var wrapsLines = false
     var size = Size.medium
 
-    /// Set from `AppSettings` at launch and when changed in Settings. Code blocks are built
+    /// Set from `AppSettings` at launch and when changed in Settings. Comment bodies are built
     /// each time a comment is shown, so changes apply to the next comments shown.
-    nonisolated(unsafe) static var current = CodeBlockStyle()
+    nonisolated(unsafe) static var current = CommentTextStyle()
 }

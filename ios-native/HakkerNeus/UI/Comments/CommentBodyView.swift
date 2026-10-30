@@ -44,8 +44,8 @@ final class CommentBodyView: UIStackView {
         flushText()
     }
 
-    static func attributedString(for paragraphs: [[CommentBody.Run]]) -> NSAttributedString {
-        let font = Theme.Font.body()
+    static func attributedString(for paragraphs: [[CommentBody.Run]], style: CommentTextStyle = .current) -> NSAttributedString {
+        let font = Theme.Font.body(size: style.size.bodyPointSize)
         let italic = font.fontDescriptor.withSymbolicTraits(.traitItalic).map { UIFont(descriptor: $0, size: font.pointSize) } ?? font
 
         let style = NSMutableParagraphStyle()
@@ -137,7 +137,7 @@ extension LinkTextView: UITextViewDelegate {
 final class CodeBlockView: UIView {
     let scrollView = UIScrollView()
 
-    init(code: String, style: CodeBlockStyle = .current) {
+    init(code: String, style: CommentTextStyle = .current) {
         super.init(frame: .zero)
 
         layer.borderWidth = 1 / max(traitCollection.displayScale, 1)
@@ -145,7 +145,7 @@ final class CodeBlockView: UIView {
 
         let label = UILabel()
         label.text = code
-        label.font = Theme.Font.monospaced(size: style.size.pointSize)
+        label.font = Theme.Font.monospaced(size: style.size.codePointSize)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = .white
         label.numberOfLines = 0
