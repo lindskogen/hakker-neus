@@ -82,7 +82,18 @@ final class AppCoordinator {
             itemCache.prefetch(id: screen.itemID)
             stack.append(CommentsViewController(id: screen.itemID, story: screen.story, coordinator: self, restoring: screen))
         }
+        navigationController.cornerButtonMode = { [weak self] screen in
+            guard let self else { return .hidden }
+            if screen === frontPage { return .menu }
+            if screen === savedList { return .close }
+            return .hidden
+        }
+        navigationController.onCornerButton = { [weak self] screen in
+            guard let self else { return }
+            screen === savedList ? showFrontPage() : showSavedStories()
+        }
         navigationController.setViewControllers(stack, animated: false)
+        navigationController.updateCornerButton(for: stack.last, animated: false)
 
         window.rootViewController = navigationController
         window.makeKeyAndVisible()

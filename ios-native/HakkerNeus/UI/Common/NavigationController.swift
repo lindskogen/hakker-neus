@@ -21,6 +21,20 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     private let forwardSwipe = UIScreenEdgePanGestureRecognizer()
     private var interactivePush: UIPercentDrivenInteractiveTransition?
 
+    /// The lower-left button, above every screen so it stays put while they change underneath:
+    /// a hamburger on the front page (to the profile), a close button on the profile (back).
+    private let cornerButton = UIButton(type: .system)
+    /// Called when the corner button is tapped, with the screen it was tapped on.
+    var onCornerButton: ((UIViewController) -> Void)?
+    /// Screens that show the corner button, and whether it shows as close on them.
+    var cornerButtonMode: (UIViewController) -> CornerButtonMode = { _ in .hidden }
+
+    enum CornerButtonMode: Equatable {
+        case menu
+        case close
+        case hidden
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setNavigationBarHidden(true, animated: false)
@@ -34,6 +48,8 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
             interactiveContentPopGestureRecognizer?.delegate = self
         }
 
+        configureCornerButton()
+
         forwardSwipe.edges = .right
         forwardSwipe.delegate = self
         forwardSwipe.addTarget(self, action: #selector(handleForwardSwipe(_:)))
@@ -41,6 +57,61 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
+
+    // MARK: Corner button
+
+    private func configureCornerButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        // The icon morphs between the hamburger and the close button (cross-fades before iOS 26).
+        if #available(iOS 26, *) {
+            config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
+        }
+        cornerButton.configuration = config
+        cornerButton.accessibilityIdentifier = "cornerButton"
+        cornerButton.alpha = 0
+        cornerButton.addAction(UIAction { [unowned self] _ in
+            if let top = topViewController { onCornerButton?(top) }
+        }, for: .touchUpInside)
+
+        cornerButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cornerButton)
+        NSLayoutConstraint.activate([
+            cornerButton.widthAnchor.constraint(equalToConstant: 52),
+            cornerButton.heightAnchor.constraint(equalToConstant: 52),
+            cornerButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2),
+            cornerButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
+        ])
+    }
+
+    /// Shows the corner button as it should be for `viewController`.
+    func updateCornerButton(for viewController: UIViewController?, animated: Bool) {
+        let mode = viewController.map(cornerButtonMode) ?? .hidden
+        if mode != .hidden {
+            let setIcon: () -> Void = {
+                self.cornerButton.configuration?.image = UIImage(systemName: mode == .close ? "xmark" : "line.3.horizontal")
+            }
+            if #available(iOS 26, *) {
+                setIcon()
+            } else if animated {
+                UIView.transition(with: cornerButton, duration: 0.25, options: .transitionCrossDissolve, animations: setIcon)
+            } else {
+                setIcon()
+            }
+            cornerButton.accessibilityLabel = mode == .close ? "Front Page" : "Profile and Saved Stories"
+        }
+        view.bringSubviewToFront(cornerButton)
+        let change = { self.cornerButton.alpha = mode == .hidden ? 0 : 1 }
+        animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
+    }
 
     // MARK: Gesture delegate
 
@@ -103,6 +174,14 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     }
 
     // MARK: UINavigationControllerDelegate
+
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        updateCornerButton(for: viewController, animated: animated)
+        // An interactive swipe that's abandoned leaves the previous screen showing.
+        transitionCoordinator?.notifyWhenInteractionChanges { [weak self] context in
+            if context.isCancelled { self?.updateCornerButton(for: self?.topViewController, animated: true) }
+        }
+    }
 
     func navigationController(
         _ navigationController: UINavigationController,
