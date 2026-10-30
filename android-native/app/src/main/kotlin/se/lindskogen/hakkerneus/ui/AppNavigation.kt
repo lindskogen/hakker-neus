@@ -1,6 +1,9 @@
 package se.lindskogen.hakkerneus.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -45,6 +48,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 
 private enum class CornerMode { Menu, Close, Hidden }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavigation() {
     val nav = rememberNavController()
@@ -56,19 +60,27 @@ fun AppNavigation() {
     }
 
     Box(Modifier.fillMaxSize()) {
+    SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
         composable<FrontPage> {
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
             FrontPageScreen(
                 openComments = { nav.navigate(Comments(it.id)) },
                 openItem = { nav.navigate(Comments(it)) },
             )
+            }
         }
         composable<Comments> { entry ->
-            CommentsScreen(entry.toRoute<Comments>().id, openItem = { nav.navigate(Comments(it)) })
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                CommentsScreen(entry.toRoute<Comments>().id, openItem = { nav.navigate(Comments(it)) })
+            }
         }
         composable<Saved> {
             Placeholder("Saved stories", "The saved list and profile arrive in A4.")
         }
+    }
+    }
     }
 
         // One lower-left button above every screen, so it stays put while they change underneath:

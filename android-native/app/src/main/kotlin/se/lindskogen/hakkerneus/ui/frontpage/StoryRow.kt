@@ -44,6 +44,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import se.lindskogen.hakkerneus.data.Story
 import se.lindskogen.hakkerneus.ui.HnIcons
+import se.lindskogen.hakkerneus.ui.sharedStory
 import se.lindskogen.hakkerneus.ui.theme.HN
 import kotlin.math.roundToInt
 
@@ -120,6 +121,7 @@ fun StoryRow(story: Story, background: Color, isSaved: Boolean, actions: StoryRo
                 .offset { IntOffset(with(density) { offset.value.dp.roundToPx() }, 0) }
                 .fillMaxWidth()
                 .heightIn(min = 100.dp)
+                .sharedStory("card-${story.id}")
                 .background(background)
                 .pointerInput(story.id) {
                     detectHorizontalDragGestures(
@@ -157,7 +159,7 @@ fun StoryRow(story: Story, background: Color, isSaved: Boolean, actions: StoryRo
                 .combinedClickable(onClick = { actions.open(story) }, onLongClick = { menuOpen = true }),
         ) {
             Column(Modifier.padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp)) {
-                Text(story.title, style = HN.titleStyle())
+                Text(story.title, style = HN.titleStyle(), modifier = Modifier.sharedStory("title-${story.id}", bounds = false))
                 story.displayDomain?.let {
                     Text(it, style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f)), maxLines = 1)
                 }

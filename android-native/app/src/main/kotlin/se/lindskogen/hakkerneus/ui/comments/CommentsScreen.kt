@@ -67,6 +67,7 @@ import se.lindskogen.hakkerneus.ui.HnIcons
 import se.lindskogen.hakkerneus.ui.copyToClipboard
 import se.lindskogen.hakkerneus.ui.openInBrowser
 import se.lindskogen.hakkerneus.ui.share
+import se.lindskogen.hakkerneus.ui.sharedStory
 import se.lindskogen.hakkerneus.ui.theme.HN
 import se.lindskogen.hakkerneus.ui.theme.Palette
 
@@ -104,7 +105,7 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
     Box(Modifier.fillMaxSize().background(HN.backgroundDark)) {
         PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = model::refresh) {
             LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
-                item(key = "header") { StoryHeader(state.story, state.storyBody, openLink) }
+                item(key = "header") { StoryHeader(id, state.story, state.storyBody, openLink) }
                 when {
                     state.isLoading && visible.isEmpty() -> item { Status { CircularProgressIndicator(color = Color.White) } }
                     state.error != null -> item { Status { Message(HnIcons.error, state.error!!, HN.backgroundRed.copy(alpha = 0.5f)) } }
@@ -151,11 +152,11 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit) {
 
 /** Orange header with the title, reaching up behind the status bar. */
 @Composable
-private fun StoryHeader(story: Story?, body: CommentBody?, onLink: (String) -> Unit) {
-    val context = LocalContext.current
+private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (String) -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
+            .sharedStory("card-$id")
             .background(HN.backgroundOrange)
             .statusBarsPadding()
             .heightIn(min = 100.dp)
@@ -163,7 +164,7 @@ private fun StoryHeader(story: Story?, body: CommentBody?, onLink: (String) -> U
             .padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Text(story?.title ?: "", style = HN.titleStyle(), modifier = Modifier.semantics { heading() })
+        Text(story?.title ?: "", style = HN.titleStyle(), modifier = Modifier.sharedStory("title-$id", bounds = false).semantics { heading() })
         if (story != null) {
             val byline = listOfNotNull("${story.score} points", story.author?.let { "by $it" }, story.displayDomain)
             Text(byline.joinToString(" · "), style = HN.body)
