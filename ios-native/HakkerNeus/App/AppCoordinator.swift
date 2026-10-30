@@ -17,6 +17,7 @@ final class AppCoordinator {
     let savedStories: SavedStoriesStore
     let visitedStories: VisitedStoriesStore
     let offlineItems: OfflineItemStore
+    let settings: AppSettings
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
@@ -36,6 +37,7 @@ final class AppCoordinator {
         self.client = client
         self.itemCache = ItemCache(client: client)
         self.defaults = defaults
+        self.settings = AppSettings(defaults: defaults)
         do {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
@@ -108,6 +110,12 @@ final class AppCoordinator {
         return true
     }
 
+    func showSettings() {
+        let settings = UINavigationController(rootViewController: SettingsViewController(coordinator: self))
+        settings.overrideUserInterfaceStyle = .dark
+        navigationController.present(settings, animated: true)
+    }
+
     func showSavedStories(animated: Bool = true) {
         navigationController.popToRootViewController(animated: animated)
     }
@@ -147,7 +155,9 @@ final class AppCoordinator {
     }
 
     func makeBrowser(for url: URL) -> SFSafariViewController {
-        let browser = SFSafariViewController(url: url)
+        let configuration = SFSafariViewController.Configuration()
+        configuration.entersReaderIfAvailable = settings.opensLinksInReaderMode
+        let browser = SFSafariViewController(url: url, configuration: configuration)
         browser.preferredBarTintColor = Theme.Color.backgroundDark
         browser.preferredControlTintColor = .white
         browser.dismissButtonStyle = .done

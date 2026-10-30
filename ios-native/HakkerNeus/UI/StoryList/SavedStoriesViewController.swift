@@ -12,6 +12,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     private var stories: [Story.ID: Story] = [:]
     private let emptyView = FullPageStateView()
     private let topFill = TopFillView()
+    private let settingsButton = UIButton(type: .system)
     private var pendingReload: DispatchWorkItem?
 
     init(coordinator: AppCoordinator) {
@@ -42,6 +43,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         collectionView.accessibilityIdentifier = "saved.list"
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
+        configureSettingsButton()
 
         emptyView.state = .message(systemImage: "heart", text: "No saved stories")
         emptyView.isAccessibilityElement = true
@@ -68,6 +70,36 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             self, selector: #selector(visitedStoryChanged(_:)), name: VisitedStoriesStore.didChange, object: nil
         )
         reload(animated: false)
+    }
+
+    /// The saved list is the personal page, so settings live here rather than on the front page.
+    private func configureSettingsButton() {
+        var config: UIButton.Configuration
+        if #available(iOS 26, *) {
+            config = .glass()
+        } else {
+            config = .filled()
+            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
+        }
+        config.image = UIImage(systemName: "gearshape")
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 16, weight: .semibold)
+        config.baseForegroundColor = .white
+        config.cornerStyle = .capsule
+        settingsButton.configuration = config
+        settingsButton.accessibilityLabel = "Settings"
+        settingsButton.accessibilityIdentifier = "saved.settings"
+        settingsButton.addAction(UIAction { [unowned self] _ in coordinator.showSettings() }, for: .touchUpInside)
+
+        settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(settingsButton)
+        NSLayoutConstraint.activate([
+            settingsButton.widthAnchor.constraint(equalToConstant: 40),
+            settingsButton.heightAnchor.constraint(equalToConstant: 40),
+            settingsButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding),
+            settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
+        ])
+        // Room to scroll the last row out from under the button.
+        collectionView.contentInset.bottom = 56
     }
 
     @objc private func savedStoriesChanged() {
