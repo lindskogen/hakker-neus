@@ -6,6 +6,7 @@ import UIKit
 /// Swipe right to save (heart), swipe left to open the comments (comment count).
 final class StoryCell: UICollectionViewListCell {
     var onToggleSaved: (() -> Void)?
+    var onToggleUpvote: (() -> Void)?
     var onOpenComments: (() -> Void)?
 
     /// The moving part of the row. The swipe actions sit behind it.
@@ -16,6 +17,9 @@ final class StoryCell: UICollectionViewListCell {
     private let savedHeartView = UIImageView(image: UIImage(systemName: "heart.fill"))
 
     private let saveActionView = UIImageView()
+    /// Behind the row; turns blue once a right swipe reaches the upvote stage.
+    private let actionBackground = UIView()
+    private var isUpvoted = false
     let commentCountLabel = UILabel()
 
     private var rowColor: UIColor = Theme.Color.backgroundOrange
@@ -63,7 +67,8 @@ final class StoryCell: UICollectionViewListCell {
             label.adjustsFontForContentSizeCategory = true
         }
 
-        for view in [saveActionView, commentCountLabel, rowView] {
+        actionBackground.backgroundColor = .clear
+        for view in [actionBackground, saveActionView, commentCountLabel, rowView] {
             view.translatesAutoresizingMaskIntoConstraints = false
             contentView.addSubview(view)
         }
@@ -77,6 +82,11 @@ final class StoryCell: UICollectionViewListCell {
         minHeight.priority = .defaultHigh
 
         NSLayoutConstraint.activate([
+            actionBackground.topAnchor.constraint(equalTo: contentView.topAnchor),
+            actionBackground.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            actionBackground.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            actionBackground.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+
             rowView.topAnchor.constraint(equalTo: contentView.topAnchor),
             rowView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             rowView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -140,6 +150,7 @@ final class StoryCell: UICollectionViewListCell {
         let savedChanged = story.id == storyID && isSaved != self.isSaved
         storyID = story.id
         self.isSaved = isSaved
+        self.isUpvoted = isUpvoted
 
         rowColor = backgroundColor
         rowView.backgroundColor = backgroundColor
@@ -182,6 +193,10 @@ final class StoryCell: UICollectionViewListCell {
                 self?.onToggleSaved?()
                 return true
             },
+            UIAccessibilityCustomAction(name: isUpvoted ? "Unvote" : "Upvote") { [weak self] _ in
+                self?.onToggleUpvote?()
+                return true
+            },
         ] + extraAccessibilityActions
         setNeedsUpdateConfiguration()
     }
@@ -209,9 +224,10 @@ final class StoryCell: UICollectionViewListCell {
 
         switch pan.state {
         case .began:
-            // Chosen here rather than in configure(), which runs again as soon as the save lands,
-            // while the row is still springing back over this icon.
-            saveActionView.image = UIImage(systemName: isSaved ? "heart.slash.fill" : "heart.fill")
+            // Icons are chosen per swipe rather than in configure(), which runs again as soon as
+            // the action lands, while the row is still springing back over them.
+            swipeStartedSaved = isSaved
+            swipeStartedUpvoted = isUpvoted
             haptics.prepare()
             armedAction = nil
             apply(swipe)
@@ -229,6 +245,9 @@ final class StoryCell: UICollectionViewListCell {
             case .save:
                 onToggleSaved?()
                 settle(delay: 0.1)
+            case .upvote:
+                onToggleUpvote?()
+                settle(delay: 0.1)
             case nil:
                 settle()
             }
@@ -239,8 +258,16 @@ final class StoryCell: UICollectionViewListCell {
         }
     }
 
+    private var swipeStartedSaved = false
+    private var swipeStartedUpvoted = false
+
     func apply(_ swipe: StorySwipe) {
         rowView.transform = CGAffineTransform(translationX: swipe.offset, y: 0)
+        let upvoteStage = swipe.armedAction == .upvote
+        saveActionView.image = UIImage(systemName: upvoteStage
+            ? (swipeStartedUpvoted ? "arrow.uturn.down" : "arrow.up")
+            : (swipeStartedSaved ? "heart.slash.fill" : "heart.fill"))
+        actionBackground.backgroundColor = upvoteStage ? UIColor(rgb: Palette.tableau10[0]) : .clear
         saveActionView.transform = CGAffineTransform(translationX: swipe.heartTranslation, y: 0)
         saveActionView.alpha = swipe.heartAlpha
         // Never scale all the way to zero; a singular transform can't be animated back.

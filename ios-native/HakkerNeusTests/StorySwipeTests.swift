@@ -3,13 +3,13 @@ import Testing
 @testable import HakkerNeus
 
 struct StorySwipeTests {
-    @Test func followsTheFingerUpToTheThreshold() {
-        #expect(StorySwipe(translation: 50).offset == 50)
+    @Test func followsTheFingerUpToTheLastThreshold() {
+        #expect(StorySwipe(translation: 120).offset == 120)
         #expect(StorySwipe(translation: -100).offset == -100)
     }
 
-    @Test func resistsPastTheThreshold() {
-        #expect(StorySwipe(translation: 120).offset == 90)
+    @Test func resistsPastTheLastThreshold() {
+        #expect(StorySwipe(translation: 200).offset == 170)
         #expect(StorySwipe(translation: -140).offset == -110)
     }
 
@@ -17,7 +17,9 @@ struct StorySwipeTests {
         (0, nil),
         (79, nil),
         (80, StorySwipe.Action.save),
-        (300, .save),
+        (159, .save),
+        (160, .upvote),
+        (300, .upvote),
         (-99, nil),
         (-100, .comments),
         (-300, .comments),

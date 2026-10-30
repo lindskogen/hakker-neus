@@ -25,6 +25,7 @@ extension AppCoordinator {
             extraAccessibilityActions: [jump]
         )
         cell.onToggleSaved = { [weak self] in self?.savedStories.toggle(story) }
+        cell.onToggleUpvote = { [weak self] in self?.toggleVote(story) }
         cell.onOpenComments = { [weak self] in self?.showComments(for: story) }
     }
 
