@@ -78,6 +78,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             profileHeader = view
             configureProfileHeader()
             view.onSettings = { [unowned self] in coordinator.showSettings() }
+            view.onSignIn = { [unowned self] in coordinator.showSignIn() }
         }
         dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
             collectionView.dequeueConfiguredReusableSupplementary(using: header, for: indexPath)
@@ -89,6 +90,11 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         NotificationCenter.default.addObserver(
             self, selector: #selector(visitedStoryChanged(_:)), name: VisitedStoriesStore.didChange, object: nil
         )
+        NotificationCenter.default.addObserver(
+            forName: HNSession.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.configureProfileHeader() }
+        }
         reload(animated: false)
     }
 
@@ -124,7 +130,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     }
 
     private func configureProfileHeader() {
-        profileHeader?.configure(username: nil, savedCount: stories.count)
+        profileHeader?.configure(username: coordinator.session.username, savedCount: stories.count)
     }
 
     private func story(at indexPath: IndexPath) -> Story? {

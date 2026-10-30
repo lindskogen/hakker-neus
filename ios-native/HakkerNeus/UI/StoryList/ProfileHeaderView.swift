@@ -4,6 +4,9 @@ import UIKit
 /// how much is saved, and the way into settings.
 final class ProfileHeaderView: UICollectionReusableView {
     var onSettings: (() -> Void)?
+    /// Tapping "Not signed in".
+    var onSignIn: (() -> Void)?
+    private var isSignedIn = false
 
     private let nameLabel = UILabel()
     private let detailLabel = UILabel()
@@ -33,6 +36,9 @@ final class ProfileHeaderView: UICollectionReusableView {
         settingsButton.addAction(UIAction { [weak self] _ in self?.onSettings?() }, for: .touchUpInside)
         settingsButton.setContentHuggingPriority(.required, for: .horizontal)
 
+        nameLabel.isUserInteractionEnabled = true
+        nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(nameTapped)))
+
         let text = UIStackView(arrangedSubviews: [nameLabel, detailLabel])
         text.axis = .vertical
         text.spacing = 4
@@ -55,10 +61,17 @@ final class ProfileHeaderView: UICollectionReusableView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    @objc private func nameTapped() {
+        if !isSignedIn { onSignIn?() }
+    }
+
     /// - Parameter username: The signed-in HN user, or nil.
     func configure(username: String?, savedCount: Int) {
+        isSignedIn = username != nil
         nameLabel.text = username ?? "Not signed in"
         nameLabel.alpha = username == nil ? 0.6 : 1
+        nameLabel.accessibilityTraits = username == nil ? [.header, .button] : .header
+        nameLabel.accessibilityHint = username == nil ? "Signs in to Hacker News" : nil
         detailLabel.text = savedCount == 1 ? "1 saved story" : "\(savedCount) saved stories"
     }
 }

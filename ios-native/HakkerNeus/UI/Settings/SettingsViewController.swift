@@ -4,6 +4,9 @@ import UniformTypeIdentifiers
 /// Settings, shown as a sheet from the saved list.
 final class SettingsViewController: UITableViewController, UIDocumentPickerDelegate {
     private enum Row {
+        case account
+        case signIn
+        case signOut
         case importCSV
         case exportCSV
         case readerMode
@@ -19,7 +22,13 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
 
     private var sections: [Section] {
         let count = coordinator.savedStories.allEntries.count
+        let session = coordinator.session
         return [
+            Section(
+                title: "Hacker News Account",
+                footer: session.isSignedIn ? nil : "Sign in to vote and comment.",
+                rows: session.isSignedIn ? [.account, .signOut] : [.signIn]
+            ),
             Section(
                 title: "Saved Stories",
                 footer: "\(count) saved. Uses the same CSV format as hacker-feed's bookmarks export.",
@@ -48,6 +57,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             self?.dismiss(animated: true)
         })
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: HNSession.didChange, object: nil)
+    }
+
+    @objc private func sessionChanged() {
+        tableView.reloadData()
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -73,6 +87,18 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         cell.selectionStyle = .default
 
         switch sections[indexPath.section].rows[indexPath.row] {
+        case .account:
+            content.text = coordinator.session.username
+            content.secondaryText = "Signed in"
+            content.image = UIImage(systemName: "person.crop.circle.fill")
+            cell.selectionStyle = .none
+        case .signIn:
+            content.text = "Sign In…"
+            content.image = UIImage(systemName: "person.crop.circle")
+            content.textProperties.color = .tintColor
+        case .signOut:
+            content.text = "Sign Out"
+            content.textProperties.color = .systemRed
         case .importCSV:
             content.text = "Import from CSV…"
             content.image = UIImage(systemName: "square.and.arrow.down")
@@ -97,6 +123,18 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         switch sections[indexPath.section].rows[indexPath.row] {
+        case .account:
+            break
+        case .signIn:
+            coordinator.showSignIn()
+        case .signOut:
+            let confirm = UIAlertController(title: "Sign out of \(coordinator.session.username ?? "Hacker News")?", message: nil, preferredStyle: .actionSheet)
+            confirm.addAction(UIAlertAction(title: "Sign Out", style: .destructive) { [weak self] _ in
+                self?.coordinator.session.signOut()
+            })
+            confirm.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            confirm.popoverPresentationController?.sourceView = tableView.cellForRow(at: indexPath)
+            present(confirm, animated: true)
         case .importCSV:
             let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.commaSeparatedText, .plainText], asCopy: true)
             picker.delegate = self

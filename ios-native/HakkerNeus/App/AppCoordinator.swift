@@ -18,6 +18,7 @@ final class AppCoordinator {
     let visitedStories: VisitedStoriesStore
     let offlineItems: OfflineItemStore
     let settings: AppSettings
+    let session = HNSession()
 
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
@@ -108,6 +109,15 @@ final class AppCoordinator {
         navigationController.presentedViewController?.dismiss(animated: false)
         showSavedStories(animated: false)
         return true
+    }
+
+    /// Presents the sign-in screen over whatever is showing.
+    func showSignIn() {
+        let signIn = UINavigationController(rootViewController: SignInViewController(coordinator: self))
+        signIn.overrideUserInterfaceStyle = .dark
+        var top: UIViewController = navigationController
+        while let presented = top.presentedViewController { top = presented }
+        top.present(signIn, animated: true)
     }
 
     func showSettings() {
