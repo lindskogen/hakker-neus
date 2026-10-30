@@ -12,6 +12,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     private var dataSource: UICollectionViewDiffableDataSource<Section, Story.ID>!
     private var stories: [Story.ID: Story] = [:]
     private let stateView = FullPageStateView()
+    private let skeleton = SkeletonListView()
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
     private let offlineBanner = OfflineBanner()
@@ -42,9 +43,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         }
 
         if feed.stories.isEmpty {
-            stateView.backgroundColor = Theme.Color.backgroundOrange
-            stateView.state = .loading
-            collectionView.backgroundView = stateView
+            collectionView.backgroundView = skeleton
             Task { await reload() }
         } else {
             // Restored from the last launch: show it as it was; pull to refresh gets a new ranking.
@@ -127,6 +126,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
                 if stories.isEmpty {
                     stateView.backgroundColor = Theme.Color.backgroundDark
                     stateView.state = .error(error)
+                    collectionView.backgroundView = stateView
                 } else {
                     // Keep the stories that are showing; just say why they didn't change.
                     offlineBanner.show("Offline · couldn't refresh", hideAfter: 2.5)
