@@ -90,6 +90,13 @@ final class AppCoordinator {
             if screen === savedList { return .close }
             return .hidden
         }
+        navigationController.cornerButtonOnLeft = settings.cornerButtonOnLeft
+        NotificationCenter.default.addObserver(forName: AppSettings.cornerButtonSideDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.navigationController.cornerButtonOnLeft = self.settings.cornerButtonOnLeft
+            }
+        }
         navigationController.onCornerButton = { [weak self] screen in
             guard let self else { return }
             screen === savedList ? showFrontPage() : showSavedStories()

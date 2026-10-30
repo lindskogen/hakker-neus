@@ -142,13 +142,15 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
     }
 
-        // One lower-left button above every screen, so it stays put while they change underneath:
-        // the hamburger on the front page opens the profile, the close button returns.
+        // One lower-right button (lower-left for left hands) above every screen, so it stays put
+        // while they change underneath: the hamburger on the front page opens the profile, the
+        // close button returns.
+        val onLeft = AppContainer.cornerButtonOnLeft
         AnimatedVisibility(
             visible = mode != CornerMode.Hidden,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomStart),
+            modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
             SmallFloatingActionButton(
                 onClick = { if (mode == CornerMode.Close) nav.popBackStack() else nav.navigate(Saved) },
@@ -157,7 +159,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                 contentColor = Color.White,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(start = 20.dp, bottom = HN.padding)
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding)
                     .size(52.dp)
                     .semantics { contentDescription = if (mode == CornerMode.Close) "Front page" else "Profile and saved stories" },
             ) {

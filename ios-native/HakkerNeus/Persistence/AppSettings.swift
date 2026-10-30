@@ -22,6 +22,17 @@ final class AppSettings {
         }
     }
 
+    static let cornerButtonSideDidChange = Notification.Name("AppSettings.cornerButtonSideDidChange")
+
+    /// The front page's corner button sits lower-left (for left hands) instead of lower-right.
+    var cornerButtonOnLeft: Bool {
+        get { defaults.bool(forKey: "cornerButtonOnLeft") }
+        set {
+            defaults.set(newValue, forKey: "cornerButtonOnLeft")
+            NotificationCenter.default.post(name: Self.cornerButtonSideDidChange, object: nil)
+        }
+    }
+
     /// How code blocks in comments look; also sets `CodeBlockStyle.current`.
     var codeBlockStyle: CodeBlockStyle {
         get {

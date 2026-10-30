@@ -96,6 +96,17 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
             Section("Appearance")
             for (theme in ColorTheme.entries) ThemeRow(theme)
             Footer("The front page's colours. Saved stories stay red.")
+            Section("Front page button")
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().background(Color(0xFF26292E))
+                    .toggleable(value = AppContainer.cornerButtonOnLeft, role = Role.Switch) { AppContainer.placeCornerButton(onLeft = it) }
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text("Left-handed", style = HN.body, modifier = Modifier.weight(1f))
+                Switch(checked = AppContainer.cornerButtonOnLeft, onCheckedChange = null)
+            }
+            Footer("Puts the button in the lower-left corner instead of the lower-right.")
             Section("Code in comments")
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().background(Color(0xFF26292E))

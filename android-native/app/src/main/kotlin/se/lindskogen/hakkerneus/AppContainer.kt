@@ -1,6 +1,8 @@
 package se.lindskogen.hakkerneus
 
 import android.content.Context
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import android.widget.Toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -89,6 +91,15 @@ object AppContainer {
         settings.edit().putString("colorTheme", theme.name).apply()
     }
 
+    /** The corner button sits lower-left (for left hands) instead of lower-right. Compose state. */
+    var cornerButtonOnLeft by androidx.compose.runtime.mutableStateOf(false)
+        private set
+
+    fun placeCornerButton(onLeft: Boolean) {
+        cornerButtonOnLeft = onLeft
+        settings.edit().putBoolean("cornerButtonOnLeft", onLeft).apply()
+    }
+
     /** Code block wrapping and size, remembered. */
     fun setCodeBlockStyle(wrapsLines: Boolean = CodeBlockStyle.wrapsLines, size: CodeBlockStyle.Size = CodeBlockStyle.size) {
         CodeBlockStyle.wrapsLines = wrapsLines
@@ -104,6 +115,7 @@ object AppContainer {
         visited = VisitedStoriesStore(db)
         offline = OfflineItemStore(db)
         session = HnSession(appContext)
+        cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
         CodeBlockStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
         CodeBlockStyle.size = settings.getString("codeSize", null)?.let { name -> CodeBlockStyle.Size.entries.find { it.name == name } } ?: CodeBlockStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange

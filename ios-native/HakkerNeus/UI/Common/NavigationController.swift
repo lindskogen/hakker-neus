@@ -21,9 +21,17 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     private let forwardSwipe = UIScreenEdgePanGestureRecognizer()
     private var interactivePush: UIPercentDrivenInteractiveTransition?
 
-    /// The lower-left button, above every screen so it stays put while they change underneath:
-    /// a hamburger on the front page (to the profile), a close button on the profile (back).
+    /// The lower-right button (lower-left if set for left hands), above every screen so it stays
+    /// put while they change underneath: a hamburger on the front page (to the profile), a close
+    /// button on the profile (back).
     private let cornerButton = UIButton(type: .system)
+    private var cornerButtonLeading: NSLayoutConstraint!
+    private var cornerButtonTrailing: NSLayoutConstraint!
+
+    /// Puts the corner button in the lower-left corner instead of the lower-right.
+    var cornerButtonOnLeft = false {
+        didSet { placeCornerButton() }
+    }
     /// Called when the corner button is tapped, with the screen it was tapped on.
     var onCornerButton: ((UIViewController) -> Void)?
     /// Screens that show the corner button, and whether it shows as close on them.
@@ -87,9 +95,17 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         NSLayoutConstraint.activate([
             cornerButton.widthAnchor.constraint(equalToConstant: 52),
             cornerButton.heightAnchor.constraint(equalToConstant: 52),
-            cornerButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2),
             cornerButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
         ])
+        cornerButtonLeading = cornerButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2)
+        cornerButtonTrailing = cornerButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding * 2)
+        placeCornerButton()
+    }
+
+    private func placeCornerButton() {
+        guard isViewLoaded else { return }
+        cornerButtonLeading.isActive = cornerButtonOnLeft
+        cornerButtonTrailing.isActive = !cornerButtonOnLeft
     }
 
     /// Shows the corner button as it should be for `viewController`.

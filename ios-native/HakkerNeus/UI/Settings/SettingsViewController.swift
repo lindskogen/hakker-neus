@@ -13,6 +13,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case theme(ColorTheme)
         case codeWrap
         case codeSize
+        case leftHanded
     }
 
     private struct Section {
@@ -38,6 +39,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 rows: [.importCSV, .exportCSV]
             ),
             Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
+            Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
             Section(title: "Code in Comments", footer: "Unwrapped code scrolls sideways.", rows: [.codeWrap, .codeSize]),
             Section(
                 title: "Links",
@@ -135,6 +137,15 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             }, for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
+        case .leftHanded:
+            content.text = "Left-Handed"
+            let toggle = UISwitch()
+            toggle.isOn = coordinator.settings.cornerButtonOnLeft
+            toggle.addAction(UIAction { [weak self, weak toggle] _ in
+                self?.coordinator.settings.cornerButtonOnLeft = toggle?.isOn ?? false
+            }, for: .valueChanged)
+            cell.accessoryView = toggle
+            cell.selectionStyle = .none
         case .codeSize:
             content.text = "Text Size"
             let sizes = CodeBlockStyle.Size.allCases
@@ -174,7 +185,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
-        case .readerMode, .codeWrap, .codeSize:
+        case .readerMode, .codeWrap, .codeSize, .leftHanded:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme
