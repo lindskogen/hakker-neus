@@ -90,6 +90,20 @@ object AppContainer {
     fun setColorTheme(theme: ColorTheme) {
         Palette.theme = theme
         settings.edit().putString("colorTheme", theme.name).apply()
+        useLauncherIcon(theme)
+    }
+
+    /** Shows the launcher entry (activity-alias) with [theme]'s icon and hides the others. */
+    private fun useLauncherIcon(theme: ColorTheme) {
+        val packageManager = appContext.packageManager
+        for (each in ColorTheme.entries) {
+            val component = android.content.ComponentName(appContext, "se.lindskogen.hakkerneus.Launcher${each.name}")
+            val state = if (each == theme) android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            else android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            if (packageManager.getComponentEnabledSetting(component) != state) {
+                packageManager.setComponentEnabledSetting(component, state, android.content.pm.PackageManager.DONT_KILL_APP)
+            }
+        }
     }
 
     /** The corner button sits lower-left (for left hands) instead of lower-right. Compose state. */
@@ -120,5 +134,7 @@ object AppContainer {
         CodeBlockStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
         CodeBlockStyle.size = settings.getString("codeSize", null)?.let { name -> CodeBlockStyle.Size.entries.find { it.name == name } } ?: CodeBlockStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange
+        // Themes picked before icons followed them (Android shows no prompt, so just fix it).
+        useLauncherIcon(Palette.theme)
     }
 }

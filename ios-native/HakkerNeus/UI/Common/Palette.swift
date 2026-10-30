@@ -10,6 +10,15 @@ enum ColorTheme: String, CaseIterable {
     /// Set from `AppSettings` at launch and when changed in Settings.
     nonisolated(unsafe) static var current: ColorTheme = .orange
 
+    /// The matching home screen icon (an alternate icon in the asset catalog); nil is the main one.
+    var alternateIconName: String? {
+        switch self {
+        case .orange: nil
+        case .blue: "AppIcon-Blue"
+        case .green: "AppIcon-Green"
+        }
+    }
+
     var title: String {
         switch self {
         case .orange: "Orange"

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon backgrounds: each theme's accent, Palette.accent() (d3 ramp at 0.65). -->
+<resources>
+    <color name="icon_orange">#EB6311</color>
+    <color name="icon_blue">#3C8BC3</color>
+    <color name="icon_green">#3DA458</color>
+</resources>

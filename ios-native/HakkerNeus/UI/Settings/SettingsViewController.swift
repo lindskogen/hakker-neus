@@ -189,6 +189,10 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme
+            // The home screen icon follows; iOS confirms the change with an alert of its own.
+            if UIApplication.shared.supportsAlternateIcons, UIApplication.shared.alternateIconName != theme.alternateIconName {
+                UIApplication.shared.setAlternateIconName(theme.alternateIconName)
+            }
             tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
         }
     }
