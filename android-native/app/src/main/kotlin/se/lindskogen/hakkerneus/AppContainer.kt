@@ -26,6 +26,7 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 /** App-wide dependencies (the Android counterpart of the iOS AppCoordinator's properties). */
 object AppContainer {
     val client: HnClient = LiveHnClient()
+    val users = se.lindskogen.hakkerneus.data.UserApi()
 
     /** Stories seen in a list, so the comments screen can show the header before loading. */
     val knownStories = mutableMapOf<Long, Story>()

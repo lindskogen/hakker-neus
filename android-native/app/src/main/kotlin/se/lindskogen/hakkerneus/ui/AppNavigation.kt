@@ -51,6 +51,7 @@ import se.lindskogen.hakkerneus.ui.frontpage.FrontPageScreen
 import se.lindskogen.hakkerneus.ui.settings.AccountSection
 import se.lindskogen.hakkerneus.ui.saved.SavedScreen
 import se.lindskogen.hakkerneus.ui.settings.SettingsScreen
+import se.lindskogen.hakkerneus.ui.user.UserScreen
 import se.lindskogen.hakkerneus.ui.theme.HN
 
 @Serializable object FrontPage
@@ -59,6 +60,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 @Serializable object SignIn
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
+@Serializable data class User(val name: String)
 
 private enum class CornerMode { Menu, Close, Hidden }
 
@@ -80,6 +82,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
         target.toLongOrNull()?.let { nav.navigate(Comments(it)); return@LaunchedEffect }
         when (val parsed = HackerNewsLink.parse(target)) {
             is HackerNewsLink.Item -> nav.navigate(Comments(parsed.id))
+            is HackerNewsLink.User -> nav.navigate(User(parsed.name))
             else -> if (uri.host == "open") context.openInBrowser(target)
         }
     }
@@ -91,6 +94,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
 
     Box(Modifier.fillMaxSize()) {
+    CompositionLocalProvider(LocalOpenUser provides { name -> nav.navigate(User(name)) }) {
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
@@ -128,6 +132,23 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                 )
             }
         }
+        composable<User> { entry ->
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                UserScreen(
+                    entry.toRoute<User>().name,
+                    openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
+                    openItem = { nav.navigate(Comments(it)) },
+                    openLink = { url ->
+                        when (val link = HackerNewsLink.parse(url)) {
+                            is HackerNewsLink.Item -> nav.navigate(Comments(link.id))
+                            is HackerNewsLink.User -> nav.navigate(User(link.name))
+                            else -> context.openInBrowser(url)
+                        }
+                    },
+                    signIn = { nav.navigate(SignIn) },
+                )
+            }
+        }
         composable<Settings> {
             SettingsScreen(back = { nav.popBackStack() }, account = { AccountSection(signIn = { nav.navigate(SignIn) }) })
         }
@@ -138,6 +159,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             val route = entry.toRoute<Compose>()
             ComposeScreen(route.parent, route.story, route.context, done = { nav.popBackStack() })
         }
+    }
     }
     }
     }

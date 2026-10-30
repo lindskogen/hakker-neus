@@ -23,6 +23,15 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         for context in connectionOptions.urlContexts {
             coordinator.handleAppURL(context.url)
         }
+        #if DEBUG
+        // `-OpenURL hakkerneus://…` opens a screen at launch, for screenshots (simctl openurl
+        // asks for confirmation first).
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-OpenURL"), index + 1 < arguments.count,
+           let url = URL(string: arguments[index + 1]) {
+            coordinator.handleAppURL(url)
+        }
+        #endif
 
         self.window = window
         self.coordinator = coordinator

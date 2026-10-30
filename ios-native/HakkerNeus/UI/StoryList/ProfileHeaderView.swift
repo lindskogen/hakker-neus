@@ -6,6 +6,9 @@ final class ProfileHeaderView: UICollectionReusableView {
     var onSettings: (() -> Void)?
     /// Tapping "Sign in", shown when signed out.
     var onSignIn: (() -> Void)?
+    /// Tapping your own name, when signed in.
+    var onShowUser: ((String) -> Void)?
+    private var username: String?
     private var isSignedIn = false
 
     private let nameLabel = UILabel()
@@ -68,17 +71,18 @@ final class ProfileHeaderView: UICollectionReusableView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     @objc private func nameTapped() {
-        if !isSignedIn { onSignIn?() }
+        if let username { onShowUser?(username) } else { onSignIn?() }
     }
 
     /// - Parameter username: The signed-in HN user, or nil.
     func configure(username: String?, savedCount: Int) {
         isSignedIn = username != nil
+        self.username = username
         // Signed out, the name's place is an obvious way to sign in.
         nameLabel.text = username ?? "Sign in"
         nameLabel.textColor = username == nil ? Theme.Color.accent : .white
-        nameLabel.accessibilityTraits = username == nil ? [.header, .button] : .header
-        nameLabel.accessibilityHint = username == nil ? "Signs in to Hacker News" : nil
+        nameLabel.accessibilityTraits = [.header, .button]
+        nameLabel.accessibilityHint = username == nil ? "Signs in to Hacker News" : "Shows your Hacker News page"
         detailLabel.text = savedCount == 1 ? "1 saved story" : "\(savedCount) saved stories"
     }
 }

@@ -103,7 +103,7 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
-                Text("Left-handed", style = HN.body, modifier = Modifier.weight(1f))
+                Text("Leftie mode", style = HN.body, modifier = Modifier.weight(1f))
                 Switch(checked = AppContainer.cornerButtonOnLeft, onCheckedChange = null)
             }
             Footer("Puts the button in the lower-left corner instead of the lower-right.")

@@ -67,6 +67,7 @@ fun SavedScreen(
     val visits by AppContainer.visited.visits.collectAsState()
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
+    val openUser = se.lindskogen.hakkerneus.ui.LocalOpenUser.current
     val actions = remember {
         StoryRowActions(
             open = { story ->
@@ -101,7 +102,9 @@ fun SavedScreen(
                             style = HN.titleStyle().copy(color = if (username == null) HN.accent else Color.White),
                             modifier = Modifier
                                 .semantics { heading() }
-                                .then(if (username == null) Modifier.clickable(onClickLabel = "Sign in", onClick = signIn) else Modifier),
+                                .clickable(onClickLabel = if (username == null) "Sign in" else "Your Hacker News page") {
+                                    if (username == null) signIn() else openUser(username)
+                                },
                         )
                         Text(
                             if (entries.size == 1) "1 saved story" else "${entries.size} saved stories",

@@ -1,7 +1,7 @@
 package se.lindskogen.hakkerneus.ui.comments
 
 import se.lindskogen.hakkerneus.ui.UserMenuItem
-import se.lindskogen.hakkerneus.ui.openUser
+import se.lindskogen.hakkerneus.ui.LocalOpenUser
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -99,10 +99,12 @@ fun CommentsScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
+    val openUserPage = LocalOpenUser.current
 
     val openLink: (String) -> Unit = { url ->
         when (val link = HackerNewsLink.parse(url)) {
             is HackerNewsLink.Item -> openItem(link.id)
+            is HackerNewsLink.User -> openUserPage(link.name)
             else -> context.openInBrowser(url)
         }
     }
@@ -234,6 +236,7 @@ private fun StoryHeader(
     menu: (Story) -> List<Pair<String, () -> Unit>>,
 ) {
     val context = LocalContext.current
+    val openUser = LocalOpenUser.current
     var menuOpen by remember { mutableStateOf(false) }
     Column(
         Modifier
@@ -267,7 +270,7 @@ private fun StoryHeader(
                 for ((title, action) in menu(story)) {
                     DropdownMenuItem(text = { Text(title) }, onClick = { menuOpen = false; action() })
                 }
-                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
+                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; openUser(author) } }
             }
         }
     }
@@ -289,6 +292,7 @@ private fun CommentRow(
     onCopyLink: () -> Unit,
 ) {
     val context = LocalContext.current
+    val openUser = LocalOpenUser.current
     var menuOpen by remember { mutableStateOf(false) }
     val indent = (HN.padding * minOf(flat.depth, MAX_INDENT_DEPTH))
     val author = flat.comment.author ?: "deleted"
@@ -347,7 +351,7 @@ private fun CommentRow(
             DropdownMenuItem(text = { Text("Share") }, onClick = { menuOpen = false; onShare() })
             DropdownMenuItem(text = { Text("Copy Text") }, onClick = { menuOpen = false; onCopyText() })
             DropdownMenuItem(text = { Text("Copy Link") }, onClick = { menuOpen = false; onCopyLink() })
-            flat.comment.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
+            flat.comment.author?.let { author -> UserMenuItem(author) { menuOpen = false; openUser(author) } }
         }
     }
 }

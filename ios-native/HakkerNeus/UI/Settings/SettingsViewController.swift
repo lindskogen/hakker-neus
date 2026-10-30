@@ -138,7 +138,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             cell.accessoryView = toggle
             cell.selectionStyle = .none
         case .leftHanded:
-            content.text = "Left-Handed"
+            content.text = "Leftie Mode"
             let toggle = UISwitch()
             toggle.isOn = coordinator.settings.cornerButtonOnLeft
             toggle.addAction(UIAction { [weak self, weak toggle] _ in

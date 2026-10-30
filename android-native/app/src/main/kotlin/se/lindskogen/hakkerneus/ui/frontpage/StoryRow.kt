@@ -1,7 +1,7 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
 import se.lindskogen.hakkerneus.ui.UserMenuItem
-import se.lindskogen.hakkerneus.ui.openUser
+import se.lindskogen.hakkerneus.ui.LocalOpenUser
 import androidx.compose.ui.platform.LocalContext
 import android.os.Build
 import android.view.HapticFeedbackConstants
@@ -84,6 +84,7 @@ fun StoryRow(
     score: Int = story.score,
 ) {
     val context = LocalContext.current
+    val openUser = LocalOpenUser.current
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
@@ -234,7 +235,7 @@ fun StoryRow(
                 item("Share") { actions.share(story) }()
                 item("Copy Link") { actions.copyLink(story) }()
                 if (story.url != null) item("Copy Comments Link") { actions.copyCommentsLink(story) }()
-                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; context.openUser(author) } }
+                story.author?.let { author -> UserMenuItem(author) { menuOpen = false; openUser(author) } }
             }
         }
     }

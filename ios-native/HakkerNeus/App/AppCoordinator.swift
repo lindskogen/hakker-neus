@@ -19,6 +19,7 @@ final class AppCoordinator {
     let offlineItems: OfflineItemStore
     let settings: AppSettings
     let session = HNSession()
+    let userAPI = UserAPI(transport: URLSession.shared)
     /// Unsent comment drafts, by the ID of what they reply to.
     var drafts: [Int: String] = [:]
 
@@ -286,11 +287,9 @@ final class AppCoordinator {
         return browser
     }
 
-    /// There's no native profile screen yet, so profiles open on HN in the browser.
+    /// An HN user's page: karma, about, their stories and comments.
     func showUser(_ username: String) {
-        var components = URLComponents(string: "https://news.ycombinator.com/user")!
-        components.queryItems = [URLQueryItem(name: "id", value: username)]
-        navigationController.present(makeBrowser(for: components.url!), animated: true)
+        navigationController.pushViewController(UserViewController(username: username, coordinator: self, api: userAPI), animated: true)
     }
 
     func share(_ url: URL, from sourceView: UIView) {
