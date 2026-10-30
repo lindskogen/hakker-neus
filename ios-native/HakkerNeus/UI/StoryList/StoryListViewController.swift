@@ -163,9 +163,14 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     /// A story was saved, unsaved or read: refresh its row.
     @objc private func storyStateChanged(_ notification: Notification) {
-        guard let id = notification.object as? Int, dataSource.indexPath(for: id) != nil else { return }
         var snapshot = dataSource.snapshot()
-        snapshot.reconfigureItems([id])
+        if let id = notification.object as? Int {
+            guard snapshot.indexOfItem(id) != nil else { return }
+            snapshot.reconfigureItems([id])
+        } else {
+            // Many changed at once (an import).
+            snapshot.reconfigureItems(snapshot.itemIdentifiers)
+        }
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 

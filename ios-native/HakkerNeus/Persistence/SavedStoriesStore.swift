@@ -26,6 +26,39 @@ final class SavedStoriesStore {
         entries = try loadEntries()
     }
 
+    /// Most recently saved first, with when each was saved.
+    var allEntries: [Entry] {
+        entries.values.sorted { $0.savedAt > $1.savedAt }
+    }
+
+    /// Adds stories from an import. Stories already saved are kept, with the earlier saved date.
+    /// Returns how many were new and how many were already saved.
+    @discardableResult
+    func merge(_ imported: [Entry]) throws -> (added: Int, alreadySaved: Int) {
+        var added = 0
+        var alreadySaved = 0
+        var merged = entries
+        try database.transaction {
+            for entry in imported {
+                if let existing = merged[entry.story.id] {
+                    alreadySaved += 1
+                    guard entry.savedAt < existing.savedAt else { continue }
+                    let earlier = Entry(story: existing.story, savedAt: entry.savedAt)
+                    try insert(earlier)
+                    merged[entry.story.id] = earlier
+                } else {
+                    added += 1
+                    try insert(entry)
+                    merged[entry.story.id] = entry
+                }
+            }
+        }
+        entries = merged
+        // No single ID: lists refresh everything.
+        NotificationCenter.default.post(name: Self.didChange, object: nil)
+        return (added, alreadySaved)
+    }
+
     /// Most recently saved first.
     var all: [Story] {
         entries.values.sorted { $0.savedAt > $1.savedAt }.map(\.story)

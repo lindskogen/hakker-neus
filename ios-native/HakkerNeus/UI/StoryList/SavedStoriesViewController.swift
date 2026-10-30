@@ -1,8 +1,8 @@
 import UIKit
 
-/// Saved stories, newest first, behind the front page: swipe in from the left edge of the
-/// front page to get here, and in from the right edge to go back.
-/// Rows work like on the front page, in red instead of orange.
+/// The profile page: who's signed in and the saved stories, newest first. It sits behind the
+/// front page: swipe in from the left edge of the front page to get here, and in from the
+/// right edge to go back. Rows work like on the front page, in red instead of orange.
 final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, ForwardNavigating, StoryTransitionSource {
     private enum Section { case main }
 
@@ -12,7 +12,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     private var stories: [Story.ID: Story] = [:]
     private let emptyView = FullPageStateView()
     private let topFill = TopFillView()
-    private let settingsButton = UIButton(type: .system)
+    private weak var profileHeader: ProfileHeaderView?
     private var pendingReload: DispatchWorkItem?
 
     init(coordinator: AppCoordinator) {
@@ -34,8 +34,17 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         list.backgroundColor = .clear
         list.separatorConfiguration.color = .black
         list.separatorConfiguration.bottomSeparatorInsets = .zero
+        list.headerMode = .supplementary
 
-        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: UICollectionViewCompositionalLayout.list(using: list))
+        let layout = UICollectionViewCompositionalLayout { _, environment in
+            let section = NSCollectionLayoutSection.list(using: list, layoutEnvironment: environment)
+            // Plain lists pin headers; the profile header scrolls with the rows.
+            for item in section.boundarySupplementaryItems {
+                item.pinToVisibleBounds = false
+            }
+            return section
+        }
+        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
         collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         collectionView.backgroundColor = Theme.Color.backgroundDark
         collectionView.indicatorStyle = .white
@@ -43,7 +52,8 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         collectionView.accessibilityIdentifier = "saved.list"
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
-        configureSettingsButton()
+        // The dark profile header is first, so it's what reaches up under the clock.
+        topFill.color = Theme.Color.backgroundDark
 
         emptyView.state = .message(systemImage: "heart", text: "No saved stories")
         emptyView.isAccessibilityElement = true
@@ -62,6 +72,16 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, id in
             collectionView.dequeueConfiguredReusableCell(using: cell, for: indexPath, item: id)
         }
+        let header = UICollectionView.SupplementaryRegistration<ProfileHeaderView>(
+            elementKind: UICollectionView.elementKindSectionHeader
+        ) { [unowned self] view, _, _ in
+            profileHeader = view
+            configureProfileHeader()
+            view.onSettings = { [unowned self] in coordinator.showSettings() }
+        }
+        dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
+            collectionView.dequeueConfiguredReusableSupplementary(using: header, for: indexPath)
+        }
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(savedStoriesChanged), name: SavedStoriesStore.didChange, object: nil
@@ -70,36 +90,6 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             self, selector: #selector(visitedStoryChanged(_:)), name: VisitedStoriesStore.didChange, object: nil
         )
         reload(animated: false)
-    }
-
-    /// The saved list is the personal page, so settings live here rather than on the front page.
-    private func configureSettingsButton() {
-        var config: UIButton.Configuration
-        if #available(iOS 26, *) {
-            config = .glass()
-        } else {
-            config = .filled()
-            config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
-        }
-        config.image = UIImage(systemName: "gearshape")
-        config.preferredSymbolConfigurationForImage = .init(pointSize: 16, weight: .semibold)
-        config.baseForegroundColor = .white
-        config.cornerStyle = .capsule
-        settingsButton.configuration = config
-        settingsButton.accessibilityLabel = "Settings"
-        settingsButton.accessibilityIdentifier = "saved.settings"
-        settingsButton.addAction(UIAction { [unowned self] _ in coordinator.showSettings() }, for: .touchUpInside)
-
-        settingsButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(settingsButton)
-        NSLayoutConstraint.activate([
-            settingsButton.widthAnchor.constraint(equalToConstant: 40),
-            settingsButton.heightAnchor.constraint(equalToConstant: 40),
-            settingsButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding),
-            settingsButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
-        ])
-        // Room to scroll the last row out from under the button.
-        collectionView.contentInset.bottom = 56
     }
 
     @objc private func savedStoriesChanged() {
@@ -130,7 +120,11 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         dataSource.apply(snapshot, animatingDifferences: animated && !UIAccessibility.isReduceMotionEnabled)
 
         collectionView.backgroundView = all.isEmpty ? emptyView : nil
-        topFill.color = all.isEmpty ? nil : Palette.savedStoryBackground(at: 0)
+        configureProfileHeader()
+    }
+
+    private func configureProfileHeader() {
+        profileHeader?.configure(username: nil, savedCount: stories.count)
     }
 
     private func story(at indexPath: IndexPath) -> Story? {
