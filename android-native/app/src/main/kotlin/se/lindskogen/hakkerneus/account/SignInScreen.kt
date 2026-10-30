@@ -106,7 +106,7 @@ fun SignInScreen(done: () -> Unit) {
             )
             Button(
                 onClick = ::submit, enabled = !busy, modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = HN.backgroundOrange, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = HN.accent, contentColor = Color.White),
             ) { Text("Sign In") }
             if (busy) CircularProgressIndicator(color = Color.White)
             error?.let { Text(it, style = HN.body.copy(fontSize = 14.sp, color = Color(0xFFFF6B5E))) }

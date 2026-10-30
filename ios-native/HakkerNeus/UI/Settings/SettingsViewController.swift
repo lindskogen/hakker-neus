@@ -10,6 +10,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case importCSV
         case exportCSV
         case readerMode
+        case theme(ColorTheme)
     }
 
     private struct Section {
@@ -34,6 +35,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 footer: "\(count) saved. Uses the same CSV format as hacker-feed's bookmarks export.",
                 rows: [.importCSV, .exportCSV]
             ),
+            Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
             Section(
                 title: "Links",
                 footer: "Articles open in Reader mode when the page supports it.",
@@ -84,6 +86,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         var content = cell.defaultContentConfiguration()
         cell.accessoryView = nil
+        cell.accessoryType = .none
         cell.selectionStyle = .default
 
         switch sections[indexPath.section].rows[indexPath.row] {
@@ -115,6 +118,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             }, for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
+        case .theme(let theme):
+            content.text = theme.title
+            content.image = UIImage(systemName: "circle.fill")
+            content.imageProperties.tintColor = Palette.accent(theme: theme)
+            cell.accessoryType = theme == coordinator.settings.colorTheme ? .checkmark : .none
         }
         cell.contentConfiguration = content
         return cell
@@ -143,6 +151,9 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
         case .readerMode:
             break
+        case .theme(let theme):
+            coordinator.settings.colorTheme = theme
+            tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
         }
     }
 

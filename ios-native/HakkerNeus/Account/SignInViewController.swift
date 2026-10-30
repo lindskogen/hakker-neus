@@ -43,7 +43,7 @@ final class SignInViewController: UIViewController, UITextFieldDelegate {
 
         var buttonConfig = UIButton.Configuration.filled()
         buttonConfig.title = "Sign In"
-        buttonConfig.baseBackgroundColor = Theme.Color.backgroundOrange
+        buttonConfig.baseBackgroundColor = Theme.Color.accent
         buttonConfig.cornerStyle = .large
         signInButton.configuration = buttonConfig
         signInButton.accessibilityIdentifier = "signin.submit"

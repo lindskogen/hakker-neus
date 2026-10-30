@@ -22,7 +22,7 @@ final class StoryCell: UICollectionViewListCell {
     private var isUpvoted = false
     let commentCountLabel = UILabel()
 
-    private var rowColor: UIColor = Theme.Color.backgroundOrange
+    private var rowColor: UIColor = Theme.Color.accent
     private var storyID: Story.ID?
     private var isSaved = false
     private var armedAction: StorySwipe.Action?
@@ -267,7 +267,7 @@ final class StoryCell: UICollectionViewListCell {
         saveActionView.image = UIImage(systemName: upvoteStage
             ? (swipeStartedUpvoted ? "arrow.uturn.down" : "arrow.up")
             : (swipeStartedSaved ? "heart.slash.fill" : "heart.fill"))
-        actionBackground.backgroundColor = upvoteStage ? UIColor(rgb: Palette.tableau10[0]) : .clear
+        actionBackground.backgroundColor = upvoteStage ? Palette.upvoteStage : .clear
         saveActionView.transform = CGAffineTransform(translationX: swipe.heartTranslation, y: 0)
         saveActionView.alpha = swipe.heartAlpha
         // Never scale all the way to zero; a singular transform can't be animated back.

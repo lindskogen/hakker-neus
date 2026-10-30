@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -34,7 +36,9 @@ import androidx.compose.ui.unit.sp
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.persistence.BookmarksCsv
 import se.lindskogen.hakkerneus.ui.HnIcons
+import se.lindskogen.hakkerneus.ui.theme.ColorTheme
 import se.lindskogen.hakkerneus.ui.theme.HN
+import se.lindskogen.hakkerneus.ui.theme.Palette
 
 /** Settings, opened from the profile page's gear. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +86,9 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
             Row("Import from CSV…") { importer.launch(arrayOf("text/*", "application/csv", "application/octet-stream")) }
             Row("Export to CSV…") { exporter.launch("hakkerneus_bookmarks.csv") }
             Footer("${entries.size} saved. Uses the same CSV format as hacker-feed's bookmarks export.")
+            Section("Appearance")
+            for (theme in ColorTheme.entries) ThemeRow(theme)
+            Footer("The front page's colours. Saved stories stay red.")
         }
     }
 
@@ -125,7 +132,7 @@ fun AccountSection(signIn: () -> Unit) {
         Text("Signed in as $name", style = HN.body, modifier = Modifier.fillMaxWidth().background(Color(0xFF26292E)).padding(horizontal = 20.dp, vertical = 14.dp))
         Row("Sign Out", color = Color(0xFFFF6B5E)) { confirm = true }
     } else {
-        Row("Sign In…", color = HN.backgroundOrange, onClick = signIn)
+        Row("Sign In…", color = HN.accent, onClick = signIn)
         Footer("Sign in to vote and comment.")
     }
     if (confirm) {
@@ -135,5 +142,20 @@ fun AccountSection(signIn: () -> Unit) {
             dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
             title = { Text("Sign out of $name?") },
         )
+    }
+}
+
+/** A theme to pick: its colour, its name, and a check if it's the current one. */
+@Composable
+private fun ThemeRow(theme: ColorTheme) {
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().background(Color(0xFF26292E)).clickable { AppContainer.setColorTheme(theme) }.padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.size(22.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Palette.accent(theme)),
+        )
+        Text(theme.title, style = HN.body, modifier = Modifier.padding(start = 16.dp).weight(1f))
+        if (Palette.theme == theme) Text("✓", style = HN.body.copy(color = HN.accent, fontSize = 18.sp))
     }
 }

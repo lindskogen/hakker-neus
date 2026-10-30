@@ -196,7 +196,7 @@ private fun StoryHeader(id: Long, story: Story?, body: CommentBody?, onLink: (St
         Modifier
             .fillMaxWidth()
             .sharedStory("card-$id")
-            .background(HN.backgroundOrange)
+            .background(HN.accent)
             .statusBarsPadding()
             .heightIn(min = 100.dp)
             .combinedClickable(enabled = story?.url != null, onClick = { story?.url?.let(onLink) })

@@ -15,7 +15,8 @@ object HN {
     val padding = 10.dp
     val backgroundDark = Color(0xFF1B1D21)
     val backgroundRed = Color(0xFFCE5B4C)
-    val backgroundOrange = Palette.orangesRgb(0.65).color
+    /** The theme colour (orange unless another theme is picked in Settings). */
+    val accent: Color get() = Palette.accent()
 
     /** Story titles. No Helvetica Neue on Android: light sans-serif, as the RN app used here. */
     fun titleStyle(isTablet: Boolean = false) = TextStyle(
@@ -29,8 +30,8 @@ object HN {
     val body = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp, lineHeight = 22.sp, color = Color.White)
 }
 
-private val colors = darkColorScheme(
-    primary = HN.backgroundOrange,
+private fun colors() = darkColorScheme(
+    primary = HN.accent,
     background = HN.backgroundDark,
     surface = HN.backgroundDark,
     onPrimary = Color.White,
@@ -40,5 +41,5 @@ private val colors = darkColorScheme(
 
 @Composable
 fun HakkerNeusTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = colors, content = content)
+    MaterialTheme(colorScheme = colors(), content = content)
 }

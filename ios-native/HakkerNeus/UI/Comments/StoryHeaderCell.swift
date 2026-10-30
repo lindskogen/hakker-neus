@@ -82,7 +82,7 @@ final class StoryHeaderCell: UICollectionViewListCell {
 
     override func updateConfiguration(using state: UICellConfigurationState) {
         var background = UIBackgroundConfiguration.listCell()
-        background.backgroundColor = Theme.Color.backgroundOrange
+        background.backgroundColor = Theme.Color.accent
         backgroundConfiguration = background
         contentView.alpha = state.isHighlighted ? 0.4 : 1
     }

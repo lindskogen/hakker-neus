@@ -8,7 +8,8 @@ enum Theme {
     enum Color {
         static let backgroundDark = UIColor(rgb: 0x1B1D21)
         static let backgroundRed = UIColor(rgb: 0xCE5B4C)
-        static let backgroundOrange = Palette.oranges(0.65)
+        /// The theme colour (orange unless another theme is picked in Settings).
+        static var accent: UIColor { Palette.accent() }
     }
 
     /// The RN app's fonts, scaled with Dynamic Type. Each font follows the system text style

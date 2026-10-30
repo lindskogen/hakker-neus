@@ -17,6 +17,8 @@ import se.lindskogen.hakkerneus.persistence.Database
 import se.lindskogen.hakkerneus.persistence.OfflineItemStore
 import se.lindskogen.hakkerneus.persistence.SavedStoriesStore
 import se.lindskogen.hakkerneus.persistence.VisitedStoriesStore
+import se.lindskogen.hakkerneus.ui.theme.ColorTheme
+import se.lindskogen.hakkerneus.ui.theme.Palette
 
 /** App-wide dependencies (the Android counterpart of the iOS AppCoordinator's properties). */
 object AppContainer {
@@ -78,6 +80,14 @@ object AppContainer {
         }
     }
 
+    private val settings get() = appContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
+    /** Picks the front page's colours, and remembers the choice. */
+    fun setColorTheme(theme: ColorTheme) {
+        Palette.theme = theme
+        settings.edit().putString("colorTheme", theme.name).apply()
+    }
+
     fun init(context: Context) {
         if (::saved.isInitialized) return
         appContext = context.applicationContext
@@ -86,5 +96,6 @@ object AppContainer {
         visited = VisitedStoriesStore(db)
         offline = OfflineItemStore(db)
         session = HnSession(appContext)
+        Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange
     }
 }

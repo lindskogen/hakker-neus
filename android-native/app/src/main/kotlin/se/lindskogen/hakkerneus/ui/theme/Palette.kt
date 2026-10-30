@@ -1,11 +1,27 @@
 package se.lindskogen.hakkerneus.ui.theme
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
+/**
+ * The colour of the front page and the accents that go with it, as on iOS. Orange is the
+ * original; blue and green use d3's Blues and Greens the same way. Saved stories stay red.
+ */
+enum class ColorTheme(val title: String, internal val stops: IntArray) {
+    Orange("Orange", intArrayOf(0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C, 0xF16913, 0xD94801, 0xA63603, 0x7F2704)),
+    Blue("Blue", intArrayOf(0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x6BAED6, 0x4292C6, 0x2171B5, 0x08519C, 0x08306B)),
+    Green("Green", intArrayOf(0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x74C476, 0x41AB5D, 0x238B45, 0x006D2C, 0x00441B)),
+}
+
 /** Ports of the d3-scale-chromatic schemes the app uses, matching the iOS `Palette`. */
 object Palette {
+    /** The chosen theme; Compose state, so everything drawn with it follows a change. Set via AppContainer. */
+    var theme by mutableStateOf(ColorTheme.Orange)
+
     data class Rgb(val r: Int, val g: Int, val b: Int) {
         val color: Color get() = Color(r, g, b)
     }
@@ -16,8 +32,17 @@ object Palette {
     /** `d3.interpolateReds(t)`, for the saved stories list. */
     fun redsRgb(t: Double): Rgb = interpolate(reds, t)
 
+    /** The theme's ramp at [t], like `d3.interpolateOranges(t)` for orange. */
+    fun themeRgb(t: Double, theme: ColorTheme = this.theme): Rgb = interpolate(stops(*theme.stops), t)
+
     /** Background for row [index] of the front page (`getBackgroundColor` in `NewsList.tsx`). */
-    fun storyBackground(index: Int): Color = orangesRgb(rowPosition(index)).color
+    fun storyBackground(index: Int): Color = themeRgb(rowPosition(index)).color
+
+    /** The comments header and other accents: the first row's colour. */
+    fun accent(theme: ColorTheme = this.theme): Color = themeRgb(0.65, theme).color
+
+    /** Behind a row at the upvote stage of a swipe: blue, or orange when the rows are blue. */
+    val upvoteStage: Color get() = Color(tableau10[if (theme == ColorTheme.Blue) 1 else 0])
 
     fun savedStoryBackground(index: Int): Color = redsRgb(rowPosition(index)).color
 

@@ -66,7 +66,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         guard let indexPath = dataSource.indexPath(for: .story),
               let header = collectionView.cellForItem(at: indexPath) as? StoryHeaderCell
         else { return nil }
-        return (header, header.titleView, Theme.Color.backgroundOrange)
+        return (header, header.titleView, Theme.Color.accent)
     }
 
     /// This screen's place, for state restoration.
@@ -380,7 +380,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
 
     private func applySnapshot(animated: Bool, reconfigureAll: Bool = false, reconfiguring ids: [Item] = []) {
         // The orange header reaches up under the clock.
-        topFill.color = story == nil ? nil : Theme.Color.backgroundOrange
+        topFill.color = story == nil ? nil : Theme.Color.accent
 
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         if story != nil {

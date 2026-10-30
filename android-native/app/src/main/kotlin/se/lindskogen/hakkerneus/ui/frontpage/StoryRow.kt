@@ -109,7 +109,7 @@ fun StoryRow(
     ) {
         // Behind the row: the heart on the left (an up arrow on blue at the upvote stage),
         // the comment count on the right.
-        Box(Modifier.matchParentSize().background(if (upvoteStage) Color(Palette.tableau10[0]) else Color.Transparent)) {
+        Box(Modifier.matchParentSize().background(if (upvoteStage) Palette.upvoteStage else Color.Transparent)) {
             Icon(
                 when {
                     upvoteStage -> if (upvotedAtSwipeStart) HnIcons.undo else HnIcons.arrowUp

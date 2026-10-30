@@ -38,6 +38,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
+        NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
         for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
@@ -160,6 +161,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             let existing = Set(dataSource.snapshot().itemIdentifiers)
             snapshot.reconfigureItems(all.map(\.id).filter(existing.contains))
         }
+        dataSource.apply(snapshot, animatingDifferences: false)
+    }
+
+    @objc private func colorThemeChanged() {
+        topFill.color = Palette.storyBackground(at: 0)
+        var snapshot = dataSource.snapshot()
+        snapshot.reconfigureItems(snapshot.itemIdentifiers)
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 

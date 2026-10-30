@@ -137,7 +137,7 @@ final class CommentCell: UICollectionViewListCell {
     func flash() {
         let highlight = UIView(frame: contentView.bounds)
         highlight.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        highlight.backgroundColor = Theme.Color.backgroundOrange.withAlphaComponent(0.35)
+        highlight.backgroundColor = Theme.Color.accent.withAlphaComponent(0.35)
         highlight.isUserInteractionEnabled = false
         contentView.insertSubview(highlight, at: 0)
         UIView.animate(withDuration: 1.2, delay: 0.6, options: .curveEaseOut) {

@@ -1,6 +1,33 @@
 import UIKit
 
-/// Ports of the two `d3-scale-chromatic` schemes the app uses.
+/// The colour of the front page and the accents that go with it. Orange is the original;
+/// blue and green use d3's Blues and Greens the same way. The saved list stays red in all.
+enum ColorTheme: String, CaseIterable {
+    case orange
+    case blue
+    case green
+
+    /// Set from `AppSettings` at launch and when changed in Settings.
+    nonisolated(unsafe) static var current: ColorTheme = .orange
+
+    var title: String {
+        switch self {
+        case .orange: "Orange"
+        case .blue: "Blue"
+        case .green: "Green"
+        }
+    }
+
+    fileprivate var stops: [(Double, Double, Double)] {
+        switch self {
+        case .orange: Palette.orangesStops
+        case .blue: Palette.bluesStops
+        case .green: Palette.greensStops
+        }
+    }
+}
+
+/// Ports of the `d3-scale-chromatic` schemes the app uses.
 enum Palette {
     /// 8-bit RGB triple, kept separate from UIColor so it can be unit tested exactly.
     struct RGB: Equatable {
@@ -27,9 +54,24 @@ enum Palette {
         interpolate(redsStops, t)
     }
 
+    /// The current theme's ramp at `t`, like `d3.interpolateOranges(t)` for orange.
+    static func themeRGB(_ t: Double, theme: ColorTheme = .current) -> RGB {
+        interpolate(theme.stops, t)
+    }
+
     /// Background for row `index` of the story list (`getBackgroundColor` in `NewsList.tsx`).
-    static func storyBackground(at index: Int) -> UIColor {
-        oranges(rowPosition(index))
+    static func storyBackground(at index: Int, theme: ColorTheme = .current) -> UIColor {
+        themeRGB(rowPosition(index), theme: theme).uiColor
+    }
+
+    /// The colour of the comments header and other accents: the first row's colour.
+    static func accent(theme: ColorTheme = .current) -> UIColor {
+        themeRGB(0.65, theme: theme).uiColor
+    }
+
+    /// Behind a row at the upvote stage of a swipe: blue, or orange when the rows are blue.
+    static var upvoteStage: UIColor {
+        UIColor(rgb: tableau10[ColorTheme.current == .blue ? 1 : 0])
     }
 
     /// Background for row `index` of the saved list: the same ramp in red, so it's clear which list you're on.
@@ -60,7 +102,17 @@ enum Palette {
         0xEDC949, 0xAF7AA1, 0xFF9DA7, 0x9C755F, 0xBAB0AB,
     ]
 
-    private static let orangesStops = stops([
+    fileprivate static let bluesStops = stops([
+        0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x6BAED6,
+        0x4292C6, 0x2171B5, 0x08519C, 0x08306B,
+    ])
+
+    fileprivate static let greensStops = stops([
+        0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x74C476,
+        0x41AB5D, 0x238B45, 0x006D2C, 0x00441B,
+    ])
+
+    fileprivate static let orangesStops = stops([
         0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C,
         0xF16913, 0xD94801, 0xA63603, 0x7F2704,
     ])

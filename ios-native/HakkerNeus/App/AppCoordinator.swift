@@ -41,6 +41,7 @@ final class AppCoordinator {
         self.itemCache = ItemCache(client: client)
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
+        ColorTheme.current = settings.colorTheme
         do {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
