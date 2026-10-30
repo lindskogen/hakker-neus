@@ -202,13 +202,13 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                 contentColor = Color.White,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    // Centred over the 52dp corner button, 20dp in and 10dp up.
-                    .padding(start = if (onLeft) 24.dp else 0.dp, end = if (onLeft) 0.dp else 24.dp, bottom = HN.padding + 52.dp + HN.padding)
-                    .size(44.dp)
+                    // The corner button's size, 10dp above it.
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + 52.dp + HN.padding)
+                    .size(52.dp)
                     .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
             ) {
                 Crossfade(undo, label = "hide-read") { isUndo ->
-                    Icon(if (isUndo) HnIcons.undo else HnIcons.eyeSlash, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(if (isUndo) HnIcons.undo else HnIcons.eyeSlash, contentDescription = null, modifier = Modifier.size(22.dp))
                 }
             }
         }

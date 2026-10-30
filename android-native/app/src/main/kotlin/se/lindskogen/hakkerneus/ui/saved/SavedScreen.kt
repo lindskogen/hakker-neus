@@ -92,7 +92,7 @@ fun SavedScreen(
         LazyColumn(contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
             item(key = "profile") {
                 Row(
-                    Modifier.fillMaxWidth().statusBarsPadding().padding(start = HN.padding, end = HN.padding, top = 20.dp, bottom = 20.dp),
+                    Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {

@@ -78,6 +78,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             elementKind: UICollectionView.elementKindSectionHeader
         ) { [unowned self] view, _, _ in
             profileHeader = view
+            view.horizontalMargin = systemMinimumLayoutMargins.leading
             configureProfileHeader()
             view.onSettings = { [unowned self] in coordinator.showSettings() }
             view.onSignIn = { [unowned self] in coordinator.showSignIn() }

@@ -14,6 +14,17 @@ final class ProfileHeaderView: UICollectionReusableView {
     private let nameLabel = UILabel()
     private let detailLabel = UILabel()
     private let settingsButton = UIButton(type: .system)
+    private var leadingConstraint: NSLayoutConstraint!
+    private var trailingConstraint: NSLayoutConstraint!
+
+    /// Space on each side: the system margin the Settings app uses (16pt, or 20pt on the widest
+    /// iPhones), passed in from the list's view controller.
+    var horizontalMargin: CGFloat = 16 {
+        didSet {
+            leadingConstraint.constant = horizontalMargin
+            trailingConstraint.constant = -horizontalMargin
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -59,11 +70,13 @@ final class ProfileHeaderView: UICollectionReusableView {
         addSubview(row)
 
         let padding = Theme.padding
+        leadingConstraint = row.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: horizontalMargin)
+        trailingConstraint = row.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -horizontalMargin)
         NSLayoutConstraint.activate([
             row.topAnchor.constraint(equalTo: topAnchor, constant: padding * 2),
             row.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -padding * 2),
-            row.leadingAnchor.constraint(equalTo: leadingAnchor, constant: padding),
-            row.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -padding),
+            leadingConstraint,
+            trailingConstraint,
         ])
     }
 

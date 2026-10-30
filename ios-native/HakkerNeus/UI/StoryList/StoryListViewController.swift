@@ -192,7 +192,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             config = .filled()
             config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
         }
-        config.preferredSymbolConfigurationForImage = .init(pointSize: 16, weight: .semibold)
+        // Same size and weight as the corner button below it.
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
         if #available(iOS 26, *) {
@@ -208,8 +209,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         view.addSubview(hideReadButton)
         // Stacked above the corner button (52pt, 10pt off the bottom), on the same side.
         NSLayoutConstraint.activate([
-            hideReadButton.widthAnchor.constraint(equalToConstant: 44),
-            hideReadButton.heightAnchor.constraint(equalToConstant: 44),
+            hideReadButton.widthAnchor.constraint(equalToConstant: 52),
+            hideReadButton.heightAnchor.constraint(equalToConstant: 52),
             hideReadButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -(Theme.padding + 52 + Theme.padding)),
         ])
         hideReadLeading = hideReadButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2 + 26)
