@@ -123,6 +123,9 @@ final class StoryCell: UICollectionViewListCell {
     ///   - showsSavedBadge: Whether a saved story shows the faded heart in its corner.
     ///     Off in the saved list, where every row is saved.
     ///   - extraAccessibilityActions: Screen-level actions VoiceOver should offer on every row.
+    /// The coloured card and title, for the transition into the comments header.
+    var transitionViews: (card: UIView, title: UIView) { (rowView, titleLabel) }
+
     func configure(
         with story: Story,
         backgroundColor: UIColor,

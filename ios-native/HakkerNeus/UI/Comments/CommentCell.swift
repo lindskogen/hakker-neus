@@ -128,6 +128,11 @@ final class CommentCell: UICollectionViewListCell {
         set { bodyView.onLinkTap = newValue }
     }
 
+    var linkMenu: ((URL, UIView) -> UIMenu)? {
+        get { bodyView.linkMenu }
+        set { bodyView.linkMenu = newValue }
+    }
+
     /// Briefly highlights the comment, e.g. after following a link to it.
     func flash() {
         let highlight = UIView(frame: contentView.bounds)

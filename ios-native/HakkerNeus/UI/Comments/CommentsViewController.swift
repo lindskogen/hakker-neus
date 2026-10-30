@@ -3,7 +3,7 @@ import UIKit
 /// A story with its comment tree (`CommentsList.tsx`).
 /// Tapping a comment collapses its replies, Apollo-style.
 /// Opened with a comment's ID, it shows that comment's story scrolled to the comment.
-final class CommentsViewController: UIViewController, UICollectionViewDelegate {
+final class CommentsViewController: UIViewController, UICollectionViewDelegate, StoryTransitionDestination {
     private enum Section { case header, comments }
 
     private enum Item: Hashable {
@@ -49,6 +49,15 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
             thread = CommentThread(comments: [], collapsed: Set(restored.collapsed))
         }
         super.init(nibName: nil, bundle: nil)
+    }
+
+    var transitionStoryID: Int { id }
+
+    func transitionViews() -> (header: UIView, title: UIView, color: UIColor)? {
+        guard let indexPath = dataSource.indexPath(for: .story),
+              let header = collectionView.cellForItem(at: indexPath) as? StoryHeaderCell
+        else { return nil }
+        return (header, header.titleView, Theme.Color.backgroundOrange)
     }
 
     /// This screen's place, for state restoration.
@@ -113,6 +122,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
         let storyCell = UICollectionView.CellRegistration<StoryHeaderCell, Item> { [unowned self] cell, _, _ in
             if let story { cell.configure(with: story, body: storyBody) }
             cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
+            cell.linkMenu = { [unowned self] url, source in coordinator.linkMenu(for: url, sourceView: source) }
         }
         let statusCell = UICollectionView.CellRegistration<StatusCell, Item> { [unowned self] cell, _, _ in
             switch loadState {
@@ -125,6 +135,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate {
             guard case .comment(let id) = item, let content = content(for: id) else { return }
             cell.configure(with: content)
             cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
+            cell.linkMenu = { [unowned self] url, source in coordinator.linkMenu(for: url, sourceView: source) }
         }
 
         dataSource = UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, item in

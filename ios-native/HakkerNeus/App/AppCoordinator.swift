@@ -187,6 +187,28 @@ final class AppCoordinator {
 
     // MARK: Menus
 
+    /// Long-pressing a link inside a comment or self post.
+    func linkMenu(for url: URL, sourceView: UIView) -> UIMenu {
+        let openTitle = HackerNewsLink(url) == nil ? "Open Link" : "Open in HakkerNeus"
+        let open = UIAction(title: openTitle, image: UIImage(systemName: "arrow.up.right.square")) { [weak self] _ in
+            self?.open(url)
+        }
+        let safari = UIAction(title: "Open in Safari", image: UIImage(systemName: "safari")) { _ in
+            UIApplication.shared.open(url)
+        }
+        let copy = UIAction(title: "Copy Link", image: UIImage(systemName: "link")) { _ in
+            UIPasteboard.general.url = url
+        }
+        let share = UIAction(title: "Share", image: UIImage(systemName: "square.and.arrow.up")) { [weak self, weak sourceView] _ in
+            guard let sourceView else { return }
+            self?.share(url, from: sourceView)
+        }
+        return UIMenu(title: url.host() ?? url.absoluteString, children: [
+            UIMenu(options: .displayInline, children: [open, safari]),
+            UIMenu(options: .displayInline, children: [copy, share]),
+        ])
+    }
+
     func storyMenu(for story: Story, sourceView: UIView, includeComments: Bool) -> UIMenu {
         var open: [UIMenuElement] = []
         if includeComments {

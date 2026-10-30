@@ -110,8 +110,17 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         from fromVC: UIViewController,
         to toVC: UIViewController
     ) -> UIViewControllerAnimatedTransitioning? {
-        // Only the interactive swipe-forward needs a custom animation; UIKit's own push can't be driven.
-        operation == .push && interactivePush != nil ? SlideTransition() : nil
+        guard operation == .push else { return nil }
+        // The interactive swipe-forward needs a custom animation; UIKit's own push can't be driven.
+        if interactivePush != nil { return SlideTransition() }
+
+        // Opening a story's comments from a list: the row grows into the comments header.
+        if !UIAccessibility.isReduceMotionEnabled,
+           let destination = toVC as? StoryTransitionDestination,
+           let (card, title) = (fromVC as? StoryTransitionSource)?.transitionViews(forStory: destination.transitionStoryID) {
+            return StoryTransition(card: card, title: title)
+        }
+        return nil
     }
 
     func navigationController(

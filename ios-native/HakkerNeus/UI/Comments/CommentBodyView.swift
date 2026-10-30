@@ -5,6 +5,8 @@ import UIKit
 final class CommentBodyView: UIStackView {
     /// Called when a link is tapped.
     var onLinkTap: ((URL) -> Void)?
+    /// The menu for long-pressing a link, shown with the system's web preview. Nil for the default.
+    var linkMenu: ((URL, UIView) -> UIMenu)?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -25,6 +27,7 @@ final class CommentBodyView: UIStackView {
             let textView = LinkTextView()
             textView.attributedText = Self.attributedString(for: paragraphs)
             textView.onLinkTap = { [weak self] in self?.onLinkTap?($0) }
+            textView.linkMenu = { [weak self] url, source in self?.linkMenu?(url, source) }
             addArrangedSubview(textView)
             paragraphs = []
         }
@@ -71,6 +74,7 @@ final class CommentBodyView: UIStackView {
 /// reach the cell (tap to collapse) and long presses reach the cell's context menu.
 final class LinkTextView: UITextView {
     var onLinkTap: ((URL) -> Void)?
+    var linkMenu: ((URL, UIView) -> UIMenu?)?
 
     init() {
         // An explicit TextKit 1 stack, because link hit-testing below uses NSLayoutManager.
@@ -118,6 +122,13 @@ extension LinkTextView: UITextViewDelegate {
     func textView(_ textView: UITextView, primaryActionFor textItem: UITextItem, defaultAction: UIAction) -> UIAction? {
         guard case .link(let url) = textItem.content, let onLinkTap else { return defaultAction }
         return UIAction { _ in onLinkTap(url) }
+    }
+
+    func textView(_ textView: UITextView, menuConfigurationFor textItem: UITextItem, defaultMenu: UIMenu) -> UITextItem.MenuConfiguration? {
+        guard case .link(let url) = textItem.content, let menu = linkMenu?(url, textView) else {
+            return UITextItem.MenuConfiguration(menu: defaultMenu)
+        }
+        return UITextItem.MenuConfiguration(preview: .default, menu: menu)
     }
 }
 

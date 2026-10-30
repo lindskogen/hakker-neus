@@ -3,7 +3,7 @@ import UIKit
 /// Saved stories, newest first, behind the front page: swipe in from the left edge of the
 /// front page to get here, and in from the right edge to go back.
 /// Rows work like on the front page, in red instead of orange.
-final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, ForwardNavigating {
+final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, ForwardNavigating, StoryTransitionSource {
     private enum Section { case main }
 
     private unowned let coordinator: AppCoordinator
@@ -105,6 +105,13 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         dataSource.itemIdentifier(for: indexPath).flatMap { stories[$0] }
     }
 
+
+    // MARK: Transition into comments
+
+    func transitionViews(forStory id: Int) -> (card: UIView, title: UIView)? {
+        guard let indexPath = dataSource.indexPath(for: id) else { return nil }
+        return (collectionView.cellForItem(at: indexPath) as? StoryCell)?.transitionViews
+    }
 
     // MARK: Restoration
 

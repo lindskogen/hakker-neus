@@ -92,6 +92,17 @@ final class CommentRenderingUITests: XCTestCase {
         XCTAssertLessThan(secondThread.frame.minY, before - 100, "Second tap didn't scroll towards the next thread")
     }
 
+    func testLongPressingALinkShowsItsMenu() {
+        let link = app.links["an external link"]
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        link.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).press(forDuration: 1.2)
+
+        XCTAssertTrue(app.buttons["Open in Safari"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Open Link"].exists)
+        XCTAssertTrue(app.buttons["Copy Link"].exists)
+        XCTAssertTrue(app.buttons["Share"].exists)
+    }
+
     func testTappingBodyTextOutsideLinksCollapses() {
         let cell = comment(by: "user3")
         XCTAssertTrue(cell.waitForExistence(timeout: 5))

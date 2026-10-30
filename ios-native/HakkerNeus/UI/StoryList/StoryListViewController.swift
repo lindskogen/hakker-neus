@@ -2,7 +2,7 @@ import UIKit
 
 /// The front page (`NewsList.tsx`).
 /// Swiping right in the content area saves a row here, so only the edge swipe goes back (to the saved list).
-final class StoryListViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack {
+final class StoryListViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack, StoryTransitionSource {
     private enum Section { case main }
 
     private let feed: TopStoriesFeed
@@ -168,6 +168,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         dataSource.itemIdentifier(for: indexPath).flatMap { stories[$0] }
     }
 
+
+    // MARK: Transition into comments
+
+    func transitionViews(forStory id: Int) -> (card: UIView, title: UIView)? {
+        guard let indexPath = dataSource.indexPath(for: id) else { return nil }
+        return (collectionView.cellForItem(at: indexPath) as? StoryCell)?.transitionViews
+    }
 
     // MARK: Restoration
 

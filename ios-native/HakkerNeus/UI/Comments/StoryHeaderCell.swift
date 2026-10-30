@@ -12,6 +12,11 @@ final class StoryHeaderCell: UICollectionViewListCell {
         set { bodyView.onLinkTap = newValue }
     }
 
+    var linkMenu: ((URL, UIView) -> UIMenu)? {
+        get { bodyView.linkMenu }
+        set { bodyView.linkMenu = newValue }
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
 
@@ -40,12 +45,16 @@ final class StoryHeaderCell: UICollectionViewListCell {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: Theme.padding * 2),
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -Theme.padding * 2),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: Theme.padding),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -Theme.padding),
+            // Same as story rows, so the title wraps the same and the shared-element transition lines up.
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -Theme.padding * 3),
         ])
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    /// The title, for the transition from a story row.
+    var titleView: UIView { titleLabel }
 
     func configure(with story: Story, body: CommentBody?) {
         if let body, !body.blocks.isEmpty {
