@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,7 +91,7 @@ fun ComposeScreen(parentId: Long, storyId: Long, context: String, done: () -> Un
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).imePadding().padding(HN.padding), verticalArrangement = Arrangement.spacedBy(HN.padding)) {
+        Column(Modifier.fillMaxSize().padding(padding).wrapContentWidth().widthIn(max = 672.dp).imePadding().padding(HN.padding), verticalArrangement = Arrangement.spacedBy(HN.padding)) {
             Text(context, style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)), maxLines = 3)
             Text("Blank line for a new paragraph · *italic* · indent two spaces for code", style = HN.body.copy(fontSize = 12.sp, color = Color.White.copy(alpha = 0.4f)))
             OutlinedTextField(

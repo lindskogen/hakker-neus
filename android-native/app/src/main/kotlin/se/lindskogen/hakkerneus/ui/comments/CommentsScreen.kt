@@ -50,7 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +91,7 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, s
     val context = LocalContext.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
 
     val openLink: (String) -> Unit = { url ->
         when (val link = HackerNewsLink.parse(url)) {
@@ -122,7 +129,10 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, s
                             isOp = flat.comment.author != null && flat.comment.author == state.story?.author,
                             isCollapsed = state.thread.isCollapsed(flat.id),
                             hiddenReplies = state.thread.replyCounts[flat.id] ?: 0,
-                            onToggle = { model.toggleCollapsed(flat.id) },
+                            onToggle = {
+                                haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                model.toggleCollapsed(flat.id)
+                            },
                             onReply = {
                                 val body = state.bodies[flat.id]?.plainText.orEmpty().take(140)
                                 compose(flat.id, model.storyId, "${flat.comment.author ?: "deleted"}: $body")
@@ -173,7 +183,10 @@ fun CommentsScreen(id: Long, openItem: (Long) -> Unit, compose: (parent: Long, s
                 onClick = {
                     val current = listState.firstVisibleItemIndex
                     val next = visible.withIndex().firstOrNull { (index, comment) -> comment.depth == 0 && index + 1 > current }
-                    next?.let { scope.launch { listState.animateScrollToItem(it.index + 1) } }
+                    next?.let {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        scope.launch { listState.animateScrollToItem(it.index + 1) }
+                    }
                 },
                 shape = CircleShape,
                 containerColor = Color(0xE6404040),
@@ -238,7 +251,21 @@ private fun CommentRow(
     Column(
         Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onToggle, onLongClick = { menuOpen = true })
+            .combinedClickable(
+                onClickLabel = if (isCollapsed) "Expand thread" else "Collapse thread",
+                onClick = onToggle,
+                onLongClickLabel = "More actions",
+                onLongClick = { menuOpen = true },
+            )
+            .semantics {
+                if (isCollapsed) stateDescription = if (hiddenReplies > 0) "Collapsed, $hiddenReplies hidden replies" else "Collapsed"
+                customActions = listOf(
+                    CustomAccessibilityAction("Reply") { onReply(); true },
+                    CustomAccessibilityAction("Share") { onShare(); true },
+                    CustomAccessibilityAction("Copy text") { onCopyText(); true },
+                    CustomAccessibilityAction("Copy link") { onCopyLink(); true },
+                )
+            }
             .padding(start = indent),
     ) {
         HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.2f))
@@ -253,12 +280,13 @@ private fun CommentRow(
                     if (isOp) {
                         Text(
                             "OP",
+                            // Read as "original poster" rather than "op".
+                            modifier = Modifier.semantics { contentDescription = "original poster" }.clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.13f)).padding(2.dp),
                             style = HN.body.copy(fontSize = 8.sp, lineHeight = 10.sp, fontWeight = FontWeight.Bold),
-                            modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.13f)).padding(2.dp),
                         )
                     }
                     if (isCollapsed && hiddenReplies > 0) {
-                        Text("+$hiddenReplies", style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.5f)))
+                        Text("+$hiddenReplies", modifier = Modifier.clearAndSetSemantics {}, style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.5f)))
                     }
                     Spacer(Modifier.weight(1f))
                     Text(RelativeTime.format(flat.comment.time), style = HN.body.copy(fontSize = 13.sp))

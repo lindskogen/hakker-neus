@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -87,7 +89,7 @@ fun SignInScreen(done: () -> Unit) {
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxSize().padding(padding).wrapContentWidth().widthIn(max = 672.dp).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
                 "Sign in with your Hacker News account to vote and comment. Your password is sent to news.ycombinator.com and not stored.",
                 style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),

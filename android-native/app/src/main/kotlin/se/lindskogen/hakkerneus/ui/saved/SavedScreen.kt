@@ -30,7 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,7 @@ fun SavedScreen(
     val entries by AppContainer.saved.entries.collectAsState()
     val visits by AppContainer.visited.visits.collectAsState()
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val actions = remember {
         StoryRowActions(
             open = { story ->
@@ -76,7 +79,7 @@ fun SavedScreen(
             },
             openComments = openComments,
             toggleSaved = { AppContainer.saved.toggle(it) },
-            toggleUpvote = { AppContainer.toggleVote(it, signIn) },
+            toggleUpvote = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); AppContainer.toggleVote(it, signIn) },
             share = { context.share(it.url ?: it.hackerNewsUrl, it.title) },
             copyLink = { context.copyToClipboard(it.url ?: it.hackerNewsUrl) },
             copyCommentsLink = { context.copyToClipboard(it.hackerNewsUrl) },

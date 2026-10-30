@@ -48,7 +48,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -77,6 +79,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
     val visits by AppContainer.visited.visits.collectAsState()
     val upvoted by AppContainer.session.upvoted.collectAsState()
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
     // Remember the list and where it's scrolled when leaving the app, to show it again next launch.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.saveForNextLaunch(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }
@@ -94,7 +97,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
             },
             openComments = openComments,
             toggleSaved = { AppContainer.saved.toggle(it) },
-            toggleUpvote = { AppContainer.toggleVote(it, signIn) },
+            toggleUpvote = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); AppContainer.toggleVote(it, signIn) },
             share = { context.share(it.url ?: it.hackerNewsUrl, it.title) },
             copyLink = { context.copyToClipboard(it.url ?: it.hackerNewsUrl) },
             copyCommentsLink = { context.copyToClipboard(it.hackerNewsUrl) },
@@ -117,7 +120,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
         when {
             state.stories.isEmpty() && state.isLoading -> SkeletonRows()
             state.stories.isEmpty() && state.error != null -> ErrorState(state.error!!)
-            else -> PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = model::refresh) {
+            else -> PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); model.refresh() }) {
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(

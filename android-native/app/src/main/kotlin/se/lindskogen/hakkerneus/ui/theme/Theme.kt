@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -18,14 +19,18 @@ object HN {
     /** The theme colour (orange unless another theme is picked in Settings). */
     val accent: Color get() = Palette.accent()
 
-    /** Story titles. No Helvetica Neue on Android: light sans-serif, as the RN app used here. */
-    fun titleStyle(isTablet: Boolean = false) = TextStyle(
+    /** Story titles. No Helvetica Neue on Android: light sans-serif, as the RN app used here. Larger on tablets, as on iPad. */
+    @Composable
+    fun titleStyle(isTablet: Boolean = isTablet()) = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Light,
         fontSize = if (isTablet) 30.sp else 25.sp,
         lineHeight = if (isTablet) 36.sp else 30.sp,
         color = Color.White,
     )
+
+    @Composable
+    fun isTablet() = LocalConfiguration.current.smallestScreenWidthDp >= 600
 
     val body = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp, lineHeight = 22.sp, color = Color.White)
 }

@@ -35,7 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
+import se.lindskogen.hakkerneus.data.HackerNewsLink
 import androidx.navigation.toRoute
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.ui.comments.CommentsScreen
@@ -59,8 +64,25 @@ private enum class CornerMode { Menu, Close, Hidden }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) {
     val nav = rememberNavController()
+    val context = LocalContext.current
+    val link by pendingLink.collectAsState()
+    // hakkerneus://item?id=…, hakkerneus://open?url=… and HN item links (see the manifest).
+    LaunchedEffect(link) {
+        val uri = link ?: return@LaunchedEffect
+        pendingLink.value = null
+        val target = when {
+            uri.scheme == "hakkerneus" && uri.host == "item" -> uri.getQueryParameter("id")
+            uri.scheme == "hakkerneus" && uri.host == "open" -> uri.getQueryParameter("url")
+            else -> uri.toString()
+        } ?: return@LaunchedEffect
+        target.toLongOrNull()?.let { nav.navigate(Comments(it)); return@LaunchedEffect }
+        when (val parsed = HackerNewsLink.parse(target)) {
+            is HackerNewsLink.Item -> nav.navigate(Comments(parsed.id))
+            else -> if (uri.host == "open") context.openInBrowser(target)
+        }
+    }
     val entry by nav.currentBackStackEntryAsState()
     val mode = when {
         entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Menu

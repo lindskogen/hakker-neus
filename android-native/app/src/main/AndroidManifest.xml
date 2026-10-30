@@ -6,16 +6,32 @@
     <application
         android:name=".HakkerNeusApp"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="HackerNeus"
         android:supportsRtl="true"
         android:theme="@style/Theme.HakkerNeus">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- hakkerneus://item?id=123 and hakkerneus://open?url=…, as on iOS. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hakkerneus" />
+            </intent-filter>
+            <!-- Offered for HN item links (not verified, so the user picks it, or turns it on in app settings). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="news.ycombinator.com" android:path="/item" />
             </intent-filter>
         </activity>
     </application>

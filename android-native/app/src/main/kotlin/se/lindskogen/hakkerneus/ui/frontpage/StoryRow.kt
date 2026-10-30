@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,14 +100,7 @@ fun StoryRow(
     Box(
         modifier
             .fillMaxWidth()
-            .background(HN.backgroundDark)
-            .semantics {
-                customActions = listOf(
-                    CustomAccessibilityAction("Open comments") { actions.openComments(story); true },
-                    CustomAccessibilityAction(if (isSaved) "Unsave" else "Save") { actions.toggleSaved(story); true },
-                    CustomAccessibilityAction(if (isUpvoted) "Unvote" else "Upvote") { actions.toggleUpvote(story); true },
-                )
-            },
+            .background(HN.backgroundDark),
     ) {
         // Behind the row: the heart on the left (an up arrow on blue at the upvote stage),
         // the comment count on the right.
@@ -179,7 +174,21 @@ fun StoryRow(
                         onDragCancel = { settle(); armed = null },
                     )
                 }
-                .combinedClickable(onClick = { actions.open(story) }, onLongClick = { menuOpen = true }),
+                .combinedClickable(
+                    onClickLabel = if (story.url == null) "Open comments" else "Open link",
+                    onClick = { actions.open(story) },
+                    onLongClickLabel = "More actions",
+                    onLongClick = { menuOpen = true },
+                )
+                // TalkBack: the swipes as actions (the row is the focusable node, so they go here).
+                .semantics {
+                    if (isVisited) stateDescription = "Read"
+                    customActions = listOf(
+                        CustomAccessibilityAction("Open comments") { actions.openComments(story); true },
+                        CustomAccessibilityAction(if (isSaved) "Unsave" else "Save") { actions.toggleSaved(story); true },
+                        CustomAccessibilityAction(if (isUpvoted) "Unvote" else "Upvote") { actions.toggleUpvote(story); true },
+                    )
+                },
         ) {
             Column(Modifier.padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp)) {
                 // Read stories fade back, so unread ones stand out.
@@ -202,7 +211,12 @@ fun StoryRow(
             Text(
                 if (isUpvoted) "▲ $score" else "$score",
                 style = HN.body.copy(fontSize = 30.sp, lineHeight = 34.sp, color = Color.White.copy(alpha = if (isUpvoted) 0.85f else 0.3f)),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(HN.padding),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(HN.padding)
+                    .semantics {
+                        contentDescription = listOfNotNull("$score points", if (isUpvoted) "upvoted" else null, "${story.commentCount} comments").joinToString(", ")
+                    },
             )
 
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
