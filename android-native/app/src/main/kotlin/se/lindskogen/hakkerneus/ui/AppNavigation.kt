@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.serialization.Serializable
 import androidx.navigation.toRoute
 import se.lindskogen.hakkerneus.AppContainer
+import se.lindskogen.hakkerneus.ui.comments.CommentsScreen
 import se.lindskogen.hakkerneus.ui.frontpage.CornerButton
 import se.lindskogen.hakkerneus.ui.frontpage.FrontPageScreen
 import se.lindskogen.hakkerneus.ui.theme.HN
@@ -39,8 +40,7 @@ fun AppNavigation() {
             )
         }
         composable<Comments> { entry ->
-            val id = entry.toRoute<Comments>().id
-            Placeholder(AppContainer.knownStories[id]?.title ?: "Item $id", "Comments arrive in A3.")
+            CommentsScreen(entry.toRoute<Comments>().id, openItem = { nav.navigate(Comments(it)) })
         }
         composable<Saved> {
             Box(Modifier.fillMaxSize()) {
