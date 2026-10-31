@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.data
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.concurrent.ConcurrentHashMap
 import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +25,8 @@ class RequestCache<K : Any, V>(private val maxAgeMs: Long = 5 * 60_000L, private
     private class Entry<V>(val deferred: Deferred<V>, val started: Long)
 
     private val mutex = Mutex()
-    private val entries = HashMap<K, Entry<V>>()
+    // Written under [mutex]; concurrent so [peek] can read it from the main thread.
+    private val entries = ConcurrentHashMap<K, Entry<V>>()
     // Not tied to a screen: a prefetch keeps going if the user backs out, ready for next time.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -49,6 +53,14 @@ class RequestCache<K : Any, V>(private val maxAgeMs: Long = 5 * 60_000L, private
         }
     }
 
+    /** The value if it has already arrived (and is fresh), without waiting. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun peek(key: K): V? {
+        val entry = entries[key] ?: return null
+        if (SystemClock.elapsedRealtime() - entry.started >= maxAgeMs || !entry.deferred.isCompleted) return null
+        return runCatching { entry.deferred.getCompleted() }.getOrNull()
+    }
+
     fun prefetch(key: K, fetch: suspend () -> V) {
         scope.launch { runCatching { get(key, fetch = fetch) } }
     }
@@ -64,6 +76,8 @@ class ItemCache(private val client: HnClient) {
     suspend fun item(id: Long, forceRefresh: Boolean = false): LoadedItem = cache.get(id, forceRefresh) { load(id) }
 
     fun prefetch(id: Long) = cache.prefetch(id) { load(id) }
+
+    fun peek(id: Long): LoadedItem? = cache.peek(id)
 
     private suspend fun load(id: Long): LoadedItem {
         val item = client.item(id)
@@ -86,6 +100,16 @@ class UserCache(val api: UserApi) {
         if (page == 0) firstStories.get(name) { api.stories(name, 0) } else api.stories(name, page)
 
     suspend fun comments(name: String, page: Int) = api.comments(name, page)
+
+    /** The profile and first page of stories, as a user page opens with. */
+    suspend fun firstPage(name: String): Pair<HnUser, UserActivityPage<Story>?> = coroutineScope {
+        val stories = async { runCatching { stories(name, 0) }.getOrNull() }
+        user(name) to stories.await()
+    }
+
+    /** The profile and first stories if they've already arrived, without waiting. */
+    fun peekFirstPage(name: String): Pair<HnUser, UserActivityPage<Story>?>? =
+        users.peek(name)?.let { it to firstStories.peek(name) }
 
     fun prefetch(name: String) {
         users.prefetch(name) { api.user(name) }

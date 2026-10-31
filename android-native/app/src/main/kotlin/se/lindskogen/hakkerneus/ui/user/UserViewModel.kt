@@ -43,6 +43,25 @@ class UserViewModel(private val name: String) : ViewModel() {
     private var loadJob: Job? = null
 
     init {
+        val preloaded = AppContainer.users.peekFirstPage(name)
+        if (preloaded != null) {
+            // Already loaded before the screen opened: shown in the first frame.
+            val (user, stories) = preloaded
+            stories?.items?.forEach { AppContainer.knownStories[it.id] = it }
+            _state.value = UserState(
+                user = user,
+                about = user.about?.let(CommentBody::parse),
+                stories = stories?.items.orEmpty(),
+                nextPage = if (stories != null) mapOf(UserTab.Stories to 1) else emptyMap(),
+                hasMore = if (stories != null) mapOf(UserTab.Stories to stories.hasMore) else emptyMap(),
+            )
+            if (stories == null) loadMore()
+        } else {
+            loadProfile()
+        }
+    }
+
+    private fun loadProfile() {
         viewModelScope.launch {
             try {
                 val user = AppContainer.users.user(name)

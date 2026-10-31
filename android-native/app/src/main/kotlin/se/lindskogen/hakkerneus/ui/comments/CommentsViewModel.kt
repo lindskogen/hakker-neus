@@ -13,6 +13,7 @@ import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.data.CommentThread
 import kotlinx.coroutines.flow.drop
 import se.lindskogen.hakkerneus.data.Comment
+import se.lindskogen.hakkerneus.data.FlatComment
 import se.lindskogen.hakkerneus.data.Story
 import se.lindskogen.hakkerneus.data.StoryWithComments
 import se.lindskogen.hakkerneus.data.flattened
@@ -42,7 +43,18 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
     private var parsed: Map<Long, CommentBody> = emptyMap()
 
     init {
-        load()
+        val preloaded = AppContainer.items.peek(id)?.takeIf { it.item.parentStoryId == null }
+        if (preloaded != null) {
+            // Already loaded before the screen opened: shown in the first frame.
+            serverResult = preloaded.item
+            parsed = preloaded.bodies
+            AppContainer.offline.save(id, preloaded.item)
+            val flat = flatten(preloaded.item)
+            publish(preloaded.item, flat, flat.associate { it.id to (parsed[it.id] ?: CommentBody.parse(it.comment.text ?: "")) }, offlineFrom = null)
+            parsed = _state.value.bodies
+        } else {
+            load()
+        }
         // Comments posted from the app show up straight away, until Algolia has them.
         viewModelScope.launch {
             AppContainer.localReplies.drop(1).collect { replies ->
@@ -61,15 +73,21 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
 
     val storyId: Long get() = id
 
+    private fun flatten(result: StoryWithComments) =
+        mergeLocalReplies(AppContainer.localReplies.value.filter { it.storyId == result.story.id }, result.comments, result.story.id).flattened()
+
     private suspend fun rebuild(result: StoryWithComments, offlineFrom: Long?, focus: Long? = null) {
-        val local = AppContainer.localReplies.value.filter { it.storyId == result.story.id }
-        val flat = mergeLocalReplies(local, result.comments, result.story.id).flattened()
+        val flat = flatten(result)
         // Parsing comment HTML can take a moment on big threads; prefetched threads come parsed.
         val known = parsed
         val bodies = withContext(Dispatchers.Default) {
             flat.associate { it.id to (known[it.id] ?: CommentBody.parse(it.comment.text ?: "")) }
         }
         parsed = bodies
+        publish(result, flat, bodies, offlineFrom, focus)
+    }
+
+    private fun publish(result: StoryWithComments, flat: List<FlatComment>, bodies: Map<Long, CommentBody>, offlineFrom: Long?, focus: Long? = null) {
         _state.update { current ->
             val target = focus ?: current.focusCommentId
             var thread = CommentThread(flat, current.thread.collapsed)

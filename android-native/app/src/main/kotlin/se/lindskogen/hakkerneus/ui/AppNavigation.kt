@@ -1,5 +1,10 @@
 package se.lindskogen.hakkerneus.ui
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -70,6 +75,34 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     val nav = rememberNavController()
     val context = LocalContext.current
     val link by pendingLink.collectAsState()
+
+    // Opening comments or a user page waits briefly for the data (usually already prefetched on
+    // touch down), so the screen opens filled instead of showing a loading state for a moment.
+    // Gives up waiting after 150 ms; taps while waiting are ignored.
+    val navScope = rememberCoroutineScope()
+    val waiting = remember { booleanArrayOf(false) }
+    fun navigateAfterBriefWait(route: Any, fetch: suspend () -> Unit) {
+        if (waiting[0]) return
+        waiting[0] = true
+        navScope.launch {
+            withTimeoutOrNull(150) {
+                try {
+                    fetch()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // The screen shows the error.
+                }
+            }
+            waiting[0] = false
+            nav.navigate(route)
+        }
+    }
+    fun openComments(id: Long) = navigateAfterBriefWait(Comments(id)) {
+        // A link to a comment opens its story; have that ready too.
+        AppContainer.items.item(id).item.parentStoryId?.let { AppContainer.items.item(it) }
+    }
+    fun openUser(name: String) = navigateAfterBriefWait(User(name)) { AppContainer.users.firstPage(name) }
     // hakkerneus://item?id=…, hakkerneus://user?id=…, hakkerneus://open?url=… and HN item links (see the manifest).
     LaunchedEffect(link) {
         val uri = link ?: return@LaunchedEffect
@@ -78,13 +111,13 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             uri.scheme == "hakkerneus" && uri.host == "item" -> uri.getQueryParameter("id")
             uri.scheme == "hakkerneus" && uri.host == "open" -> uri.getQueryParameter("url")
             uri.scheme == "hakkerneus" && uri.host == "user" ->
-                uri.getQueryParameter("id")?.let { nav.navigate(User(it)); return@LaunchedEffect }
+                uri.getQueryParameter("id")?.let { openUser(it); return@LaunchedEffect }
             else -> uri.toString()
         } ?: return@LaunchedEffect
-        target.toLongOrNull()?.let { nav.navigate(Comments(it)); return@LaunchedEffect }
+        target.toLongOrNull()?.let { openComments(it); return@LaunchedEffect }
         when (val parsed = HackerNewsLink.parse(target)) {
-            is HackerNewsLink.Item -> nav.navigate(Comments(parsed.id))
-            is HackerNewsLink.User -> nav.navigate(User(parsed.name))
+            is HackerNewsLink.Item -> openComments(parsed.id)
+            is HackerNewsLink.User -> openUser(parsed.name)
             else -> if (uri.host == "open") context.openInBrowser(target)
         }
     }
@@ -96,15 +129,15 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
 
     Box(Modifier.fillMaxSize()) {
-    CompositionLocalProvider(LocalOpenUser provides { name -> nav.navigate(User(name)) }) {
+    CompositionLocalProvider(LocalOpenUser provides { name -> openUser(name) }) {
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
         composable<FrontPage> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
             FrontPageScreen(
-                openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
-                openItem = { nav.navigate(Comments(it)) },
+                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                openItem = { openComments(it) },
                 signIn = { nav.navigate(SignIn) },
             )
             }
@@ -113,7 +146,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                 CommentsScreen(
                     entry.toRoute<Comments>().id,
-                    openItem = { nav.navigate(Comments(it)) },
+                    openItem = { openComments(it) },
                     compose = { parent, story, context ->
                         val open = { nav.navigate(Compose(parent, story, context)) }
                         if (AppContainer.session.isSignedIn) open() else { AppContainer.afterSignIn = open; nav.navigate(SignIn) }
@@ -127,8 +160,8 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                 val username by AppContainer.session.username.collectAsState()
                 SavedScreen(
                     username = username,
-                    openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
-                    openItem = { nav.navigate(Comments(it)) },
+                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                    openItem = { openComments(it) },
                     openSettings = { nav.navigate(Settings) },
                     signIn = { nav.navigate(SignIn) },
                 )
@@ -138,12 +171,12 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                 UserScreen(
                     entry.toRoute<User>().name,
-                    openComments = { AppContainer.visited.markCommentsSeen(it); nav.navigate(Comments(it.id)) },
-                    openItem = { nav.navigate(Comments(it)) },
+                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                    openItem = { openComments(it) },
                     openLink = { url ->
                         when (val link = HackerNewsLink.parse(url)) {
-                            is HackerNewsLink.Item -> nav.navigate(Comments(link.id))
-                            is HackerNewsLink.User -> nav.navigate(User(link.name))
+                            is HackerNewsLink.Item -> openComments(link.id)
+                            is HackerNewsLink.User -> openUser(link.name)
                             else -> context.openInBrowser(url)
                         }
                     },

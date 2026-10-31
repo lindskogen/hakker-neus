@@ -47,10 +47,14 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
     private var hasMore: [Tab: Bool] = [:]
     private var loadTask: Task<Void, Never>?
 
-    init(username: String, coordinator: AppCoordinator, users: UserCache) {
+    /// The profile and first stories, when they were already loaded before the screen was pushed.
+    private var preloaded: UserFirstPage?
+
+    init(username: String, coordinator: AppCoordinator, users: UserCache, preloaded: UserFirstPage? = nil) {
         self.username = username
         self.coordinator = coordinator
         self.users = users
+        self.preloaded = preloaded
         super.init(nibName: nil, bundle: nil)
         title = username
     }
@@ -148,6 +152,22 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
     // MARK: Loading
 
     private func load() {
+        if let preloaded {
+            // Shown in the first frame, so the screen slides in filled.
+            self.preloaded = nil
+            user = preloaded.user
+            about = preloaded.user.about.map { CommentBody(html: $0) }
+            collectionView.backgroundView = nil
+            if let page = preloaded.stories {
+                stories = page.items
+                for story in page.items { storiesByID[story.id] = story }
+                hasMore[.stories] = page.hasMore
+                nextPage[.stories] = 1
+            }
+            apply()
+            if preloaded.stories == nil { loadMore() }
+            return
+        }
         stateView.state = .loading
         Task {
             do {

@@ -49,10 +49,20 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     private let nextThreadButton = UIButton(type: .system)
     private let jumpHaptics = UISelectionFeedbackGenerator()
 
-    init(id: Int, story: Story?, coordinator: AppCoordinator, restoring restored: RestorationState.CommentsScreen? = nil) {
+    /// The thread, when it was already loaded before the screen was pushed.
+    private var preloaded: LoadedItem?
+
+    init(
+        id: Int,
+        story: Story?,
+        coordinator: AppCoordinator,
+        restoring restored: RestorationState.CommentsScreen? = nil,
+        preloaded: LoadedItem? = nil
+    ) {
         self.id = id
         self.story = story
         self.coordinator = coordinator
+        self.preloaded = preloaded
         if let restored {
             pendingAnchor = restored.anchor
             thread = CommentThread(comments: [], collapsed: Set(restored.collapsed))
@@ -118,7 +128,16 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             MainActor.assumeIsolated { self?.applySnapshot(animated: false, reconfiguring: [.story]) }
         }
 
-        Task { await load(forceRefresh: false) }
+        if let preloaded {
+            // Shown in the first frame, so the screen slides in filled.
+            self.preloaded = nil
+            let result = preloaded.item
+            coordinator.offlineItems.save(result, id: id)
+            let flat = Self.merge(localReplies, into: result.comments, storyID: result.story.id).flattened()
+            show(result, flat: flat, parsed: preloaded.bodies, offlineCopyDate: nil)
+        } else {
+            Task { await load(forceRefresh: false) }
+        }
         Task { await syncVoteState() }
     }
 
@@ -242,31 +261,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             let (flat, parsed) = await build(result, prepared: prepared)
 
             update = { [self] in
-                if let offlineCopyDate {
-                    offlineBanner.show("Offline · saved \(RelativeTime.string(from: offlineCopyDate)) ago")
-                } else {
-                    offlineBanner.hide()
-                }
-                serverResult = result
-                story = result.story
-                storyBody = result.story.text.map { CommentBody(html: $0) }
-                thread = CommentThread(comments: flat, collapsed: thread.collapsed)
-                commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
-                bodies = parsed
-                loadState = .loaded
-                if let focus = focusCommentID {
-                    thread.expandAncestors(of: focus)
-                }
-                applySnapshot(animated: false, reconfigureAll: true)
-                if let focus = focusCommentID {
-                    focusCommentID = nil
-                    reveal(focus)
-                } else if let anchor = pendingAnchor {
-                    pendingAnchor = nil
-                    if let indexPath = dataSource.indexPath(for: .comment(anchor.id)) {
-                        collectionView.scroll(toAnchor: indexPath, offset: anchor.offset)
-                    }
-                }
+                show(result, flat: flat, parsed: parsed, offlineCopyDate: offlineCopyDate)
             }
         } catch {
             update = { [self] in
@@ -280,6 +275,34 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             }
         }
         refreshControl.endRefreshing(applying: update)
+    }
+
+    private func show(_ result: StoryWithComments, flat: [FlatComment], parsed: [Int: CommentBody], offlineCopyDate: Date?) {
+        if let offlineCopyDate {
+            offlineBanner.show("Offline · saved \(RelativeTime.string(from: offlineCopyDate)) ago")
+        } else {
+            offlineBanner.hide()
+        }
+        serverResult = result
+        story = result.story
+        storyBody = result.story.text.map { CommentBody(html: $0) }
+        thread = CommentThread(comments: flat, collapsed: thread.collapsed)
+        commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
+        bodies = parsed
+        loadState = .loaded
+        if let focus = focusCommentID {
+            thread.expandAncestors(of: focus)
+        }
+        applySnapshot(animated: false, reconfigureAll: true)
+        if let focus = focusCommentID {
+            focusCommentID = nil
+            reveal(focus)
+        } else if let anchor = pendingAnchor {
+            pendingAnchor = nil
+            if let indexPath = dataSource.indexPath(for: .comment(anchor.id)) {
+                collectionView.scroll(toAnchor: indexPath, offset: anchor.offset)
+            }
+        }
     }
 
     /// Flattens the thread, with local replies merged in, and parses the HTML of comments not

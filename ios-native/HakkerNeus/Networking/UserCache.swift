@@ -24,8 +24,21 @@ struct UserCache: Sendable {
         try await api.comments(by: name, page: page)
     }
 
+    /// The profile and first page of stories, as a user page opens with.
+    func firstPage(of name: String) async throws -> UserFirstPage {
+        async let user = user(name)
+        async let stories = try? stories(by: name, page: 0)
+        return try await UserFirstPage(user: user, stories: stories)
+    }
+
     func prefetch(_ name: String) {
         Task { _ = try? await user(name) }
         Task { _ = try? await stories(by: name, page: 0) }
     }
+}
+
+/// What a user page shows first. No stories if that request failed; the page retries.
+struct UserFirstPage: Sendable {
+    let user: HNUser
+    let stories: UserActivityPage<Story>?
 }

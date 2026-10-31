@@ -1,5 +1,6 @@
 import SafariServices
 import UIKit
+import os
 
 /// Owns app-wide dependencies, the root navigation stack, and navigation between screens.
 ///
@@ -257,18 +258,72 @@ final class AppCoordinator {
         }
     }
 
-    func makeCommentsViewController(id: Int, story: Story?) -> CommentsViewController {
+    func makeCommentsViewController(id: Int, story: Story?, preloaded: LoadedItem? = nil) -> CommentsViewController {
         itemCache.prefetch(id: id)
-        return CommentsViewController(id: id, story: story, coordinator: self)
+        return CommentsViewController(id: id, story: story, coordinator: self, preloaded: preloaded)
     }
 
     func showComments(for story: Story) {
         visitedStories.markCommentsSeen(story)
-        navigationController.pushViewController(makeCommentsViewController(id: story.id, story: story), animated: true)
+        showComments(id: story.id, story: story)
     }
 
     func showComments(id: Int) {
-        navigationController.pushViewController(makeCommentsViewController(id: id, story: nil), animated: true)
+        showComments(id: id, story: nil)
+    }
+
+    private func showComments(id: Int, story: Story?) {
+        push(waitingFor: { [itemCache] in
+            let loaded = try await itemCache.item(id: id)
+            // A link to a comment opens its story; have that ready too.
+            if let storyID = loaded.item.parentStoryID {
+                _ = try await itemCache.item(id: storyID)
+            }
+            return loaded
+        }) { [unowned self] loaded in
+            // Comment links still go through the screen's own (now cached) load, which focuses the comment.
+            makeCommentsViewController(id: id, story: story, preloaded: loaded?.item.parentStoryID == nil ? loaded : nil)
+        }
+    }
+
+    private var isWaitingToPush = false
+
+    /// Pushes a screen after waiting briefly for its data (usually already prefetched on touch
+    /// down), so it slides in filled instead of showing a loading state for a moment. Gives up
+    /// waiting after 150 ms; taps while waiting are ignored.
+    private func push<T: Sendable>(
+        waitingFor fetch: @escaping @Sendable () async throws -> T,
+        make: @escaping (T?) -> UIViewController
+    ) {
+        guard !isWaitingToPush else { return }
+        isWaitingToPush = true
+        Task {
+            let value = await Self.firstResult(within: .milliseconds(150), fetch)
+            isWaitingToPush = false
+            navigationController.pushViewController(make(value), animated: true)
+        }
+    }
+
+    /// `fetch`'s result if it arrives within `limit`, else nil (the fetch carries on, for the screen).
+    private nonisolated static func firstResult<T: Sendable>(
+        within limit: Duration,
+        _ fetch: @escaping @Sendable () async throws -> T
+    ) async -> T? {
+        await withCheckedContinuation { continuation in
+            let resumed = OSAllocatedUnfairLock(initialState: false)
+            let finish: @Sendable (T?) -> Void = { value in
+                let first = resumed.withLock { done in
+                    defer { done = true }
+                    return !done
+                }
+                if first { continuation.resume(returning: value) }
+            }
+            Task { finish(try? await fetch()) }
+            Task {
+                try? await Task.sleep(for: limit)
+                finish(nil)
+            }
+        }
     }
 
     /// Opens HN item links in the app and everything else in an in-app browser.
@@ -295,7 +350,9 @@ final class AppCoordinator {
 
     /// An HN user's page: karma, about, their stories and comments.
     func showUser(_ username: String) {
-        navigationController.pushViewController(UserViewController(username: username, coordinator: self, users: userCache), animated: true)
+        push(waitingFor: { [userCache] in try await userCache.firstPage(of: username) }) { [unowned self] first in
+            UserViewController(username: username, coordinator: self, users: userCache, preloaded: first)
+        }
     }
 
     func share(_ url: URL, from sourceView: UIView) {
