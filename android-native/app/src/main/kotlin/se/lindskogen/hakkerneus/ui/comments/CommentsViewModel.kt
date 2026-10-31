@@ -38,6 +38,8 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
 
     /** The thread as last loaded, before local replies are merged in. */
     private var serverResult: StoryWithComments? = null
+    /** Comment bodies parsed so far, by ID, so rebuilding only parses new comments. */
+    private var parsed: Map<Long, CommentBody> = emptyMap()
 
     init {
         load()
@@ -62,8 +64,12 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
     private suspend fun rebuild(result: StoryWithComments, offlineFrom: Long?, focus: Long? = null) {
         val local = AppContainer.localReplies.value.filter { it.storyId == result.story.id }
         val flat = mergeLocalReplies(local, result.comments, result.story.id).flattened()
-        // Parsing every comment's HTML can take a moment on big threads.
-        val bodies = withContext(Dispatchers.Default) { flat.associate { it.id to CommentBody.parse(it.comment.text ?: "") } }
+        // Parsing comment HTML can take a moment on big threads; prefetched threads come parsed.
+        val known = parsed
+        val bodies = withContext(Dispatchers.Default) {
+            flat.associate { it.id to (known[it.id] ?: CommentBody.parse(it.comment.text ?: "")) }
+        }
+        parsed = bodies
         _state.update { current ->
             val target = focus ?: current.focusCommentId
             var thread = CommentThread(flat, current.thread.collapsed)
@@ -84,19 +90,22 @@ class CommentsViewModel(private var id: Long) : ViewModel() {
 
     fun refresh() {
         _state.update { it.copy(isRefreshing = true) }
-        load()
+        load(forceRefresh = true)
     }
 
     fun toggleCollapsed(commentId: Long) = _state.update { it.copy(thread = it.thread.toggled(commentId)) }
 
     fun focusHandled() = _state.update { it.copy(focusCommentId = null) }
 
-    private fun load() {
+    private fun load(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             try {
                 var offlineFrom: Long? = null
                 suspend fun fetch(itemId: Long) = try {
-                    AppContainer.client.item(itemId).also { if (it.parentStoryId == null) AppContainer.offline.save(itemId, it) }
+                    val loaded = AppContainer.items.item(itemId, forceRefresh)
+                    // A refresh replaces the bodies (comments can be edited); a first load starts with the prefetched ones.
+                    parsed = loaded.bodies
+                    loaded.item.also { if (it.parentStoryId == null) AppContainer.offline.save(itemId, it) }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

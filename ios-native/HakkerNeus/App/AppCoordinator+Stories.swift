@@ -28,6 +28,7 @@ extension AppCoordinator {
         cell.onToggleSaved = { [weak self] in self?.savedStories.toggle(story) }
         cell.onToggleUpvote = { [weak self] in self?.toggleVote(story) }
         cell.onOpenComments = { [weak self] in self?.showComments(for: story) }
+        cell.onSwipeBegan = { [weak self] in self?.prefetchComments(for: story) }
     }
 
     /// Tapping a row opens the link, or the comments for self posts.
@@ -41,7 +42,8 @@ extension AppCoordinator {
     }
 
     func contextMenuConfiguration(for story: Story, sourceView: UIView) -> UIContextMenuConfiguration {
-        UIContextMenuConfiguration(
+        prefetchComments(for: story)
+        return UIContextMenuConfiguration(
             identifier: story.id as NSNumber,
             previewProvider: { [weak self] in self?.makePreview(for: story) },
             actionProvider: { [weak self, weak sourceView] _ in
@@ -105,6 +107,33 @@ extension AppCoordinator {
             } completion: { _ in
                 heart.removeFromSuperview()
             }
+        }
+    }
+}
+
+// MARK: Prefetching
+
+extension AppCoordinator {
+    /// Starts fetching a story's comments as soon as the user shows interest (touching the row,
+    /// starting a swipe, opening its menu), so the comments screen usually opens already loaded.
+    func prefetchComments(for story: Story) {
+        itemCache.prefetch(id: story.id)
+    }
+
+    func prefetchItem(id: Int) {
+        itemCache.prefetch(id: id)
+    }
+
+    /// Fetches the profile and first stories of a user whose page is one tap away.
+    func prefetchUser(_ name: String) {
+        userCache.prefetch(name)
+    }
+
+    /// On Wi-Fi, fetches the comments of the rows on screen once scrolling stops.
+    func prefetchVisible(_ stories: [Story]) {
+        guard NetworkConditions.shared.allowsSpeculativeFetching else { return }
+        for story in stories.prefix(10) where story.commentCount > 0 {
+            itemCache.prefetch(id: story.id)
         }
     }
 }

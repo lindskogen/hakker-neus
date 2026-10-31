@@ -8,6 +8,7 @@ final class StoryCell: UICollectionViewListCell {
     var onToggleSaved: (() -> Void)?
     var onToggleUpvote: (() -> Void)?
     var onOpenComments: (() -> Void)?
+    var onSwipeBegan: (() -> Void)?
 
     /// The moving part of the row. The swipe actions sit behind it.
     private let rowView = UIView()
@@ -263,6 +264,7 @@ final class StoryCell: UICollectionViewListCell {
             // the action lands, while the row is still springing back over them.
             swipeStartedSaved = isSaved
             swipeStartedUpvoted = isUpvoted
+            onSwipeBegan?()
             haptics.prepare()
             armedAction = nil
             apply(swipe)

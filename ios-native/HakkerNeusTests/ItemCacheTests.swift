@@ -12,7 +12,7 @@ struct ItemCacheTests {
         async let a = cache.item(id: 1)
         async let b = cache.item(id: 1)
         _ = try await (a, b)
-        #expect(try await cache.item(id: 1) == item)
+        #expect(try await cache.item(id: 1).item == item)
 
         #expect(await client.itemRequests == [1])
     }
@@ -37,6 +37,6 @@ struct ItemCacheTests {
         await #expect(throws: HNClientError.badStatus(500)) { try await cache.item(id: 1) }
 
         await client.setFailing(1, false)
-        #expect(try await cache.item(id: 1) == item)
+        #expect(try await cache.item(id: 1).item == item)
     }
 }

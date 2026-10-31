@@ -217,9 +217,12 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         let update: () -> Void
         do {
             let result: StoryWithComments
+            var prepared: [Int: CommentBody] = [:]
             var offlineCopyDate: Date?
             do {
-                result = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
+                let loaded = try await coordinator.itemCache.item(id: id, forceRefresh: forceRefresh)
+                result = loaded.item
+                prepared = loaded.bodies
                 if result.parentStoryID == nil {
                     coordinator.offlineItems.save(result, id: id)
                 }
@@ -236,7 +239,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
                 await load(forceRefresh: forceRefresh)
                 return
             }
-            let (flat, parsed) = await build(result)
+            let (flat, parsed) = await build(result, prepared: prepared)
 
             update = { [self] in
                 if let offlineCopyDate {
@@ -279,15 +282,17 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         refreshControl.endRefreshing(applying: update)
     }
 
-    /// Flattens the thread, with local replies merged in, and parses each comment's HTML
-    /// off the main thread (big threads take a moment).
-    private func build(_ result: StoryWithComments) async -> (flat: [FlatComment], parsed: [Int: CommentBody]) {
+    /// Flattens the thread, with local replies merged in, and parses the HTML of comments not
+    /// in `prepared` off the main thread (big threads take a moment).
+    private func build(_ result: StoryWithComments, prepared: [Int: CommentBody] = [:]) async -> (flat: [FlatComment], parsed: [Int: CommentBody]) {
         let comments = Self.merge(localReplies, into: result.comments, storyID: result.story.id)
         let flat = comments.flattened()
+        let missing = flat.filter { prepared[$0.id] == nil }
+        guard !missing.isEmpty else { return (flat, prepared) }
         let parsed = await Task.detached(priority: .userInitiated) {
-            Dictionary(flat.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
+            Dictionary(missing.map { ($0.id, CommentBody(html: $0.comment.text ?? "")) }, uniquingKeysWith: { $1 })
         }.value
-        return (flat, parsed)
+        return (flat, prepared.merging(parsed) { $1 })
     }
 
     // MARK: Replying
@@ -307,7 +312,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         localReplies.append((parent, comment))
         guard let result = serverResult else { return }
         Task {
-            let (flat, parsed) = await build(result)
+            let (flat, parsed) = await build(result, prepared: bodies)
             thread = CommentThread(comments: flat, collapsed: thread.collapsed)
             thread.expandAncestors(of: comment.id)
             commentsByID = Dictionary(flat.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
@@ -532,6 +537,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             })
         case .comment(let id):
             guard let flat = commentsByID[id] else { return nil }
+            flat.comment.author.map(coordinator.prefetchUser)
             return UIContextMenuConfiguration(actionProvider: { [unowned self, weak cell] _ in
                 commentMenu(for: flat.comment, sourceView: cell ?? collectionView)
             })

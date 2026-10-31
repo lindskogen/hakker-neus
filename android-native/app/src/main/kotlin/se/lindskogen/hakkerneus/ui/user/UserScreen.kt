@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.ui.user
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -242,6 +245,14 @@ private fun UserCommentRow(comment: UserComment, body: CommentBody?, openItem: (
     Column(
         Modifier
             .fillMaxWidth()
+            // The comments screen loads the comment to find its story; fetch both on touch down.
+            .pointerInput(comment.id) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    AppContainer.prefetchComments(comment.id)
+                    comment.storyId?.let(AppContainer::prefetchComments)
+                }
+            }
             .combinedClickable(
                 onClickLabel = "Open thread",
                 onClick = { openItem(comment.id) },

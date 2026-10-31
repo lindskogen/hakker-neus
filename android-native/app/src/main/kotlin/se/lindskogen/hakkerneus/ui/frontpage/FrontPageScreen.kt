@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -128,6 +131,13 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             last >= listState.layoutInfo.totalItemsCount - 5
         }
+    }
+    // Once scrolling stops, the comments of the rows on screen (on unmetered networks).
+    LaunchedEffect(listState, shown) {
+        snapshotFlow { if (listState.isScrollInProgress) null else listState.layoutInfo.visibleItemsInfo.map { it.key } }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .collect { keys -> AppContainer.prefetchVisible(keys.mapNotNull { key -> shown.find { it.id == key } }) }
     }
     // Hiding can leave too few rows to scroll to the end, where the next page loads.
     LaunchedEffect(nearEnd, state.stories.size, shown.size) { if (nearEnd || (state.stories.isNotEmpty() && shown.size < 15)) model.loadMore() }

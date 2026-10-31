@@ -26,7 +26,7 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
 
     let username: String
     private unowned let coordinator: AppCoordinator
-    private let api: UserAPI
+    private let users: UserCache
 
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
@@ -47,10 +47,10 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
     private var hasMore: [Tab: Bool] = [:]
     private var loadTask: Task<Void, Never>?
 
-    init(username: String, coordinator: AppCoordinator, api: UserAPI) {
+    init(username: String, coordinator: AppCoordinator, users: UserCache) {
         self.username = username
         self.coordinator = coordinator
-        self.api = api
+        self.users = users
         super.init(nibName: nil, bundle: nil)
         title = username
     }
@@ -151,7 +151,7 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         stateView.state = .loading
         Task {
             do {
-                let user = try await api.user(username)
+                let user = try await users.user(username)
                 self.user = user
                 about = user.about.map { CommentBody(html: $0) }
                 collectionView.backgroundView = nil
@@ -167,7 +167,7 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         let tab = selectedTab
         guard loadTask == nil, hasMore[tab] ?? true else { return }
         let page = nextPage[tab] ?? 0
-        let task = Task { [weak self, api, username] in
+        let task = Task { [weak self, users, username] in
             defer {
                 self?.loadTask = nil
                 self?.footer?.isLoading = false
@@ -175,14 +175,14 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
             do {
                 switch tab {
                 case .stories:
-                    let result = try await api.stories(by: username, page: page)
+                    let result = try await users.stories(by: username, page: page)
                     guard let self else { return }
                     let new = result.items.filter { self.storiesByID[$0.id] == nil }
                     stories += new
                     for story in new { storiesByID[story.id] = story }
                     hasMore[tab] = result.hasMore
                 case .comments:
-                    let result = try await api.comments(by: username, page: page)
+                    let result = try await users.comments(by: username, page: page)
                     // Parsing the HTML off the main thread, as the comments screen does.
                     let bodies = await Task.detached { Dictionary(result.items.map { ($0.id, CommentBody(html: $0.text)) }, uniquingKeysWith: { $1 }) }.value
                     guard let self else { return }
@@ -256,6 +256,19 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         switch dataSource.itemIdentifier(for: indexPath) {
         case .story, .comment: true
         default: false
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        switch dataSource.itemIdentifier(for: indexPath) {
+        case .story(let id):
+            storiesByID[id].map(coordinator.prefetchComments)
+        case .comment(let id):
+            // The comments screen loads the comment to find its story; fetch both at once.
+            coordinator.prefetchItem(id: id)
+            commentsByID[id]?.storyID.map(coordinator.prefetchItem)
+        default:
+            break
         }
     }
 

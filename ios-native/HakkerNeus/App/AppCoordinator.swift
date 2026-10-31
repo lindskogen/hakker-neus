@@ -20,7 +20,7 @@ final class AppCoordinator {
     let offlineItems: OfflineItemStore
     let settings: AppSettings
     let session = HNSession()
-    let userAPI = UserAPI(transport: URLSession.shared)
+    let userCache = UserCache(api: UserAPI(transport: URLSession.shared))
     /// Unsent comment drafts, by the ID of what they reply to.
     var drafts: [Int: String] = [:]
 
@@ -41,6 +41,7 @@ final class AppCoordinator {
         #endif
         self.client = client
         self.itemCache = ItemCache(client: client)
+        _ = NetworkConditions.shared // Start watching the connection before it's asked about.
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
         self.hiddenStories = HiddenStoriesStore(defaults: defaults)
@@ -294,7 +295,7 @@ final class AppCoordinator {
 
     /// An HN user's page: karma, about, their stories and comments.
     func showUser(_ username: String) {
-        navigationController.pushViewController(UserViewController(username: username, coordinator: self, api: userAPI), animated: true)
+        navigationController.pushViewController(UserViewController(username: username, coordinator: self, users: userCache), animated: true)
     }
 
     func share(_ url: URL, from sourceView: UIView) {
@@ -348,6 +349,8 @@ final class AppCoordinator {
     }
 
     func storyMenu(for story: Story, sourceView: UIView, includeComments: Bool) -> UIMenu {
+        // Built as the menu opens; the author's page is one tap away.
+        story.author.map(prefetchUser)
         var open: [UIMenuElement] = []
         if includeComments {
             open.append(UIAction(

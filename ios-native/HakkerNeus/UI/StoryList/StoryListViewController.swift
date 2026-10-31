@@ -178,6 +178,10 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         }
         dataSource.apply(snapshot, animatingDifferences: animated && !UIAccessibility.isReduceMotionEnabled)
         updateHideReadButton()
+        if replacing {
+            collectionView.layoutIfNeeded()
+            prefetchVisible()
+        }
         // Hiding can leave too few rows to scroll to the end, where the next page loads.
         if shown.count < 15 { loadMore() }
     }
@@ -340,6 +344,22 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         collectionView.deselectItem(at: indexPath, animated: true)
         guard let story = story(at: indexPath) else { return }
         coordinator.select(story)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        story(at: indexPath).map(coordinator.prefetchComments)
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        prefetchVisible()
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if !decelerate { prefetchVisible() }
+    }
+
+    private func prefetchVisible() {
+        coordinator.prefetchVisible(collectionView.indexPathsForVisibleItems.sorted().compactMap(story(at:)))
     }
 
     func collectionView(

@@ -26,7 +26,24 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 /** App-wide dependencies (the Android counterpart of the iOS AppCoordinator's properties). */
 object AppContainer {
     val client: HnClient = LiveHnClient()
-    val users = se.lindskogen.hakkerneus.data.UserApi()
+    val users = se.lindskogen.hakkerneus.data.UserCache(se.lindskogen.hakkerneus.data.UserApi())
+    val items = se.lindskogen.hakkerneus.data.ItemCache(client)
+
+    /**
+     * Starts fetching a story's comments as soon as the user shows interest (touching the row,
+     * starting a swipe, opening its menu), so the comments screen usually opens already loaded.
+     */
+    fun prefetchComments(id: Long) = items.prefetch(id)
+
+    /** Fetches the profile and first stories of a user whose page is one tap away. */
+    fun prefetchUser(name: String) = users.prefetch(name)
+
+    /** On unmetered networks (not cellular, not Data Saver), fetches the comments of the rows on screen. */
+    fun prefetchVisible(stories: List<Story>) {
+        val connectivity = appContext.getSystemService(android.net.ConnectivityManager::class.java) ?: return
+        if (connectivity.isActiveNetworkMetered) return
+        stories.take(10).filter { it.commentCount > 0 }.forEach { items.prefetch(it.id) }
+    }
 
     /** Stories seen in a list, so the comments screen can show the header before loading. */
     val knownStories = mutableMapOf<Long, Story>()

@@ -1,5 +1,8 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import se.lindskogen.hakkerneus.AppContainer
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import se.lindskogen.hakkerneus.ui.UserMenuItem
 import se.lindskogen.hakkerneus.ui.LocalOpenUser
 import androidx.compose.ui.platform.LocalContext
@@ -151,6 +154,7 @@ fun StoryRow(
                 .pointerInput(story.id) {
                     detectHorizontalDragGestures(
                         onDragStart = {
+                            AppContainer.prefetchComments(story.id)
                             translation = 0f
                             armed = null
                             savedAtSwipeStart = isSaved
@@ -183,11 +187,18 @@ fun StoryRow(
                         onDragCancel = { settle(); armed = null },
                     )
                 }
+                // On touch down, before it's clear whether this is a tap, swipe or long press.
+                .pointerInput(story.id) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        AppContainer.prefetchComments(story.id)
+                    }
+                }
                 .combinedClickable(
                     onClickLabel = if (story.url == null) "Open comments" else "Open link",
                     onClick = { actions.open(story) },
                     onLongClickLabel = "More actions",
-                    onLongClick = { menuOpen = true },
+                    onLongClick = { menuOpen = true; story.author?.let(AppContainer::prefetchUser) },
                 )
                 // TalkBack: the swipes as actions (the row is the focusable node, so they go here).
                 .semantics {

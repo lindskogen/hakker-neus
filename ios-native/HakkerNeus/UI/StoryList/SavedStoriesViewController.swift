@@ -183,6 +183,10 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         }
     }
 
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        story(at: indexPath).map(coordinator.prefetchComments)
+    }
+
     func collectionView(
         _ collectionView: UICollectionView,
         contextMenuConfigurationForItemsAt indexPaths: [IndexPath],

@@ -250,7 +250,7 @@ private fun StoryHeader(
                 onClickLabel = if (story?.url != null) "Open link" else null,
                 onClick = { story?.url?.let(onLink) },
                 onLongClickLabel = "More actions",
-                onLongClick = { menuOpen = true },
+                onLongClick = { menuOpen = true; story?.author?.let(AppContainer::prefetchUser) },
             )
             .padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -304,7 +304,7 @@ private fun CommentRow(
                 onClickLabel = if (isCollapsed) "Expand thread" else "Collapse thread",
                 onClick = onToggle,
                 onLongClickLabel = "More actions",
-                onLongClick = { menuOpen = true },
+                onLongClick = { menuOpen = true; flat.comment.author?.let(AppContainer::prefetchUser) },
             )
             .semantics {
                 if (isCollapsed) stateDescription = if (hiddenReplies > 0) "Collapsed, $hiddenReplies hidden replies" else "Collapsed"
