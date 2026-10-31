@@ -150,8 +150,7 @@ fun StoryRow(
                 .fillMaxWidth()
                 .heightIn(min = if (compact) 0.dp else 100.dp)
                 .sharedStory("card-${story.id}")
-                // Read stories turn black, so unread ones stand out.
-                .background(if (isVisited) Color.Black else background)
+                .background(background)
                 .pointerInput(story.id) {
                     detectHorizontalDragGestures(
                         onDragStart = {
@@ -218,7 +217,7 @@ fun StoryRow(
                 Text(
                     story.title,
                     style = if (compact) title.copy(fontSize = title.fontSize * 0.8f, lineHeight = title.lineHeight * 0.8f) else title,
-                    modifier = Modifier.sharedStory("title-${story.id}", bounds = false),
+                    modifier = Modifier.sharedStory("title-${story.id}", bounds = false).alpha(if (isVisited) 0.55f else 1f),
                 )
                 if (compact) {
                     val details = listOfNotNull(

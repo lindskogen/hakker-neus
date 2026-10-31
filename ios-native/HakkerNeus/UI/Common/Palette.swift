@@ -78,9 +78,6 @@ enum Palette {
         themeRGB(0.65, theme: theme).uiColor
     }
 
-    /// Behind a read story's row.
-    static let readStoryBackground = UIColor.black
-
     /// Behind the row of the story open in the iPad side column: black, tinted with the theme.
     static var activeStoryBackground: UIColor {
         var (r, g, b): (CGFloat, CGFloat, CGFloat) = (0, 0, 0)
