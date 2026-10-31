@@ -16,6 +16,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case leftHanded
         case newMinimumScore
         case adBlocking
+        case linkBrowser
     }
 
     private struct Section {
@@ -44,14 +45,20 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
             Section(title: "New Stories", footer: "Hides stories in the New list with fewer points than this.", rows: [.newMinimumScore]),
             Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
-            Section(
-                title: "Links",
-                footer: "Articles open in Reader mode when the page supports it.",
-                rows: [.readerMode]
-            ),
+            coordinator.settings.opensLinksInSafari
+                ? Section(
+                    title: "Links",
+                    footer: "Safari keeps your logins and opens articles in Reader mode when the page supports it. Beside the list on iPad, articles use the built-in browser.",
+                    rows: [.linkBrowser, .readerMode]
+                )
+                : Section(
+                    title: "Links",
+                    footer: "The built-in browser blocks ads. Safari keeps your logins and has Reader mode.",
+                    rows: [.linkBrowser]
+                ),
             Section(
                 title: "Ad Blocking",
-                footer: "To block ads in articles, turn on HackerNeus in the Settings app under Apps › Safari › Extensions. On iPad, articles beside the list are always filtered. Uses EasyList by The EasyList authors (easylist.to), CC BY-SA.",
+                footer: "The built-in browser always blocks ads. To block them in Safari too, turn on HackerNeus in the Settings app under Apps › Safari › Extensions. Uses EasyList by The EasyList authors (easylist.to), CC BY-SA.",
                 rows: [.adBlocking]
             ),
         ]
@@ -144,8 +151,22 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             }, for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
+        case .linkBrowser:
+            content.text = "Open In"
+            let picker = UISegmentedControl(items: ["Built-in", "Safari"])
+            picker.selectedSegmentIndex = coordinator.settings.opensLinksInSafari ? 1 : 0
+            picker.accessibilityIdentifier = "settings.linkBrowser"
+            picker.addAction(UIAction { [weak self, weak picker] _ in
+                guard let self, let picker else { return }
+                coordinator.settings.opensLinksInSafari = picker.selectedSegmentIndex == 1
+                if !coordinator.settings.opensLinksInSafari { AdBlocking.prepare() }
+                tableView.reloadSections(IndexSet(integer: indexPath.section), with: .automatic)
+            }, for: .valueChanged)
+            picker.sizeToFit()
+            cell.accessoryView = picker
+            cell.selectionStyle = .none
         case .adBlocking:
-            content.text = "Block Ads in Articles"
+            content.text = "Block Ads in Safari"
             content.secondaryText = adBlockingEnabled.map { $0 ? "On" : "Off" }
             content.prefersSideBySideTextAndSecondaryText = true
             cell.selectionStyle = .none
@@ -223,7 +244,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
-        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking:
+        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking, .linkBrowser:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme

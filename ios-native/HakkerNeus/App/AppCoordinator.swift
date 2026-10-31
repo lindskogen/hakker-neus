@@ -125,6 +125,7 @@ final class AppCoordinator {
         window.makeKeyAndVisible()
         // Lay out now, so links opened at launch know whether there's room beside the list.
         split.view.layoutIfNeeded()
+        if !settings.opensLinksInSafari { AdBlocking.prepare() }
 
         #if DEBUG
         if client is CommentsSinkClient {
@@ -365,7 +366,7 @@ final class AppCoordinator {
             showComments(id: id, from: origin)
         case .user(let username):
             showUser(username, from: origin)
-        case nil where split.isSplit:
+        case nil where split.isSplit || !settings.opensLinksInSafari:
             show(ArticleViewController(url: url, story: story, coordinator: self), from: origin)
         case nil:
             navigationController.present(makeBrowser(for: url), animated: true)
@@ -400,7 +401,9 @@ final class AppCoordinator {
     /// Preview for long-pressing a story: the linked page, or the comments for self posts.
     func makePreview(for story: Story) -> UIViewController {
         if let url = story.url {
-            makeBrowser(for: url)
+            split.isSplit || !settings.opensLinksInSafari
+                ? ArticleViewController(url: url, story: story, coordinator: self)
+                : makeBrowser(for: url)
         } else {
             makeCommentsViewController(id: story.id, story: story)
         }

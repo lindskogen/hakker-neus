@@ -61,6 +61,14 @@ final class AppSettings {
         }
     }
 
+    /// Open article links in the in-app Safari sheet instead of the built-in browser (which
+    /// blocks ads, but has no Reader mode or Safari logins). Beside the list on iPad, links
+    /// always use the built-in browser.
+    var opensLinksInSafari: Bool {
+        get { defaults.bool(forKey: "opensLinksInSafari") }
+        set { defaults.set(newValue, forKey: "opensLinksInSafari") }
+    }
+
     /// Open article links in Safari's Reader mode when the page supports it.
     var opensLinksInReaderMode: Bool {
         get { defaults.bool(forKey: "opensLinksInReaderMode") }
