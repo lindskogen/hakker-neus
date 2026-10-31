@@ -54,6 +54,10 @@ actor StubClient: HNClient {
         return ids
     }
 
+    func newStoryIDs() async throws -> [Int] {
+        try await topStoryIDs()
+    }
+
     func story(id: Int) async throws -> Story? {
         storyRequests.append(id)
         await Task.yield()

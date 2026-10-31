@@ -28,6 +28,8 @@ final class AppCoordinator {
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
     private(set) lazy var savedList = SavedStoriesViewController(coordinator: self)
+    /// HN's New list, kept alive like the front page so its place survives going back and forth.
+    private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
 
     init(
         window: UIWindow,
@@ -92,7 +94,7 @@ final class AppCoordinator {
         navigationController.cornerButtonMode = { [weak self] screen in
             guard let self else { return .hidden }
             if screen === frontPage { return .menu }
-            if screen === savedList { return .close }
+            if screen === savedList || screen === newList { return .close }
             return .hidden
         }
         navigationController.cornerButtonOnLeft = settings.cornerButtonOnLeft
@@ -104,7 +106,7 @@ final class AppCoordinator {
         }
         navigationController.onCornerButton = { [weak self] screen in
             guard let self else { return }
-            screen === savedList ? showFrontPage() : showSavedStories()
+            screen === savedList || screen === newList ? showFrontPage() : showSavedStories()
         }
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
@@ -248,6 +250,12 @@ final class AppCoordinator {
 
     func showSavedStories(animated: Bool = true) {
         navigationController.popToRootViewController(animated: animated)
+    }
+
+    /// HN's New list, on top of the front page.
+    func showNewStories() {
+        guard navigationController.topViewController === frontPage else { return }
+        navigationController.pushViewController(newList, animated: true)
     }
 
     func showFrontPage(animated: Bool = true) {

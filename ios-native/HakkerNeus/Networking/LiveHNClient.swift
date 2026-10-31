@@ -14,6 +14,10 @@ struct LiveHNClient: HNClient {
         try await firebase.topStoryIDs()
     }
 
+    func newStoryIDs() async throws -> [Int] {
+        try await firebase.newStoryIDs()
+    }
+
     func story(id: Int) async throws -> Story? {
         try await firebase.story(id: id)
     }

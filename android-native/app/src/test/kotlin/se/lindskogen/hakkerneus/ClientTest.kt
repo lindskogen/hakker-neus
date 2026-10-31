@@ -51,6 +51,7 @@ class ClientTest {
 private class StubClient(var ids: List<Long>) : HnClient {
     var idRequests = 0
     override suspend fun topStoryIds(): List<Long> { idRequests++; return ids }
+    override suspend fun newStoryIds() = topStoryIds()
     override suspend fun story(id: Long) = if (id < 0) null else Story(id, "Story $id")
     override suspend fun item(id: Long): StoryWithComments = throw UnsupportedOperationException()
 }

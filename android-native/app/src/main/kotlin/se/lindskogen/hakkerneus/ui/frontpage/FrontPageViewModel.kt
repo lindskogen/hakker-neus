@@ -17,10 +17,12 @@ data class FrontPageState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val error: String? = null,
+    val hasMore: Boolean = true,
 )
 
-class FrontPageViewModel : ViewModel() {
-    private val feed = TopStoriesFeed(AppContainer.client)
+/** The front page, or HN's New list with [isNew] (not remembered between launches). */
+class FrontPageViewModel(private val isNew: Boolean = false) : ViewModel() {
+    private val feed = TopStoriesFeed(AppContainer.client, if (isNew) TopStoriesFeed.Source.New else TopStoriesFeed.Source.Top)
     private val _state = MutableStateFlow(FrontPageState())
     val state: StateFlow<FrontPageState> = _state
 
@@ -32,7 +34,7 @@ class FrontPageViewModel : ViewModel() {
 
     init {
         // Show the front page as it was last time, unchanged; pull to refresh gets a new ranking.
-        val saved = FrontPageMemory.load()
+        val saved = if (isNew) null else FrontPageMemory.load()
         if (saved != null) {
             feed.restore(saved.snapshot)
             restoredIndex = saved.snapshot.stories.indexOfFirst { it.id == saved.anchorId }.coerceAtLeast(0)
@@ -44,6 +46,7 @@ class FrontPageViewModel : ViewModel() {
     }
 
     fun saveForNextLaunch(firstIndex: Int, firstOffset: Int) {
+        if (isNew) return
         val snapshot = feed.snapshot ?: return
         FrontPageMemory.save(FrontPageMemory.Saved(snapshot, snapshot.stories.getOrNull(firstIndex)?.id, firstOffset))
     }
@@ -78,6 +81,6 @@ class FrontPageViewModel : ViewModel() {
 
     private fun show(stories: List<Story>) {
         stories.forEach { AppContainer.knownStories[it.id] = it }
-        _state.update { it.copy(stories = stories, isLoading = false, isRefreshing = false, error = null) }
+        _state.update { it.copy(stories = stories, isLoading = false, isRefreshing = false, error = null, hasMore = feed.hasMore) }
     }
 }

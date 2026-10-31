@@ -61,6 +61,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 
 @Serializable object FrontPage
 @Serializable object Saved
+@Serializable object New
 @Serializable object Settings
 @Serializable object SignIn
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
@@ -125,6 +126,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     val mode = when {
         entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Menu
         entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Close
+        entry?.destination?.hasRoute<New>() == true -> CornerMode.Close
         else -> CornerMode.Hidden
     }
 
@@ -139,6 +141,17 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                 openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
                 openItem = { openComments(it) },
                 signIn = { nav.navigate(SignIn) },
+                openNew = { nav.navigate(New) },
+            )
+            }
+        }
+        composable<New> {
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+            FrontPageScreen(
+                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                openItem = { openComments(it) },
+                signIn = { nav.navigate(SignIn) },
+                isNew = true,
             )
             }
         }

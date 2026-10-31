@@ -107,6 +107,25 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                 Switch(checked = AppContainer.cornerButtonOnLeft, onCheckedChange = null)
             }
             Footer("Puts the button in the lower-left corner instead of the lower-right.")
+            Section("New stories")
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().background(Color(0xFF26292E)).padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text("Minimum votes", style = HN.body, modifier = Modifier.weight(1f))
+                SingleChoiceSegmentedButtonRow {
+                    val options = AppContainer.newMinimumScoreOptions
+                    options.forEachIndexed { index, score ->
+                        SegmentedButton(
+                            selected = AppContainer.newMinimumScore == score,
+                            onClick = { AppContainer.updateNewMinimumScore(score) },
+                            shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                            icon = {},
+                        ) { Text(if (score == 0) "Any" else "$score", fontSize = 13.sp) }
+                    }
+                }
+            }
+            Footer("Hides stories in the New list with fewer points than this.")
             Section("Comments")
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().background(Color(0xFF26292E))

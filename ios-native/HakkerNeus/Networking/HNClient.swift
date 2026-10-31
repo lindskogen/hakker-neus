@@ -4,6 +4,9 @@ protocol HNClient: Sendable {
     /// IDs of the current front page, in rank order (up to 500).
     func topStoryIDs() async throws -> [Int]
 
+    /// IDs of the newest stories, newest first (up to 500).
+    func newStoryIDs() async throws -> [Int]
+
     /// A single story, or nil if it is deleted, dead or missing.
     func story(id: Int) async throws -> Story?
 

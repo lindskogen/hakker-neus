@@ -6,7 +6,15 @@ struct FirebaseAPI: Sendable {
     var baseURL = URL(string: "https://hacker-news.firebaseio.com/v0/")!
 
     func topStoryIDs() async throws -> [Int] {
-        let data = try await transport.data(from: baseURL.appending(path: "topstories.json"))
+        try await ids("topstories.json")
+    }
+
+    func newStoryIDs() async throws -> [Int] {
+        try await ids("newstories.json")
+    }
+
+    private func ids(_ path: String) async throws -> [Int] {
+        let data = try await transport.data(from: baseURL.appending(path: path))
         return try JSONDecoder().decode([Int].self, from: data)
     }
 

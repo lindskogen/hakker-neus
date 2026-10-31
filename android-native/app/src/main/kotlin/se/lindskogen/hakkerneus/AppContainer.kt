@@ -134,6 +134,18 @@ object AppContainer {
         settings.edit().putBoolean("cornerButtonOnLeft", onLeft).apply()
     }
 
+    /** The choices for [newMinimumScore]; 0 shows everything. */
+    val newMinimumScoreOptions = listOf(0, 2, 5, 10, 25)
+
+    /** The New list only shows stories with at least this many points. Compose state. */
+    var newMinimumScore by androidx.compose.runtime.mutableStateOf(0)
+        private set
+
+    fun updateNewMinimumScore(score: Int) {
+        newMinimumScore = score
+        settings.edit().putInt("newMinimumScore", score).apply()
+    }
+
     /** Code block wrapping and size, remembered. */
     fun setCommentTextStyle(wrapsLines: Boolean = CommentTextStyle.wrapsLines, size: CommentTextStyle.Size = CommentTextStyle.size) {
         CommentTextStyle.wrapsLines = wrapsLines
@@ -151,6 +163,7 @@ object AppContainer {
         session = HnSession(appContext)
         hidden = se.lindskogen.hakkerneus.persistence.HiddenStoriesStore(appContext)
         cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
+        newMinimumScore = settings.getInt("newMinimumScore", 0)
         CommentTextStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
         CommentTextStyle.size = settings.getString("codeSize", null)?.let { name -> CommentTextStyle.Size.entries.find { it.name == name } } ?: CommentTextStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange

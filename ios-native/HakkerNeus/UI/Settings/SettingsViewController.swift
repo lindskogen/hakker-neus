@@ -14,6 +14,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case codeWrap
         case codeSize
         case leftHanded
+        case newMinimumScore
     }
 
     private struct Section {
@@ -40,6 +41,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             ),
             Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
             Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
+            Section(title: "New Stories", footer: "Hides stories in the New list with fewer points than this.", rows: [.newMinimumScore]),
             Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
             Section(
                 title: "Links",
@@ -146,6 +148,18 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             }, for: .valueChanged)
             cell.accessoryView = toggle
             cell.selectionStyle = .none
+        case .newMinimumScore:
+            content.text = "Minimum Votes"
+            let options = AppSettings.newMinimumScoreOptions
+            let picker = UISegmentedControl(items: options.map { $0 == 0 ? "Any" : "\($0)" })
+            picker.selectedSegmentIndex = options.firstIndex(of: coordinator.settings.newMinimumScore) ?? 0
+            picker.addAction(UIAction { [weak self, weak picker] _ in
+                guard let index = picker?.selectedSegmentIndex, options.indices.contains(index) else { return }
+                self?.coordinator.settings.newMinimumScore = options[index]
+            }, for: .valueChanged)
+            picker.sizeToFit()
+            cell.accessoryView = picker
+            cell.selectionStyle = .none
         case .codeSize:
             content.text = "Text Size"
             let sizes = CommentTextStyle.Size.allCases
@@ -185,7 +199,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
-        case .readerMode, .codeWrap, .codeSize, .leftHanded:
+        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme

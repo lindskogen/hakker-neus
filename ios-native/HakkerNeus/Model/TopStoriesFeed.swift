@@ -1,6 +1,6 @@
 import Foundation
 
-/// Paginated front page, replacing `useNewsList` in `fetchNewsList.ts`.
+/// Paginated front page (or HN's New list), replacing `useNewsList` in `fetchNewsList.ts`.
 ///
 /// `reload()` takes a snapshot of the ranked IDs and `loadNextPage()` fetches the stories for the
 /// next slice of that snapshot in parallel. Pull-to-refresh calls `reload()` to get a new ranking.
@@ -8,8 +8,14 @@ import Foundation
 final class TopStoriesFeed {
     static let pageSize = 40
 
+    /// Which HN list: the ranked front page or the newest stories.
+    enum Source {
+        case top, new
+    }
+
     private let client: HNClient
     private let pageSize: Int
+    let source: Source
 
     private var ids: [Int] = []
     private var nextOffset = 0
@@ -41,8 +47,9 @@ final class TopStoriesFeed {
         stories = snapshot.stories
     }
 
-    init(client: HNClient, pageSize: Int = TopStoriesFeed.pageSize) {
+    init(client: HNClient, source: Source = .top, pageSize: Int = TopStoriesFeed.pageSize) {
         self.client = client
+        self.source = source
         self.pageSize = pageSize
     }
 
@@ -54,7 +61,7 @@ final class TopStoriesFeed {
         pageTask = nil
 
         let generation = generation
-        let ids = try await client.topStoryIDs()
+        let ids = try await source == .top ? client.topStoryIDs() : client.newStoryIDs()
         guard generation == self.generation else { throw CancellationError() }
 
         self.ids = ids

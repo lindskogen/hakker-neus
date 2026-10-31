@@ -13,6 +13,10 @@ struct CommentsSinkClient: HNClient {
         try await base.topStoryIDs()
     }
 
+    func newStoryIDs() async throws -> [Int] {
+        try await base.newStoryIDs()
+    }
+
     func story(id: Int) async throws -> Story? {
         try await base.story(id: id)
     }

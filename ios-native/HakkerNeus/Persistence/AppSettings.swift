@@ -48,6 +48,19 @@ final class AppSettings {
         }
     }
 
+    static let newMinimumScoreDidChange = Notification.Name("AppSettings.newMinimumScoreDidChange")
+    /// The choices for `newMinimumScore`; 0 shows everything.
+    static let newMinimumScoreOptions = [0, 2, 5, 10, 25]
+
+    /// The New list only shows stories with at least this many points.
+    var newMinimumScore: Int {
+        get { defaults.integer(forKey: "newMinimumScore") }
+        set {
+            defaults.set(newValue, forKey: "newMinimumScore")
+            NotificationCenter.default.post(name: Self.newMinimumScoreDidChange, object: nil)
+        }
+    }
+
     /// Open article links in Safari's Reader mode when the page supports it.
     var opensLinksInReaderMode: Bool {
         get { defaults.bool(forKey: "opensLinksInReaderMode") }

@@ -1,6 +1,7 @@
 import UIKit
 
-/// The front page (`NewsList.tsx`).
+/// The front page (`NewsList.tsx`), or HN's New list (pushed from the front page's New button,
+/// filtered by the minimum votes setting).
 /// Swiping right in the content area saves a row here, so only the edge swipe goes back (to the saved list).
 final class StoryListViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack, StoryTransitionSource {
     private enum Section { case main }
@@ -22,7 +23,14 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     }
     private weak var footer: LoadingFooterView?
 
-    /// Above the corner button: hides the read stories, then briefly offers to undo that.
+    private var isNewList: Bool { feed.source == .new }
+
+    /// Front page only, above the corner button: opens the New list.
+    private let newButton = UIButton(type: .system)
+    private var newLeading: NSLayoutConstraint!
+    private var newTrailing: NSLayoutConstraint!
+
+    /// Front page only, above the New button: hides the read stories, then briefly offers to undo that.
     private let hideReadButton = UIButton(type: .system)
     private var hideReadLeading: NSLayoutConstraint!
     private var hideReadTrailing: NSLayoutConstraint!
@@ -36,6 +44,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         self.feed = feed
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
+        title = feed.source == .new ? "New" : "Front Page"
     }
 
     @available(*, unavailable)
@@ -48,9 +57,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
-        configureHideReadButton()
+        if isNewList {
+            NotificationCenter.default.addObserver(self, selector: #selector(minimumScoreChanged), name: AppSettings.newMinimumScoreDidChange, object: nil)
+        } else {
+            configureFloatingButtons()
+            NotificationCenter.default.addObserver(self, selector: #selector(placeFloatingButtons), name: AppSettings.cornerButtonSideDidChange, object: nil)
+        }
         NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(placeHideReadButton), name: AppSettings.cornerButtonSideDidChange, object: nil)
         for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
@@ -165,7 +178,8 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     private func show(_ all: [Story], replacing: Bool, animated: Bool = false) {
         feedStories = all
-        let shown = all.filter { !coordinator.hiddenStories.isHidden($0.id) }
+        let minimumScore = isNewList ? coordinator.settings.newMinimumScore : 0
+        let shown = all.filter { !coordinator.hiddenStories.isHidden($0.id) && $0.score >= minimumScore }
         stories = Dictionary(shown.map { ($0.id, $0) }, uniquingKeysWith: { $1 })
         var snapshot = NSDiffableDataSourceSnapshot<Section, Story.ID>()
         snapshot.appendSections([.main])
@@ -178,6 +192,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         }
         dataSource.apply(snapshot, animatingDifferences: animated && !UIAccessibility.isReduceMotionEnabled)
         updateHideReadButton()
+        if isNewList, shown.isEmpty, !feed.hasMore, !all.isEmpty {
+            stateView.backgroundColor = Theme.Color.backgroundDark
+            stateView.state = .message(systemImage: "line.3.horizontal.decrease", text: "No new stories with \(minimumScore) or more points yet.")
+            collectionView.backgroundView = stateView
+        } else if collectionView.backgroundView === stateView, !shown.isEmpty {
+            collectionView.backgroundView = nil
+        }
         if replacing {
             collectionView.layoutIfNeeded()
             prefetchVisible()
@@ -186,9 +207,29 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         if shown.count < 15 { loadMore() }
     }
 
-    // MARK: Hide read stories
+    @objc private func minimumScoreChanged() {
+        show(feedStories, replacing: true)
+    }
 
-    private func configureHideReadButton() {
+    // MARK: Floating buttons
+
+    /// The New and hide-read buttons, stacked above the corner button on the same side.
+    private func configureFloatingButtons() {
+        configureNewButton()
+        configureHideReadButton()
+        placeFloatingButtons()
+    }
+
+    @objc private func placeFloatingButtons() {
+        let onLeft = coordinator.settings.cornerButtonOnLeft
+        newLeading.isActive = onLeft
+        newTrailing.isActive = !onLeft
+        hideReadLeading.isActive = onLeft
+        hideReadTrailing.isActive = !onLeft
+    }
+
+    /// Same size, style and weight as the corner button.
+    private static func floatingButtonConfiguration() -> UIButton.Configuration {
         var config: UIButton.Configuration
         if #available(iOS 26, *) {
             config = .glass()
@@ -196,10 +237,42 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             config = .filled()
             config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
         }
-        // Same size and weight as the corner button below it.
         config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
+        return config
+    }
+
+    /// The `slot`th button up from the corner button (which is slot 0).
+    private func stack(_ button: UIButton, slot: Int) -> (leading: NSLayoutConstraint, trailing: NSLayoutConstraint) {
+        button.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(button)
+        let size: CGFloat = 52
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: size),
+            button.heightAnchor.constraint(equalToConstant: size),
+            button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -(Theme.padding + CGFloat(slot) * (size + Theme.padding))),
+        ])
+        return (
+            button.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2 + size / 2),
+            button.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -(Theme.padding * 2 + size / 2))
+        )
+    }
+
+    private func configureNewButton() {
+        var config = Self.floatingButtonConfiguration()
+        config.image = UIImage(systemName: "clock")
+        newButton.configuration = config
+        newButton.accessibilityLabel = "New Stories"
+        newButton.accessibilityIdentifier = "newStories"
+        newButton.addAction(UIAction { [unowned self] _ in coordinator.showNewStories() }, for: .touchUpInside)
+        (newLeading, newTrailing) = stack(newButton, slot: 1)
+    }
+
+    // MARK: Hide read stories
+
+    private func configureHideReadButton() {
+        var config = Self.floatingButtonConfiguration()
         if #available(iOS 26, *) {
             config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
         }
@@ -208,29 +281,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         hideReadButton.alpha = 0
         hideReadButton.isHidden = true
         hideReadButton.addAction(UIAction { [unowned self] _ in hideReadTapped() }, for: .touchUpInside)
-
-        hideReadButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(hideReadButton)
-        // Stacked above the corner button (52pt, 10pt off the bottom), on the same side.
-        NSLayoutConstraint.activate([
-            hideReadButton.widthAnchor.constraint(equalToConstant: 52),
-            hideReadButton.heightAnchor.constraint(equalToConstant: 52),
-            hideReadButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -(Theme.padding + 52 + Theme.padding)),
-        ])
-        hideReadLeading = hideReadButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2 + 26)
-        hideReadTrailing = hideReadButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -(Theme.padding * 2 + 26))
-        placeHideReadButton()
+        (hideReadLeading, hideReadTrailing) = stack(hideReadButton, slot: 2)
         updateHideReadButton()
-    }
-
-    @objc private func placeHideReadButton() {
-        let onLeft = coordinator.settings.cornerButtonOnLeft
-        hideReadLeading.isActive = onLeft
-        hideReadTrailing.isActive = !onLeft
     }
 
     /// Shown while there are read stories to hide, or while offering to undo.
     private func updateHideReadButton() {
+        guard !isNewList else { return }
         let isUndo = justHidden != nil
         let hasRead = stories.keys.contains { coordinator.visitedStories.isVisited($0) }
         let visible = isUndo || hasRead

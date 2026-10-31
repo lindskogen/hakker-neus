@@ -78,11 +78,14 @@ import se.lindskogen.hakkerneus.ui.share
 import se.lindskogen.hakkerneus.ui.theme.HN
 import se.lindskogen.hakkerneus.ui.theme.Palette
 
-/** The front page (`NewsList.tsx`). */
+/**
+ * The front page (`NewsList.tsx`), or with [isNew] HN's New list (opened from the front page's
+ * New button, filtered by the minimum votes setting).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit) {
-    val model: FrontPageViewModel = viewModel()
+fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit, openNew: () -> Unit = {}, isNew: Boolean = false) {
+    val model: FrontPageViewModel = viewModel(key = if (isNew) "new" else "front") { FrontPageViewModel(isNew) }
     val state by model.state.collectAsStateWithLifecycle()
     val savedEntries by AppContainer.saved.entries.collectAsState()
     val saved = savedEntries.mapTo(HashSet()) { it.story.id }
@@ -90,7 +93,8 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
     val upvoted by AppContainer.session.upvoted.collectAsState()
     val hidden by AppContainer.hidden.ids.collectAsState()
     // Stories hidden with the hide-read button stay out of the list.
-    val shown = remember(state.stories, hidden) { state.stories.filterNot { it.id in hidden } }
+    val minimumScore = if (isNew) AppContainer.newMinimumScore else 0
+    val shown = remember(state.stories, hidden, minimumScore) { state.stories.filter { it.id !in hidden && it.score >= minimumScore } }
     /** What the button just hid, while it offers to undo. */
     var justHidden by remember { mutableStateOf<List<Long>?>(null) }
     LaunchedEffect(justHidden) {
@@ -149,6 +153,12 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
         when {
             state.stories.isEmpty() && state.isLoading -> SkeletonRows()
             state.stories.isEmpty() && state.error != null -> ErrorState(state.error!!)
+            isNew && shown.isEmpty() && state.stories.isNotEmpty() && !state.hasMore ->
+                Text(
+                    "No new stories with $minimumScore or more points yet.",
+                    style = HN.titleStyle().copy(color = Color.White.copy(alpha = 0.3f)),
+                    modifier = Modifier.align(Alignment.Center).padding(20.dp),
+                )
             else -> PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = { haptics.performHapticFeedback(HapticFeedbackType.Confirm); model.refresh() }) {
                 LazyColumn(
                     state = listState,
@@ -181,10 +191,27 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
         }
 
 
-        // Above the corner button, same side: hides read stories, then briefly offers to undo.
+        if (isNew) return@Box
+        val onLeft = AppContainer.cornerButtonOnLeft
+        // Above the corner button, same side: opens the New list.
+        SmallFloatingActionButton(
+            onClick = openNew,
+            shape = CircleShape,
+            containerColor = Color(0xE6404040),
+            contentColor = Color.White,
+            modifier = Modifier
+                .align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + 52.dp + HN.padding)
+                .size(52.dp)
+                .semantics { contentDescription = "New stories" },
+        ) {
+            Icon(HnIcons.clock, contentDescription = null, modifier = Modifier.size(22.dp))
+        }
+
+        // Above the New button: hides read stories, then briefly offers to undo.
         visits.size // re-read when visits change
         val hasRead = shown.any { AppContainer.visited.isVisited(it.id) }
-        val onLeft = AppContainer.cornerButtonOnLeft
         AnimatedVisibility(
             visible = justHidden != null || hasRead,
             enter = fadeIn(),
@@ -212,8 +239,8 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                 contentColor = Color.White,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    // The corner button's size, 10dp above it.
-                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + 52.dp + HN.padding)
+                    // The corner button's size, stacked above it and the New button.
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * 2)
                     .size(52.dp)
                     .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
             ) {
