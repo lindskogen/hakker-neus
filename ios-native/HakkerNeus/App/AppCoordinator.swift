@@ -10,6 +10,15 @@ import os
 final class AppCoordinator {
     let window: UIWindow
     let navigationController = NavigationController()
+    /// The root: `navigationController` alone, or beside a column for articles and comments when the window is wide.
+    private(set) lazy var split = SplitViewController(primary: navigationController)
+
+    /// Where a screen is opened from, which decides where it goes when the window is wide:
+    /// from a list it replaces what's in the side column, from the side column it goes on top.
+    enum OpenedFrom {
+        case list
+        case detail
+    }
     private var relativeTimeTimer: Timer?
     let defaults: UserDefaults
 
@@ -111,7 +120,8 @@ final class AppCoordinator {
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
 
-        window.rootViewController = navigationController
+        split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController }
+        window.rootViewController = split
         window.makeKeyAndVisible()
 
         #if DEBUG
@@ -134,7 +144,7 @@ final class AppCoordinator {
 
     /// What's on screen now, for the next launch.
     var restorationState: RestorationState {
-        let stack = navigationController.viewControllers
+        let stack = split.allViewControllers
         return RestorationState(
             showsFrontPage: stack.contains(frontPage),
             frontPageFeed: frontPage.feedSnapshot,
@@ -184,7 +194,7 @@ final class AppCoordinator {
 
     /// The topmost presented screen, to present over.
     private var topViewController: UIViewController {
-        var top: UIViewController = navigationController
+        var top: UIViewController = split
         while let presented = top.presentedViewController { top = presented }
         return top
     }
@@ -271,17 +281,17 @@ final class AppCoordinator {
         return CommentsViewController(id: id, story: story, coordinator: self, preloaded: preloaded)
     }
 
-    func showComments(for story: Story) {
+    func showComments(for story: Story, from origin: OpenedFrom = .list) {
         visitedStories.markCommentsSeen(story)
-        showComments(id: story.id, story: story)
+        showComments(id: story.id, story: story, from: origin)
     }
 
-    func showComments(id: Int) {
-        showComments(id: id, story: nil)
+    func showComments(id: Int, from origin: OpenedFrom = .detail) {
+        showComments(id: id, story: nil, from: origin)
     }
 
-    private func showComments(id: Int, story: Story?) {
-        push(waitingFor: { [itemCache] in
+    private func showComments(id: Int, story: Story?, from origin: OpenedFrom) {
+        push(from: origin, waitingFor: { [itemCache] in
             let loaded = try await itemCache.item(id: id)
             // A link to a comment opens its story; have that ready too.
             if let storyID = loaded.item.parentStoryID {
@@ -300,6 +310,7 @@ final class AppCoordinator {
     /// down), so it slides in filled instead of showing a loading state for a moment. Gives up
     /// waiting after 150 ms; taps while waiting are ignored.
     private func push<T: Sendable>(
+        from origin: OpenedFrom,
         waitingFor fetch: @escaping @Sendable () async throws -> T,
         make: @escaping (T?) -> UIViewController
     ) {
@@ -308,7 +319,16 @@ final class AppCoordinator {
         Task {
             let value = await Self.firstResult(within: .milliseconds(150), fetch)
             isWaitingToPush = false
-            navigationController.pushViewController(make(value), animated: true)
+            show(make(value), from: origin)
+        }
+    }
+
+    /// Pushes a screen, or when the window is wide opens it in the side column.
+    private func show(_ viewController: UIViewController, from origin: OpenedFrom) {
+        if split.isSplit {
+            split.showDetail(viewController, replacing: origin == .list)
+        } else {
+            navigationController.pushViewController(viewController, animated: true)
         }
     }
 
@@ -334,13 +354,17 @@ final class AppCoordinator {
         }
     }
 
-    /// Opens HN item links in the app and everything else in an in-app browser.
-    func open(_ url: URL) {
+    /// Opens HN item links in the app and everything else in an in-app browser (beside the
+    /// list when the window is wide).
+    /// - Parameter story: The story the link belongs to, if it's a story's link.
+    func open(_ url: URL, story: Story? = nil, from origin: OpenedFrom = .detail) {
         switch HackerNewsLink(url) {
         case .item(let id):
-            showComments(id: id)
+            showComments(id: id, from: origin)
         case .user(let username):
-            showUser(username)
+            showUser(username, from: origin)
+        case nil where split.isSplit:
+            show(ArticleViewController(url: url, story: story, coordinator: self), from: origin)
         case nil:
             navigationController.present(makeBrowser(for: url), animated: true)
         }
@@ -357,8 +381,8 @@ final class AppCoordinator {
     }
 
     /// An HN user's page: karma, about, their stories and comments.
-    func showUser(_ username: String) {
-        push(waitingFor: { [userCache] in try await userCache.firstPage(of: username) }) { [unowned self] first in
+    func showUser(_ username: String, from origin: OpenedFrom = .detail) {
+        push(from: origin, waitingFor: { [userCache] in try await userCache.firstPage(of: username) }) { [unowned self] first in
             UserViewController(username: username, coordinator: self, users: userCache, preloaded: first)
         }
     }
@@ -385,7 +409,7 @@ final class AppCoordinator {
         if viewController is SFSafariViewController {
             navigationController.present(viewController, animated: true)
         } else {
-            navigationController.pushViewController(viewController, animated: true)
+            show(viewController, from: .list)
         }
     }
 
@@ -416,6 +440,8 @@ final class AppCoordinator {
     func storyMenu(for story: Story, sourceView: UIView, includeComments: Bool) -> UIMenu {
         // Built as the menu opens; the author's page is one tap away.
         story.author.map(prefetchUser)
+        // With the comments item the menu is on a list row; without it, on the comments screen.
+        let origin: OpenedFrom = includeComments ? .list : .detail
         var open: [UIMenuElement] = []
         if includeComments {
             open.append(UIAction(
@@ -423,13 +449,13 @@ final class AppCoordinator {
                 subtitle: story.commentCount == 1 ? "1 comment" : "\(story.commentCount) comments",
                 image: UIImage(systemName: "bubble.left.and.bubble.right")
             ) { [weak self] _ in
-                self?.showComments(for: story)
+                self?.showComments(for: story, from: origin)
             })
         }
         if let url = story.url {
             open.append(UIAction(title: "Open Link", subtitle: url.host(), image: UIImage(systemName: "safari")) { [weak self] _ in
                 self?.visitedStories.markOpened(story)
-                self?.open(url)
+                self?.open(url, story: story, from: origin)
             })
         }
 
@@ -467,7 +493,7 @@ final class AppCoordinator {
         var user: [UIMenuElement] = []
         if let author = story.author {
             user.append(UIAction(title: author, image: UIImage(systemName: "person")) { [weak self] _ in
-                self?.showUser(author)
+                self?.showUser(author, from: origin)
             })
         }
 

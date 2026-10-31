@@ -296,7 +296,7 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         collectionView.deselectItem(at: indexPath, animated: true)
         switch dataSource.itemIdentifier(for: indexPath) {
         case .story(let id):
-            if let story = storiesByID[id] { coordinator.select(story) }
+            if let story = storiesByID[id] { coordinator.select(story, from: .detail) }
         case .comment(let id):
             // The comments screen finds the comment's story and scrolls to it.
             coordinator.showComments(id: id)

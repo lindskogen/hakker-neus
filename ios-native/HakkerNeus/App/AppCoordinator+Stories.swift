@@ -27,17 +27,18 @@ extension AppCoordinator {
         )
         cell.onToggleSaved = { [weak self] in self?.savedStories.toggle(story) }
         cell.onToggleUpvote = { [weak self] in self?.toggleVote(story) }
-        cell.onOpenComments = { [weak self] in self?.showComments(for: story) }
+        // Compact rows are on user pages, which are in the side column when the window is wide.
+        cell.onOpenComments = { [weak self] in self?.showComments(for: story, from: compact ? .detail : .list) }
         cell.onSwipeBegan = { [weak self] in self?.prefetchComments(for: story) }
     }
 
     /// Tapping a row opens the link, or the comments for self posts.
-    func select(_ story: Story) {
+    func select(_ story: Story, from origin: OpenedFrom = .list) {
         if let url = story.url {
             visitedStories.markOpened(story)
-            open(url)
+            open(url, story: story, from: origin)
         } else {
-            showComments(for: story)
+            showComments(for: story, from: origin)
         }
     }
 
@@ -93,10 +94,9 @@ extension AppCoordinator {
         heart.sizeToFit()
         heart.center = CGPoint(x: 32, y: window.bounds.midY)
         heart.alpha = 0
-        // Behind the navigation controller's view, so it's only visible in the gap.
-        window.insertSubview(heart, at: 0)
-
         let page = navigationController.view!
+        // Behind the navigation controller's view, so it's only visible in the gap.
+        page.superview?.insertSubview(heart, belowSubview: page)
         UIView.animate(withDuration: 0.35, delay: 0, options: .curveEaseOut) {
             page.transform = CGAffineTransform(translationX: 64, y: 0)
             heart.alpha = 1

@@ -82,7 +82,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             configureProfileHeader()
             view.onSettings = { [unowned self] in coordinator.showSettings() }
             view.onSignIn = { [unowned self] in coordinator.showSignIn() }
-            view.onShowUser = { [unowned self] in coordinator.showUser($0) }
+            view.onShowUser = { [unowned self] in coordinator.showUser($0, from: .list) }
         }
         dataSource.supplementaryViewProvider = { collectionView, _, indexPath in
             collectionView.dequeueConfiguredReusableSupplementary(using: header, for: indexPath)
