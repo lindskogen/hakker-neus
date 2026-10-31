@@ -106,22 +106,56 @@ final class SplitViewController: UIViewController {
     }
 }
 
-/// The empty side column, before anything is opened.
+/// The empty side column: a zen quote, a new one each time the column empties.
 private final class DetailPlaceholderViewController: UIViewController {
+    private static let quotes: [(text: String, source: String)] = [
+        ("Before enlightenment, chop wood, carry water. After enlightenment, chop wood, carry water.", "Zen proverb"),
+        ("When walking, walk. When eating, eat.", "Zen proverb"),
+        ("Sitting quietly, doing nothing, spring comes, and the grass grows by itself.", "Zenrin Kushū"),
+        ("Let go, or be dragged.", "Zen proverb"),
+        ("No snowflake ever falls in the wrong place.", "Zen proverb"),
+        ("If you cannot find the truth right where you are, where else do you expect to find it?", "Dōgen"),
+        ("In the beginner’s mind there are many possibilities, but in the expert’s there are few.", "Shunryū Suzuki"),
+        ("The obstacle is the path.", "Zen proverb"),
+        ("Do not seek the truth; only cease to cherish opinions.", "Sengcan"),
+        ("Empty your mind, be formless, shapeless, like water.", "Bruce Lee"),
+    ]
+
+    private let quoteLabel = UILabel()
+    private let sourceLabel = UILabel()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = Theme.Color.backgroundDark
-        let label = UILabel()
-        label.text = "Pick a story"
-        label.font = Theme.Font.light(size: 24)
-        label.adjustsFontForContentSizeCategory = true
-        label.textColor = UIColor(white: 1, alpha: 0.25)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(label)
+        quoteLabel.font = Theme.Font.light(size: 26)
+        quoteLabel.textColor = UIColor(white: 1, alpha: 0.35)
+        quoteLabel.numberOfLines = 0
+        quoteLabel.textAlignment = .center
+        sourceLabel.font = Theme.Font.body(size: 15, style: .subheadline)
+        sourceLabel.textColor = UIColor(white: 1, alpha: 0.2)
+        sourceLabel.textAlignment = .center
+        for label in [quoteLabel, sourceLabel] { label.adjustsFontForContentSizeCategory = true }
+
+        let stack = UIStackView(arrangedSubviews: [quoteLabel, sourceLabel])
+        stack.axis = .vertical
+        stack.spacing = Theme.padding * 1.5
+        stack.isAccessibilityElement = true
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stack.widthAnchor.constraint(lessThanOrEqualToConstant: 480),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: Theme.padding * 4),
         ])
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        let quote = Self.quotes.randomElement()!
+        quoteLabel.text = quote.text
+        sourceLabel.text = "— " + quote.source
+        quoteLabel.superview?.accessibilityLabel = "\(quote.text) — \(quote.source)"
     }
 }
 
