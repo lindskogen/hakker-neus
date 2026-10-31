@@ -1,13 +1,19 @@
 package se.lindskogen.hakkerneus.ui.user
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.background
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -184,33 +190,45 @@ fun UserScreen(
     }
 }
 
-/** Stories / Comments as two words: the selected one white with a short accent line under it,
- * the other dimmed. */
+/** Stories / Comments across the full width: the selected one white with an accent line under
+ * it that slides over when the tab changes, the other dimmed. */
 @Composable
 private fun UserTabs(selected: UserTab, onSelect: (UserTab) -> Unit) {
-    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(25.dp)) {
-        UserTab.entries.forEach { tab ->
-            val isSelected = tab == selected
-            Column(
-                Modifier
-                    .width(IntrinsicSize.Max)
-                    .heightIn(min = 44.dp)
-                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(tab) }),
-                verticalArrangement = Arrangement.Bottom,
-            ) {
-                Text(
-                    tab.title,
-                    style = HN.body.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = if (isSelected) 1f else 0.4f)),
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
+    val tabs = UserTab.entries
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val tabWidth = maxWidth / tabs.size
+        val indicatorOffset by animateDpAsState(
+            tabWidth * selected.ordinal,
+            spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
+            label = "indicator",
+        )
+        Row(Modifier.fillMaxWidth().selectableGroup()) {
+            tabs.forEach { tab ->
+                val isSelected = tab == selected
+                val color by animateColorAsState(Color.White.copy(alpha = if (isSelected) 1f else 0.4f), tween(250), label = "tab")
                 Box(
                     Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(if (isSelected) HN.accent else Color.Transparent, RoundedCornerShape(1.dp)),
-                )
+                        .weight(1f)
+                        .heightIn(min = 44.dp)
+                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(tab) }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        tab.title,
+                        style = HN.body.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = color),
+                        modifier = Modifier.padding(vertical = 10.dp),
+                    )
+                }
             }
         }
+        Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = indicatorOffset)
+                .width(tabWidth)
+                .height(2.dp)
+                .background(HN.accent, RoundedCornerShape(1.dp)),
+        )
     }
 }
 
