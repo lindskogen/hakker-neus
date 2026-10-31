@@ -57,11 +57,10 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         configureCollectionView()
         configureDataSource()
 
+        configureFloatingButtons()
+        NotificationCenter.default.addObserver(self, selector: #selector(placeFloatingButtons), name: AppSettings.cornerButtonSideDidChange, object: nil)
         if isNewList {
             NotificationCenter.default.addObserver(self, selector: #selector(minimumScoreChanged), name: AppSettings.newMinimumScoreDidChange, object: nil)
-        } else {
-            configureFloatingButtons()
-            NotificationCenter.default.addObserver(self, selector: #selector(placeFloatingButtons), name: AppSettings.cornerButtonSideDidChange, object: nil)
         }
         NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
         for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
@@ -213,17 +212,17 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     // MARK: Floating buttons
 
-    /// The New and hide-read buttons, stacked above the corner button on the same side.
+    /// The New (front page only) and hide-read buttons, stacked above the corner button on the same side.
     private func configureFloatingButtons() {
-        configureNewButton()
+        if !isNewList { configureNewButton() }
         configureHideReadButton()
         placeFloatingButtons()
     }
 
     @objc private func placeFloatingButtons() {
         let onLeft = coordinator.settings.cornerButtonOnLeft
-        newLeading.isActive = onLeft
-        newTrailing.isActive = !onLeft
+        newLeading?.isActive = onLeft
+        newTrailing?.isActive = !onLeft
         hideReadLeading.isActive = onLeft
         hideReadTrailing.isActive = !onLeft
     }
@@ -281,13 +280,12 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         hideReadButton.alpha = 0
         hideReadButton.isHidden = true
         hideReadButton.addAction(UIAction { [unowned self] _ in hideReadTapped() }, for: .touchUpInside)
-        (hideReadLeading, hideReadTrailing) = stack(hideReadButton, slot: 2)
+        (hideReadLeading, hideReadTrailing) = stack(hideReadButton, slot: isNewList ? 1 : 2)
         updateHideReadButton()
     }
 
     /// Shown while there are read stories to hide, or while offering to undo.
     private func updateHideReadButton() {
-        guard !isNewList else { return }
         let isUndo = justHidden != nil
         let hasRead = stories.keys.contains { coordinator.visitedStories.isVisited($0) }
         let visible = isUndo || hasRead

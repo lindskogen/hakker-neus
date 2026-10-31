@@ -191,10 +191,9 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
         }
 
 
-        if (isNew) return@Box
         val onLeft = AppContainer.cornerButtonOnLeft
         // Above the corner button, same side: opens the New list.
-        SmallFloatingActionButton(
+        if (!isNew) SmallFloatingActionButton(
             onClick = openNew,
             shape = CircleShape,
             containerColor = Color(0xE6404040),
@@ -209,7 +208,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
             Icon(HnIcons.clock, contentDescription = null, modifier = Modifier.size(22.dp))
         }
 
-        // Above the New button: hides read stories, then briefly offers to undo.
+        // Above the New button (the corner button on New): hides read stories, then briefly offers to undo.
         visits.size // re-read when visits change
         val hasRead = shown.any { AppContainer.visited.isVisited(it.id) }
         AnimatedVisibility(
@@ -240,7 +239,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                 modifier = Modifier
                     .navigationBarsPadding()
                     // The corner button's size, stacked above it and the New button.
-                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * 2)
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * (if (isNew) 1 else 2))
                     .size(52.dp)
                     .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
             ) {
