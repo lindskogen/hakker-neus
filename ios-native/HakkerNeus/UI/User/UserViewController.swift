@@ -334,7 +334,7 @@ final class UserProfileCell: UICollectionViewListCell {
     private let nameLabel = UILabel()
     private let detailLabel = UILabel()
     private let aboutView = CommentBodyView()
-    private let tabs = UISegmentedControl(items: UserViewController.Tab.allCases.map(\.title))
+    private let tabs = UserTabsView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -353,17 +353,13 @@ final class UserProfileCell: UICollectionViewListCell {
         detailLabel.textColor = UIColor.white.withAlphaComponent(0.6)
         detailLabel.numberOfLines = 0
 
-        tabs.selectedSegmentTintColor = UIColor.white.withAlphaComponent(0.25)
-        tabs.setTitleTextAttributes([.foregroundColor: UIColor.white], for: .normal)
-        tabs.addAction(UIAction { [unowned self] _ in
-            UserViewController.Tab(rawValue: tabs.selectedSegmentIndex).map { onTab?($0) }
-        }, for: .valueChanged)
+        tabs.onSelect = { [unowned self] in onTab?($0) }
 
         let stack = UIStackView(arrangedSubviews: [nameLabel, detailLabel, aboutView, tabs])
         stack.axis = .vertical
         stack.spacing = 4
         stack.setCustomSpacing(Theme.padding * 1.5, after: detailLabel)
-        stack.setCustomSpacing(Theme.padding * 2, after: aboutView)
+        stack.setCustomSpacing(Theme.padding * 1.5, after: aboutView)
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(stack)
         let padding = Theme.padding
@@ -389,7 +385,72 @@ final class UserProfileCell: UICollectionViewListCell {
         } else {
             aboutView.isHidden = true
         }
-        tabs.selectedSegmentIndex = tab.rawValue
+        tabs.selected = tab
+    }
+}
+
+/// Stories / Comments as two words: the selected one white with a short accent line under it,
+/// the other dimmed.
+final class UserTabsView: UIView {
+    var onSelect: ((UserViewController.Tab) -> Void)?
+    var selected: UserViewController.Tab = .stories {
+        didSet { update() }
+    }
+
+    private var buttons: [UIButton] = []
+    private let underline = UIView()
+    private var underlineConstraints: [NSLayoutConstraint] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        buttons = UserViewController.Tab.allCases.map { tab in
+            let button = UIButton(type: .custom, primaryAction: UIAction { [unowned self] _ in
+                guard tab != selected else { return }
+                selected = tab
+                onSelect?(tab)
+            })
+            button.setTitle(tab.title, for: .normal)
+            button.titleLabel?.font = Theme.Font.medium(size: 16, style: .callout)
+            button.titleLabel?.adjustsFontForContentSizeCategory = true
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            return button
+        }
+        let stack = UIStackView(arrangedSubviews: buttons)
+        stack.spacing = Theme.padding * 2.5
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        underline.layer.cornerRadius = 1
+        underline.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(underline)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            underline.heightAnchor.constraint(equalToConstant: 2),
+            underline.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        update()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    private func update() {
+        underline.backgroundColor = Theme.Color.accent
+        for (tab, button) in zip(UserViewController.Tab.allCases, buttons) {
+            let isSelected = tab == selected
+            button.setTitleColor(UIColor.white.withAlphaComponent(isSelected ? 1 : 0.4), for: .normal)
+            button.setTitleColor(UIColor.white.withAlphaComponent(0.25), for: .highlighted)
+            button.accessibilityTraits = isSelected ? [.button, .selected] : .button
+        }
+        NSLayoutConstraint.deactivate(underlineConstraints)
+        let button = buttons[selected.rawValue]
+        underlineConstraints = [
+            underline.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+            underline.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+        ]
+        NSLayoutConstraint.activate(underlineConstraints)
     }
 }
 
@@ -438,8 +499,8 @@ final class UserCommentCell: UICollectionViewListCell {
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: padding * 1.5),
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -padding * 1.5),
-            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding * 1.5),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding * 1.5),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: padding),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
         ])
     }
 

@@ -2,6 +2,12 @@ package se.lindskogen.hakkerneus.ui.user
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,9 +32,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -141,17 +144,8 @@ fun UserScreen(
                             Spacer(Modifier.heightIn(min = 6.dp))
                             CommentText(it, openLink)
                         }
-                        Spacer(Modifier.heightIn(min = 14.dp))
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            UserTab.entries.forEachIndexed { index, tab ->
-                                SegmentedButton(
-                                    selected = state.tab == tab,
-                                    onClick = { model.select(tab) },
-                                    shape = SegmentedButtonDefaults.itemShape(index, UserTab.entries.size),
-                                    icon = {},
-                                ) { Text(tab.title) }
-                            }
-                        }
+                        Spacer(Modifier.heightIn(min = 8.dp))
+                        UserTabs(state.tab, onSelect = model::select)
                     }
                 }
                 when (state.tab) {
@@ -190,6 +184,36 @@ fun UserScreen(
     }
 }
 
+/** Stories / Comments as two words: the selected one white with a short accent line under it,
+ * the other dimmed. */
+@Composable
+private fun UserTabs(selected: UserTab, onSelect: (UserTab) -> Unit) {
+    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(25.dp)) {
+        UserTab.entries.forEach { tab ->
+            val isSelected = tab == selected
+            Column(
+                Modifier
+                    .width(IntrinsicSize.Max)
+                    .heightIn(min = 44.dp)
+                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(tab) }),
+                verticalArrangement = Arrangement.Bottom,
+            ) {
+                Text(
+                    tab.title,
+                    style = HN.body.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = if (isSelected) 1f else 0.4f)),
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(if (isSelected) HN.accent else Color.Transparent, RoundedCornerShape(1.dp)),
+                )
+            }
+        }
+    }
+}
+
 /** A comment on a user page: which story it's on, the text, and how long ago. Opens its thread. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -208,7 +232,7 @@ private fun UserCommentRow(comment: UserComment, body: CommentBody?, openItem: (
             ),
     ) {
         HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.2f))
-        Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(HN.padding)) {
+        Column(Modifier.padding(horizontal = HN.padding, vertical = 15.dp), verticalArrangement = Arrangement.spacedBy(HN.padding)) {
             Row(verticalAlignment = Alignment.Top) {
                 Text(
                     comment.storyTitle?.let { "on $it" } ?: "Comment",
