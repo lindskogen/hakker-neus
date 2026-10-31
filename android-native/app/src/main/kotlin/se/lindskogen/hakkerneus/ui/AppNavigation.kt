@@ -70,13 +70,15 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     val nav = rememberNavController()
     val context = LocalContext.current
     val link by pendingLink.collectAsState()
-    // hakkerneus://item?id=…, hakkerneus://open?url=… and HN item links (see the manifest).
+    // hakkerneus://item?id=…, hakkerneus://user?id=…, hakkerneus://open?url=… and HN item links (see the manifest).
     LaunchedEffect(link) {
         val uri = link ?: return@LaunchedEffect
         pendingLink.value = null
         val target = when {
             uri.scheme == "hakkerneus" && uri.host == "item" -> uri.getQueryParameter("id")
             uri.scheme == "hakkerneus" && uri.host == "open" -> uri.getQueryParameter("url")
+            uri.scheme == "hakkerneus" && uri.host == "user" ->
+                uri.getQueryParameter("id")?.let { nav.navigate(User(it)); return@LaunchedEffect }
             else -> uri.toString()
         } ?: return@LaunchedEffect
         target.toLongOrNull()?.let { nav.navigate(Comments(it)); return@LaunchedEffect }

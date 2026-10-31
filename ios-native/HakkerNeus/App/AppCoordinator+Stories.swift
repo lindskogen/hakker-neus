@@ -2,7 +2,7 @@ import UIKit
 
 /// Story row behaviour shared by the front page and the saved list.
 extension AppCoordinator {
-    func configure(_ cell: StoryCell, with story: Story, backgroundColor: UIColor, inSavedList: Bool) {
+    func configure(_ cell: StoryCell, with story: Story, backgroundColor: UIColor, inSavedList: Bool, compact: Bool = false) {
         let jump = inSavedList
             ? UIAccessibilityCustomAction(name: "Front Page") { [weak self] _ in
                 self?.showFrontPage()
@@ -22,6 +22,7 @@ extension AppCoordinator {
             isVisited: visitedStories.isVisited(story.id),
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
+            compact: compact,
             extraAccessibilityActions: [jump]
         )
         cell.onToggleSaved = { [weak self] in self?.savedStories.toggle(story) }

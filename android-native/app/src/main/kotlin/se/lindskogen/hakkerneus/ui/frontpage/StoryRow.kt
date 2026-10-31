@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import se.lindskogen.hakkerneus.data.RelativeTime
 import se.lindskogen.hakkerneus.data.Story
 import se.lindskogen.hakkerneus.ui.HnIcons
 import se.lindskogen.hakkerneus.ui.sharedStory
@@ -82,6 +83,9 @@ fun StoryRow(
     showsSavedBadge: Boolean = true,
     isUpvoted: Boolean = false,
     score: Int = story.score,
+    /** A quieter row for lists inside other screens (a user's stories): a smaller title and one
+     * dim line with the domain, points, comments and age, and no big score. */
+    compact: Boolean = false,
 ) {
     val context = LocalContext.current
     val openUser = LocalOpenUser.current
@@ -141,7 +145,7 @@ fun StoryRow(
             Modifier
                 .offset { IntOffset(with(density) { offset.value.dp.roundToPx() }, 0) }
                 .fillMaxWidth()
-                .heightIn(min = 100.dp)
+                .heightIn(min = if (compact) 0.dp else 100.dp)
                 .sharedStory("card-${story.id}")
                 .background(background)
                 .pointerInput(story.id) {
@@ -195,16 +199,26 @@ fun StoryRow(
                     )
                 },
         ) {
-            Column(Modifier.padding(start = HN.padding, end = HN.padding * 3, top = 20.dp, bottom = 20.dp)) {
+            val vertical = if (compact) 15.dp else 20.dp
+            Column(Modifier.padding(start = HN.padding, end = if (compact) HN.padding else HN.padding * 3, top = vertical, bottom = vertical)) {
                 // Read stories fade back, so unread ones stand out.
+                val title = HN.titleStyle()
                 Text(
                     story.title,
-                    style = HN.titleStyle(),
+                    style = if (compact) title.copy(fontSize = title.fontSize * 0.8f, lineHeight = title.lineHeight * 0.8f) else title,
                     modifier = Modifier.sharedStory("title-${story.id}", bounds = false).alpha(if (isVisited) 0.55f else 1f),
                 )
-                val details = listOfNotNull(story.displayDomain, newComments?.let { "$it new" })
-                if (details.isNotEmpty()) {
-                    Text(details.joinToString(" · "), style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f)), maxLines = 1)
+                if (compact) {
+                    val details = listOfNotNull(
+                        story.displayDomain, if (isUpvoted) "▲ $score points" else "$score points",
+                        "${story.commentCount} comments", RelativeTime.format(story.time),
+                    )
+                    Text(details.joinToString(" · "), style = HN.body.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.45f)), modifier = Modifier.padding(top = 4.dp))
+                } else {
+                    val details = listOfNotNull(story.displayDomain, newComments?.let { "$it new" })
+                    if (details.isNotEmpty()) {
+                        Text(details.joinToString(" · "), style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f)), maxLines = 1)
+                    }
                 }
             }
             if (isSaved && showsSavedBadge) {
@@ -213,7 +227,7 @@ fun StoryRow(
                     modifier = Modifier.align(Alignment.TopEnd).padding(HN.padding).size(26.dp),
                 )
             }
-            Text(
+            if (!compact) Text(
                 if (isUpvoted) "▲ $score" else "$score",
                 style = HN.body.copy(fontSize = 30.sp, lineHeight = 34.sp, color = Color.White.copy(alpha = if (isUpvoted) 0.85f else 0.3f)),
                 modifier = Modifier

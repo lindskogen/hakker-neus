@@ -159,6 +159,9 @@ final class AppCoordinator {
         case "open":
             guard let link = query.first(where: { $0.name == "url" })?.value.flatMap(URL.init(string:)) else { return false }
             open(link)
+        case "user":
+            guard let name = query.first(where: { $0.name == "id" })?.value, !name.isEmpty else { return false }
+            showUser(name)
         default:
             return false
         }

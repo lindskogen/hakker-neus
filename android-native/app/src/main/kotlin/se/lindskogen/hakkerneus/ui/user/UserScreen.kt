@@ -65,7 +65,6 @@ import se.lindskogen.hakkerneus.ui.frontpage.StoryRowActions
 import se.lindskogen.hakkerneus.ui.openInBrowser
 import se.lindskogen.hakkerneus.ui.share
 import se.lindskogen.hakkerneus.ui.theme.HN
-import se.lindskogen.hakkerneus.ui.theme.Palette
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -156,13 +155,15 @@ fun UserScreen(
                     }
                 }
                 when (state.tab) {
-                    UserTab.Stories -> itemsIndexed(state.stories, key = { _, story -> "s${story.id}" }) { index, story ->
+                    UserTab.Stories -> itemsIndexed(state.stories, key = { _, story -> "s${story.id}" }) { _, story ->
                         visits.size // re-read when visits change
+                        // Quiet rows like the comments tab: the profile is the focus here, not a front page.
                         StoryRow(
-                            story, Palette.storyBackground(index), saved.any { it.story.id == story.id }, actions,
+                            story, HN.backgroundDark, saved.any { it.story.id == story.id }, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             isUpvoted = story.id in upvoted,
                             score = AppContainer.session.displayedScore(story.id, story.score),
+                            compact = true,
                         )
                         HorizontalDivider(thickness = 0.5.dp, color = Color.Black)
                     }

@@ -28,6 +28,11 @@ final class StoryCell: UICollectionViewListCell {
     private var armedAction: StorySwipe.Action?
     private let haptics = UIImpactFeedbackGenerator(style: .medium)
     private let horizontalOnly = HorizontalPanDelegate()
+    private var isCompact = false
+    private var titleTop: NSLayoutConstraint!
+    private var titleTrailing: NSLayoutConstraint!
+    private var minHeight: NSLayoutConstraint!
+    private var bottomInsets: [NSLayoutConstraint] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -78,8 +83,14 @@ final class StoryCell: UICollectionViewListCell {
         }
 
         let padding = Theme.padding
-        let minHeight = rowView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100)
+        minHeight = rowView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100)
         minHeight.priority = .defaultHigh
+        titleTop = titleLabel.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2)
+        titleTrailing = titleLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3)
+        bottomInsets = [
+            domainLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
+            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
+        ]
 
         NSLayoutConstraint.activate([
             actionBackground.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -93,17 +104,15 @@ final class StoryCell: UICollectionViewListCell {
             rowView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             minHeight,
 
-            titleLabel.topAnchor.constraint(equalTo: rowView.topAnchor, constant: padding * 2),
+            titleTop,
             titleLabel.leadingAnchor.constraint(equalTo: rowView.leadingAnchor, constant: padding),
-            titleLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding * 3),
+            titleTrailing,
 
             // Not in a stack with the title: a stack would stretch it to the title's full width,
             // leaving the score no room. On its own it only has to keep its text clear of the score.
             domainLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             domainLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             domainLabel.trailingAnchor.constraint(lessThanOrEqualTo: scoreLabel.leadingAnchor, constant: -padding),
-            domainLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
-            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: rowView.bottomAnchor, constant: -padding * 2),
 
             scoreLabel.trailingAnchor.constraint(equalTo: rowView.trailingAnchor, constant: -padding),
             scoreLabel.bottomAnchor.constraint(equalTo: rowView.bottomAnchor, constant: -padding),
@@ -117,7 +126,7 @@ final class StoryCell: UICollectionViewListCell {
             commentCountLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
             commentCountLabel.widthAnchor.constraint(lessThanOrEqualToConstant: StorySwipe.commentsThreshold - padding * 2),
             commentCountLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-        ])
+        ] + bottomInsets)
 
         let swipePan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         swipePan.delegate = horizontalOnly
@@ -129,12 +138,15 @@ final class StoryCell: UICollectionViewListCell {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    /// The coloured card and title, for the transition into the comments header.
+    var transitionViews: (card: UIView, title: UIView) { (rowView, titleLabel) }
+
     /// - Parameters:
     ///   - showsSavedBadge: Whether a saved story shows the faded heart in its corner.
     ///     Off in the saved list, where every row is saved.
+    ///   - compact: A quieter row for lists inside other screens (a user's stories): a smaller
+    ///     title and one dim line with the domain, points, comments and age, and no big score.
     ///   - extraAccessibilityActions: Screen-level actions VoiceOver should offer on every row.
-    /// The coloured card and title, for the transition into the comments header.
-    var transitionViews: (card: UIView, title: UIView) { (rowView, titleLabel) }
 
     func configure(
         with story: Story,
@@ -145,6 +157,7 @@ final class StoryCell: UICollectionViewListCell {
         isVisited: Bool = false,
         newComments: Int? = nil,
         showsSavedBadge: Bool = true,
+        compact: Bool = false,
         extraAccessibilityActions: [UIAccessibilityCustomAction] = []
     ) {
         let savedChanged = story.id == storyID && isSaved != self.isSaved
@@ -154,15 +167,22 @@ final class StoryCell: UICollectionViewListCell {
 
         rowColor = backgroundColor
         rowView.backgroundColor = backgroundColor
-        titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
+        setCompact(compact)
         titleLabel.text = story.title
         // Read stories fade back, so unread ones stand out.
         titleLabel.alpha = isVisited ? 0.55 : 1
-        let details = [story.displayDomain, newComments.map { "\($0) new" }].compactMap { $0 }
+        let score = score ?? story.score
+        let details = compact
+            ? [
+                story.displayDomain, isUpvoted ? "▲ \(score) points" : "\(score) points",
+                "\(story.commentCount) comments", RelativeTime.string(from: story.time),
+            ]
+            .compactMap { $0 }
+            : [story.displayDomain, newComments.map { "\($0) new" }].compactMap { $0 }
         domainLabel.text = details.joined(separator: " · ")
         domainLabel.isHidden = details.isEmpty
-        let score = score ?? story.score
-        scoreLabel.text = isUpvoted ? "▲ \(score)" : "\(score)"
+        // Empty rather than hidden in compact rows, so it takes no width from the details line.
+        scoreLabel.text = compact ? nil : isUpvoted ? "▲ \(score)" : "\(score)"
         scoreLabel.alpha = isUpvoted ? 0.85 : 0.3
         commentCountLabel.text = "\(story.commentCount)"
 
@@ -199,6 +219,21 @@ final class StoryCell: UICollectionViewListCell {
             },
         ] + extraAccessibilityActions
         setNeedsUpdateConfiguration()
+    }
+
+    private func setCompact(_ compact: Bool) {
+        let isPad = traitCollection.userInterfaceIdiom == .pad
+        titleLabel.font = compact ? Theme.Font.light(size: isPad ? 24 : 20, style: .title3) : Theme.Font.title(isPad: isPad)
+        guard compact != isCompact else { return }
+        isCompact = compact
+        let padding = Theme.padding
+        domainLabel.font = compact ? Theme.Font.body(size: 13, style: .footnote) : Theme.Font.body(size: 14, style: .subheadline)
+        domainLabel.textColor = UIColor.white.withAlphaComponent(compact ? 0.45 : 0.7)
+        domainLabel.numberOfLines = compact ? 0 : 1
+        titleTop.constant = compact ? padding * 1.5 : padding * 2
+        titleTrailing.constant = compact ? -padding : -padding * 3
+        minHeight.constant = compact ? 0 : 100
+        for inset in bottomInsets { inset.constant = compact ? -padding * 1.5 : -padding * 2 }
     }
 
     override func prepareForReuse() {

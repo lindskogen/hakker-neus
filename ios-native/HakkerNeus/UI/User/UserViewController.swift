@@ -102,9 +102,10 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
             cell.onLinkTap = { [unowned self] in coordinator.open($0) }
             cell.linkMenu = { [unowned self] url, source in coordinator.linkMenu(for: url, sourceView: source) }
         }
-        let story = UICollectionView.CellRegistration<StoryCell, Item> { [unowned self] cell, indexPath, item in
+        let story = UICollectionView.CellRegistration<StoryCell, Item> { [unowned self] cell, _, item in
             guard case .story(let id) = item, let story = storiesByID[id] else { return }
-            coordinator.configure(cell, with: story, backgroundColor: Palette.storyBackground(at: indexPath.item), inSavedList: false)
+            // Quiet rows like the comments tab: the profile is the focus here, not a front page.
+            coordinator.configure(cell, with: story, backgroundColor: Theme.Color.backgroundDark, inSavedList: false, compact: true)
         }
         let comment = UICollectionView.CellRegistration<UserCommentCell, Item> { [unowned self] cell, _, item in
             guard case .comment(let id) = item, let comment = commentsByID[id] else { return }
@@ -212,8 +213,8 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         }
         let loaded = nextPage[selectedTab] != nil
         snapshot.appendItems(items.isEmpty && loaded && hasMore[selectedTab] == false ? [.empty] : items, toSection: .activity)
-        // Story row colours depend on position.
-        snapshot.reconfigureItems(snapshot.itemIdentifiers.filter { dataSource.indexPath(for: $0) != nil })
+        // The profile and empty rows show the selected tab.
+        snapshot.reconfigureItems([Item.profile, .empty].filter { dataSource.indexPath(for: $0) != nil && snapshot.indexOfItem($0) != nil })
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 
