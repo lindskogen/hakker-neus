@@ -123,6 +123,8 @@ final class AppCoordinator {
         split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController }
         window.rootViewController = split
         window.makeKeyAndVisible()
+        // Lay out now, so links opened at launch know whether there's room beside the list.
+        split.view.layoutIfNeeded()
 
         #if DEBUG
         if client is CommentsSinkClient {

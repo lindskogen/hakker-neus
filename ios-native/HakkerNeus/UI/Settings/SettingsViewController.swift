@@ -15,6 +15,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case codeSize
         case leftHanded
         case newMinimumScore
+        case adBlocking
     }
 
     private struct Section {
@@ -48,6 +49,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 footer: "Articles open in Reader mode when the page supports it.",
                 rows: [.readerMode]
             ),
+            Section(
+                title: "Ad Blocking",
+                footer: "To block ads in articles, turn on HackerNeus in the Settings app under Apps › Safari › Extensions. On iPad, articles beside the list are always filtered. Uses EasyList by The EasyList authors (easylist.to), CC BY-SA.",
+                rows: [.adBlocking]
+            ),
         ]
     }
 
@@ -67,6 +73,19 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         })
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: HNSession.didChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshAdBlockingState), name: UIApplication.didBecomeActiveNotification, object: nil)
+        refreshAdBlockingState()
+    }
+
+    /// Whether the content blocker is on, checked again on coming back from the Settings app.
+    private var adBlockingEnabled: Bool?
+
+    @objc private func refreshAdBlockingState() {
+        Task {
+            adBlockingEnabled = await AdBlocking.isExtensionEnabled()
+            guard let index = sections.firstIndex(where: { $0.rows.contains { if case .adBlocking = $0 { true } else { false } } }) else { return }
+            tableView.reloadSections(IndexSet(integer: index), with: .none)
+        }
     }
 
     @objc private func sessionChanged() {
@@ -124,6 +143,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 self?.coordinator.settings.opensLinksInReaderMode = toggle?.isOn ?? false
             }, for: .valueChanged)
             cell.accessoryView = toggle
+            cell.selectionStyle = .none
+        case .adBlocking:
+            content.text = "Block Ads in Articles"
+            content.secondaryText = adBlockingEnabled.map { $0 ? "On" : "Off" }
+            content.prefersSideBySideTextAndSecondaryText = true
             cell.selectionStyle = .none
         case .theme(let theme):
             content.text = theme.title
@@ -199,7 +223,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
-        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore:
+        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme

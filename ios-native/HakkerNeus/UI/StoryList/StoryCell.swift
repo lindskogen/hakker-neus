@@ -167,7 +167,7 @@ final class StoryCell: UICollectionViewListCell {
         self.isSaved = isSaved
         self.isUpvoted = isUpvoted
 
-        // The story open beside the list (iPad) is tinted.
+        // The story open beside the list (iPad) turns black.
         let backgroundColor = isActive ? Palette.activeStoryBackground : backgroundColor
         rowColor = backgroundColor
         rowView.backgroundColor = backgroundColor

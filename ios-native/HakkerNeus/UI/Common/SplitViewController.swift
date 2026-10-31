@@ -65,6 +65,8 @@ final class SplitViewController: UIViewController {
         let split = bounds.width >= Self.minimumSplitWidth
         if split != isSplit {
             isSplit = split
+            // Articles open beside the list from now on; have the ad blocking rules ready.
+            if split { AdBlocking.prepare() }
             moveScreens()
         }
         detail.view.isHidden = !split
