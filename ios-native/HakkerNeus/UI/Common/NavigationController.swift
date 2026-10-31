@@ -191,6 +191,13 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
     // MARK: UINavigationControllerDelegate
 
+    /// Called once a screen has finished appearing (after any push, pop or swipe back).
+    var onDidShow: ((UIViewController) -> Void)?
+
+    func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
+        onDidShow?(viewController)
+    }
+
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
         updateCornerButton(for: viewController, animated: animated)
         // An interactive swipe that's abandoned leaves the previous screen showing.

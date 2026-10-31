@@ -78,6 +78,17 @@ enum Palette {
         themeRGB(0.65, theme: theme).uiColor
     }
 
+    /// Behind a read story's row.
+    static let readStoryBackground = UIColor.black
+
+    /// Behind the row of the story open in the iPad side column: black, tinted with the theme.
+    static var activeStoryBackground: UIColor {
+        var (r, g, b): (CGFloat, CGFloat, CGFloat) = (0, 0, 0)
+        accent().getRed(&r, green: &g, blue: &b, alpha: nil)
+        let tint: CGFloat = 0.28
+        return UIColor(red: r * tint, green: g * tint, blue: b * tint, alpha: 1)
+    }
+
     /// Behind a row at the upvote stage of a swipe: blue, or orange when the rows are blue.
     static var upvoteStage: UIColor {
         UIColor(rgb: tableau10[ColorTheme.current == .blue ? 1 : 0])

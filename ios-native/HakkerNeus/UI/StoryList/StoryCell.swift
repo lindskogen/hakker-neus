@@ -156,6 +156,7 @@ final class StoryCell: UICollectionViewListCell {
         isUpvoted: Bool = false,
         score: Int? = nil,
         isVisited: Bool = false,
+        isActive: Bool = false,
         newComments: Int? = nil,
         showsSavedBadge: Bool = true,
         compact: Bool = false,
@@ -166,12 +167,12 @@ final class StoryCell: UICollectionViewListCell {
         self.isSaved = isSaved
         self.isUpvoted = isUpvoted
 
+        // Read stories turn black, so unread ones stand out; the one open beside the list (iPad) is tinted.
+        let backgroundColor = isActive ? Palette.activeStoryBackground : isVisited ? Palette.readStoryBackground : backgroundColor
         rowColor = backgroundColor
         rowView.backgroundColor = backgroundColor
         setCompact(compact)
         titleLabel.text = story.title
-        // Read stories fade back, so unread ones stand out.
-        titleLabel.alpha = isVisited ? 0.55 : 1
         let score = score ?? story.score
         let details = compact
             ? [
@@ -201,7 +202,7 @@ final class StoryCell: UICollectionViewListCell {
         accessibilityLabel = story.title
         accessibilityValue = [
             story.displayDomain, "\(score) points", isUpvoted ? "upvoted" : nil, "\(story.commentCount) comments",
-            newComments.map { "\($0) new" }, isVisited ? "read" : nil, isSaved ? "saved" : nil,
+            newComments.map { "\($0) new" }, isVisited ? "read" : nil, isSaved ? "saved" : nil, isActive ? "open" : nil,
         ]
             .compactMap { $0 }
             .joined(separator: ", ")

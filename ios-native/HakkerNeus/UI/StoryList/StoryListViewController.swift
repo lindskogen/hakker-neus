@@ -63,7 +63,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             NotificationCenter.default.addObserver(self, selector: #selector(minimumScoreChanged), name: AppSettings.newMinimumScoreDidChange, object: nil)
         }
         NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
-        for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged] {
+        for name in [SavedStoriesStore.didChange, VisitedStoriesStore.didChange, HNSession.votesChanged, SplitViewController.activeStoryDidChange] {
             NotificationCenter.default.addObserver(self, selector: #selector(storyStateChanged(_:)), name: name, object: nil)
         }
 

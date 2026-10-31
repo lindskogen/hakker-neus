@@ -16,6 +16,19 @@ final class SplitViewController: UIViewController {
     static let minimumSplitWidth: CGFloat = 1000
 
     private(set) var isSplit = false
+
+    /// Posted with a story ID when that story starts or stops being the one in the side column.
+    static let activeStoryDidChange = Notification.Name("SplitViewController.activeStoryDidChange")
+
+    /// The story open in the side column, which the lists mark.
+    private(set) var activeStoryID: Int? {
+        didSet {
+            guard activeStoryID != oldValue else { return }
+            for id in [oldValue, activeStoryID].compactMap({ $0 }) {
+                NotificationCenter.default.post(name: Self.activeStoryDidChange, object: id)
+            }
+        }
+    }
     private let placeholder = DetailPlaceholderViewController()
     private let divider = UIView()
 
@@ -39,6 +52,7 @@ final class SplitViewController: UIViewController {
         // screen there empties the column.
         detail.setViewControllers([placeholder], animated: false)
         detail.view.isHidden = true
+        detail.onDidShow = { [unowned self] _ in updateActiveStory() }
         divider.backgroundColor = UIColor(white: 1, alpha: 0.12)
         view.addSubview(divider)
     }
@@ -80,10 +94,18 @@ final class SplitViewController: UIViewController {
             fade.type = .fade
             detail.view.layer.add(fade, forKey: "replace")
         }
+        updateActiveStory()
+    }
+
+    /// The story of the first screen in the side column: what was opened from the list.
+    private func updateActiveStory() {
+        let opened = isSplit ? detail.viewControllers.dropFirst().first : nil
+        activeStoryID = (opened as? ArticleViewController)?.story?.id ?? (opened as? CommentsViewController)?.transitionStoryID
     }
 
     /// Moves the screens above the lists into the side column, or back on top of the lists.
     private func moveScreens() {
+        defer { updateActiveStory() }
         if isSplit {
             let stack = primary.viewControllers
             let lists = stack.lastIndex(where: isList).map { stack[...$0] } ?? []
