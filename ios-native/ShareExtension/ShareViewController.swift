@@ -1,8 +1,9 @@
 import UIKit
 import UniformTypeIdentifiers
 
-/// "Search on HN" in the share sheet: opens HakkerNeus with the shared link in the search field,
-/// to find the Hacker News discussions of a page open in Safari.
+/// "Search on HN" in the share sheet's actions (an action extension, so it's listed by name with
+/// its HN glyph): opens HakkerNeus with the shared link in the search field, to find the Hacker
+/// News discussions of a page open in Safari.
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
