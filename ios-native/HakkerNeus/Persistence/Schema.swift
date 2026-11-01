@@ -35,6 +35,18 @@ enum Schema {
             fetched_at REAL NOT NULL
         );
         """,
+        // 4: Saved comments, with the story they're on.
+        """
+        CREATE TABLE IF NOT EXISTS saved_comments (
+            id INTEGER PRIMARY KEY,
+            story_id INTEGER,
+            story_title TEXT,
+            author TEXT,
+            text TEXT NOT NULL,
+            posted_at REAL NOT NULL,
+            saved_at REAL NOT NULL
+        );
+        """,
     ]
 
     /// Runs any migrations the database hasn't had yet. Safe to call repeatedly.

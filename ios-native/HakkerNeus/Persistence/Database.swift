@@ -142,6 +142,10 @@ extension Database.Value {
         self = .integer(Int64(int))
     }
 
+    init(_ int: Int?) {
+        self = int.map { .integer(Int64($0)) } ?? .null
+    }
+
     init(_ date: Date) {
         self = .real(date.timeIntervalSince1970)
     }

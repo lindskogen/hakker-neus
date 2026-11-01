@@ -9,6 +9,12 @@ final class ProfileHeaderView: UICollectionReusableView {
     var onSignIn: (() -> Void)?
     /// Tapping your own name, when signed in.
     var onShowUser: ((String) -> Void)?
+    /// Switching between saved stories and saved comments.
+    var onTab: ((SavedStoriesViewController.Tab) -> Void)? {
+        get { tabs.onSelect }
+        set { tabs.onSelect = newValue }
+    }
+    private let tabs = TextTabsView<SavedStoriesViewController.Tab>()
     private var username: String?
     private var isSignedIn = false
 
@@ -81,14 +87,20 @@ final class ProfileHeaderView: UICollectionReusableView {
         row.translatesAutoresizingMaskIntoConstraints = false
         addSubview(row)
 
+        tabs.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(tabs)
+
         let padding = Theme.padding
         leadingConstraint = row.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: horizontalMargin)
         trailingConstraint = row.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -horizontalMargin)
         NSLayoutConstraint.activate([
             row.topAnchor.constraint(equalTo: topAnchor, constant: padding * 2),
-            row.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -padding * 2),
             leadingConstraint,
             trailingConstraint,
+            tabs.topAnchor.constraint(equalTo: row.bottomAnchor, constant: padding),
+            tabs.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
+            tabs.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
+            tabs.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
     }
 
@@ -100,7 +112,8 @@ final class ProfileHeaderView: UICollectionReusableView {
     }
 
     /// - Parameter username: The signed-in HN user, or nil.
-    func configure(username: String?, savedCount: Int) {
+    func configure(username: String?, savedCount: Int, savedCommentCount: Int, tab: SavedStoriesViewController.Tab) {
+        tabs.selected = tab
         isSignedIn = username != nil
         self.username = username
         // Signed out, the name's place is an obvious way to sign in.
@@ -108,6 +121,8 @@ final class ProfileHeaderView: UICollectionReusableView {
         nameLabel.textColor = username == nil ? Theme.Color.accent : .white
         nameLabel.accessibilityTraits = [.header, .button]
         nameLabel.accessibilityHint = username == nil ? "Signs in to Hacker News" : "Shows your Hacker News page"
-        detailLabel.text = savedCount == 1 ? "1 saved story" : "\(savedCount) saved stories"
+        let stories = savedCount == 1 ? "1 saved story" : "\(savedCount) saved stories"
+        let comments = savedCommentCount == 1 ? "1 comment" : "\(savedCommentCount) comments"
+        detailLabel.text = savedCommentCount > 0 ? "\(stories) · \(comments)" : stories
     }
 }

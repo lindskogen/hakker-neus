@@ -25,6 +25,7 @@ final class AppCoordinator {
     let client: HNClient
     let itemCache: ItemCache
     let savedStories: SavedStoriesStore
+    let savedComments: SavedCommentsStore
     let visitedStories: VisitedStoriesStore
     let hiddenStories: HiddenStoriesStore
     let offlineItems: OfflineItemStore
@@ -64,6 +65,7 @@ final class AppCoordinator {
         do {
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
+            self.savedComments = try SavedCommentsStore(database: database)
             self.visitedStories = try VisitedStoriesStore(database: database)
             self.offlineItems = try OfflineItemStore(database: database)
         } catch {

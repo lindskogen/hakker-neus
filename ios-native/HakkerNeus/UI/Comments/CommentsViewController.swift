@@ -602,8 +602,18 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
             })
         }
 
+        let isSaved = coordinator.savedComments.isSaved(comment.id)
+        let save = UIAction(title: isSaved ? "Unsave" : "Save", image: UIImage(systemName: isSaved ? "heart.slash" : "heart")) { [unowned self] _ in
+            if isSaved {
+                coordinator.savedComments.remove(comment.id)
+            } else {
+                coordinator.savedComments.save(comment, storyID: story?.id, storyTitle: story?.title)
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+
         return UIMenu(children: [
-            UIMenu(options: .displayInline, children: [reply, collapse]),
+            UIMenu(options: .displayInline, children: [reply, save, collapse]),
             UIMenu(options: .displayInline, children: [share, copyText, copyLink]),
             UIMenu(options: .displayInline, children: user),
         ])

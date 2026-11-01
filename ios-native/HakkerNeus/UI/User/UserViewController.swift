@@ -475,6 +475,14 @@ final class UserCommentCell: UICollectionViewListCell {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    /// A saved comment: who wrote it, on which story.
+    func configure(with comment: SavedComment, body: CommentBody) {
+        configure(with: UserComment(id: comment.id, text: comment.text, time: comment.time, storyID: comment.storyID, storyTitle: comment.storyTitle), body: body)
+        if let author = comment.author {
+            storyLabel.text = [author, comment.storyTitle].compactMap { $0 }.joined(separator: " on ")
+        }
+    }
+
     func configure(with comment: UserComment, body: CommentBody) {
         storyLabel.text = comment.storyTitle.map { "on \($0)" } ?? "Comment"
         timeLabel.text = RelativeTime.string(from: comment.time)
