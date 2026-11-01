@@ -18,6 +18,7 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
     private unowned let coordinator: AppCoordinator
     private let api: UserAPI
 
+    private let backButton = UIButton(type: .system)
     private let searchField = UISearchTextField()
     private let tabs = TextTabsView<Order>()
     private var collectionView: UICollectionView!
@@ -72,19 +73,32 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
         searchField.accessibilityIdentifier = "search.field"
         searchField.addAction(UIAction { [unowned self] _ in queryChanged(debounce: true) }, for: .editingChanged)
 
+        backButton.setImage(UIImage(systemName: "chevron.backward", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)), for: .normal)
+        backButton.tintColor = .white
+        backButton.accessibilityLabel = "Back"
+        backButton.accessibilityIdentifier = "search.back"
+        backButton.addAction(UIAction { [unowned self] _ in
+            searchField.resignFirstResponder()
+            navigationController?.popViewController(animated: true)
+        }, for: .touchUpInside)
+
         tabs.onSelect = { [unowned self] order in
             self.order = order
             queryChanged(debounce: false)
         }
 
-        for view in [searchField, tabs] {
+        for view in [backButton, searchField, tabs] {
             view.translatesAutoresizingMaskIntoConstraints = false
             self.view.addSubview(view)
         }
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
+            backButton.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: Theme.padding / 2),
+            backButton.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
             searchField.topAnchor.constraint(equalTo: guide.topAnchor, constant: Theme.padding),
-            searchField.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: Theme.padding),
+            searchField.leadingAnchor.constraint(equalTo: backButton.trailingAnchor),
             searchField.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -Theme.padding),
             searchField.heightAnchor.constraint(greaterThanOrEqualToConstant: 40),
             tabs.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: Theme.padding / 2),
