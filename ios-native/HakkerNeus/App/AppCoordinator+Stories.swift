@@ -2,7 +2,9 @@ import UIKit
 
 /// Story row behaviour shared by the front page and the saved list.
 extension AppCoordinator {
-    func configure(_ cell: StoryCell, with story: Story, backgroundColor: UIColor, inSavedList: Bool, compact: Bool = false) {
+    /// - Parameter openedFrom: Where the row's comments open from; by default a list, or the side
+    ///   column for compact rows (user pages).
+    func configure(_ cell: StoryCell, with story: Story, backgroundColor: UIColor, inSavedList: Bool, compact: Bool = false, openedFrom: OpenedFrom? = nil) {
         let jump = inSavedList
             ? UIAccessibilityCustomAction(name: "Front Page") { [weak self] _ in
                 self?.showFrontPage()
@@ -29,8 +31,9 @@ extension AppCoordinator {
         )
         cell.onToggleSaved = { [weak self] in self?.savedStories.toggle(story) }
         cell.onToggleUpvote = { [weak self] in self?.toggleVote(story) }
-        // Compact rows are on user pages, which are in the side column when the window is wide.
-        cell.onOpenComments = { [weak self] in self?.showComments(for: story, from: compact ? .detail : .list) }
+        // Compact rows are usually on user pages, which are in the side column when the window is wide.
+        let origin = openedFrom ?? (compact ? .detail : .list)
+        cell.onOpenComments = { [weak self] in self?.showComments(for: story, from: origin) }
         cell.onSwipeBegan = { [weak self] in self?.prefetchComments(for: story) }
     }
 

@@ -4,6 +4,7 @@ import UIKit
 /// how much is saved, and the way into settings.
 final class ProfileHeaderView: UICollectionReusableView {
     var onSettings: (() -> Void)?
+    var onSearch: (() -> Void)?
     /// Tapping "Sign in", shown when signed out.
     var onSignIn: (() -> Void)?
     /// Tapping your own name, when signed in.
@@ -14,6 +15,7 @@ final class ProfileHeaderView: UICollectionReusableView {
     private let nameLabel = UILabel()
     private let detailLabel = UILabel()
     private let settingsButton = UIButton(type: .system)
+    private let searchButton = UIButton(type: .system)
     private var leadingConstraint: NSLayoutConstraint!
     private var trailingConstraint: NSLayoutConstraint!
 
@@ -56,6 +58,16 @@ final class ProfileHeaderView: UICollectionReusableView {
         settingsButton.addAction(UIAction { [weak self] _ in self?.onSettings?() }, for: .touchUpInside)
         settingsButton.setContentHuggingPriority(.required, for: .horizontal)
 
+        var searchConfig = config
+        searchConfig.image = UIImage(systemName: "magnifyingglass")
+        searchButton.configuration = searchConfig
+        searchButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        searchButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        searchButton.accessibilityLabel = "Search"
+        searchButton.accessibilityIdentifier = "saved.search"
+        searchButton.addAction(UIAction { [weak self] _ in self?.onSearch?() }, for: .touchUpInside)
+        searchButton.setContentHuggingPriority(.required, for: .horizontal)
+
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(nameTapped)))
 
@@ -63,7 +75,7 @@ final class ProfileHeaderView: UICollectionReusableView {
         text.axis = .vertical
         text.spacing = 4
 
-        let row = UIStackView(arrangedSubviews: [text, settingsButton])
+        let row = UIStackView(arrangedSubviews: [text, searchButton, settingsButton])
         row.alignment = .center
         row.spacing = Theme.padding
         row.translatesAutoresizingMaskIntoConstraints = false

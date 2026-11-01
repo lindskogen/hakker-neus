@@ -180,8 +180,8 @@ final class StoryCell: UICollectionViewListCell {
         let score = score ?? story.score
         let details = compact
             ? [
-                story.displayDomain, isUpvoted ? "▲ \(score) points" : "\(score) points",
-                "\(story.commentCount) comments", RelativeTime.string(from: story.time),
+                story.displayDomain, (isUpvoted ? "▲ " : "") + (score == 1 ? "1 point" : "\(score) points"),
+                story.commentCount == 1 ? "1 comment" : "\(story.commentCount) comments", RelativeTime.string(from: story.time),
             ]
             .compactMap { $0 }
             : [story.displayDomain, newComments.map { "\($0) new" }].compactMap { $0 }

@@ -221,8 +221,8 @@ fun StoryRow(
                 )
                 if (compact) {
                     val details = listOfNotNull(
-                        story.displayDomain, if (isUpvoted) "▲ $score points" else "$score points",
-                        "${story.commentCount} comments", RelativeTime.format(story.time),
+                        story.displayDomain, (if (isUpvoted) "▲ " else "") + if (score == 1) "1 point" else "$score points",
+                        if (story.commentCount == 1) "1 comment" else "${story.commentCount} comments", RelativeTime.format(story.time),
                     )
                     Text(details.joinToString(" · "), style = HN.body.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.45f)), modifier = Modifier.padding(top = 4.dp))
                 } else {

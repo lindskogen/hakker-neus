@@ -37,6 +37,8 @@ final class AppCoordinator {
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
     private(set) lazy var savedList = SavedStoriesViewController(coordinator: self)
+    /// Story search, kept alive so the query and results survive going back.
+    private(set) lazy var search = SearchViewController(coordinator: self, api: userCache.api)
     /// HN's New list, kept alive like the front page so its place survives going back and forth.
     private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
 
@@ -120,7 +122,7 @@ final class AppCoordinator {
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
 
-        split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController }
+        split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController || $0 is SearchViewController }
         window.rootViewController = split
         window.makeKeyAndVisible()
         // Lay out now, so links opened at launch know whether there's room beside the list.
@@ -269,6 +271,12 @@ final class AppCoordinator {
     func showNewStories() {
         guard navigationController.topViewController === frontPage else { return }
         navigationController.pushViewController(newList, animated: true)
+    }
+
+    /// Story search, on top of the saved list (in the list column when the window is wide).
+    func showSearch() {
+        guard navigationController.topViewController === savedList else { return }
+        navigationController.pushViewController(search, animated: true)
     }
 
     func showFrontPage(animated: Bool = true) {

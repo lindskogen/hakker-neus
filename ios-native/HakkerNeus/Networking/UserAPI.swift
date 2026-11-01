@@ -35,7 +35,7 @@ enum UserAPIError: Error, LocalizedError {
 }
 
 /// User pages: the profile from Firebase, recent stories and comments from Algolia's search
-/// (Firebase only lists item IDs, which would mean a request per item).
+/// (Firebase only lists item IDs, which would mean a request per item). Also story search.
 struct UserAPI: Sendable {
     let transport: HTTPTransport
     var firebaseURL = URL(string: "https://hacker-news.firebaseio.com/v0/")!
@@ -54,25 +54,23 @@ struct UserAPI: Sendable {
     }
 
     func stories(by name: String, page: Int) async throws -> UserActivityPage<Story> {
-        let result = try await search(tag: "story", name: name, page: page)
-        let stories = result.hits.compactMap { hit -> Story? in
-            guard let id = Int(hit.objectID), let title = hit.title else { return nil }
-            return Story(
-                id: id,
-                title: title,
-                author: hit.author,
-                url: hit.url.flatMap { $0.isEmpty ? nil : URL(string: $0) },
-                text: hit.storyText,
-                score: hit.points ?? 0,
-                commentCount: hit.numComments ?? 0,
-                time: Date(timeIntervalSince1970: TimeInterval(hit.createdAtI))
-            )
-        }
-        return UserActivityPage(items: stories, hasMore: result.page + 1 < result.nbPages)
+        let result = try await search(tags: "story,author_\(name)", byDate: true, page: page)
+        return UserActivityPage(items: result.hits.compactMap(\.story), hasMore: result.page + 1 < result.nbPages)
+    }
+
+    enum SearchOrder: Sendable {
+        case relevance
+        case date
+    }
+
+    /// Stories matching `query`, best matches or newest first.
+    func searchStories(_ query: String, order: SearchOrder, page: Int) async throws -> UserActivityPage<Story> {
+        let result = try await search(tags: "story", query: query, byDate: order == .date, page: page)
+        return UserActivityPage(items: result.hits.compactMap(\.story), hasMore: result.page + 1 < result.nbPages)
     }
 
     func comments(by name: String, page: Int) async throws -> UserActivityPage<UserComment> {
-        let result = try await search(tag: "comment", name: name, page: page)
+        let result = try await search(tags: "comment,author_\(name)", byDate: true, page: page)
         let comments = result.hits.compactMap { hit -> UserComment? in
             guard let id = Int(hit.objectID), let text = hit.commentText else { return nil }
             return UserComment(
@@ -86,13 +84,13 @@ struct UserAPI: Sendable {
         return UserActivityPage(items: comments, hasMore: result.page + 1 < result.nbPages)
     }
 
-    private func search(tag: String, name: String, page: Int) async throws -> SearchResult {
-        var components = URLComponents(url: algoliaURL.appending(path: "search_by_date"), resolvingAgainstBaseURL: false)!
+    private func search(tags: String, query: String? = nil, byDate: Bool, page: Int) async throws -> SearchResult {
+        var components = URLComponents(url: algoliaURL.appending(path: byDate ? "search_by_date" : "search"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
-            URLQueryItem(name: "tags", value: "\(tag),author_\(name)"),
+            URLQueryItem(name: "tags", value: tags),
             URLQueryItem(name: "hitsPerPage", value: String(pageSize)),
             URLQueryItem(name: "page", value: String(page)),
-        ]
+        ] + (query.map { [URLQueryItem(name: "query", value: $0)] } ?? [])
         let data = try await transport.data(from: components.url!)
         return try JSONDecoder().decode(SearchResult.self, from: data)
     }
@@ -131,6 +129,20 @@ struct UserAPI: Sendable {
             case storyID = "story_id"
             case storyTitle = "story_title"
             case createdAtI = "created_at_i"
+        }
+
+        var story: Story? {
+            guard let id = Int(objectID), let title else { return nil }
+            return Story(
+                id: id,
+                title: title,
+                author: author,
+                url: url.flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                text: storyText,
+                score: points ?? 0,
+                commentCount: numComments ?? 0,
+                time: Date(timeIntervalSince1970: TimeInterval(createdAtI))
+            )
         }
     }
 }
