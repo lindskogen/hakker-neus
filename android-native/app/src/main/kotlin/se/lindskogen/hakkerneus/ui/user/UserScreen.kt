@@ -154,7 +154,7 @@ fun UserScreen(
                             CommentText(it, openLink)
                         }
                         Spacer(Modifier.heightIn(min = 8.dp))
-                        UserTabs(state.tab, onSelect = model::select)
+                        se.lindskogen.hakkerneus.ui.TextTabs(UserTab.entries.map { it.title }, state.tab.ordinal, onSelect = { model.select(UserTab.entries[it]) })
                     }
                 }
                 when (state.tab) {
@@ -190,48 +190,6 @@ fun UserScreen(
         }
         // The dark header reaches up behind the status bar.
         Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(HN.backgroundDark))
-    }
-}
-
-/** Stories / Comments across the full width: the selected one white with an accent line under
- * it that slides over when the tab changes, the other dimmed. */
-@Composable
-private fun UserTabs(selected: UserTab, onSelect: (UserTab) -> Unit) {
-    val tabs = UserTab.entries
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val tabWidth = maxWidth / tabs.size
-        val indicatorOffset by animateDpAsState(
-            tabWidth * selected.ordinal,
-            spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
-            label = "indicator",
-        )
-        Row(Modifier.fillMaxWidth().selectableGroup()) {
-            tabs.forEach { tab ->
-                val isSelected = tab == selected
-                val color by animateColorAsState(Color.White.copy(alpha = if (isSelected) 1f else 0.4f), tween(250), label = "tab")
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp)
-                        .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(tab) }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        tab.title,
-                        style = HN.body.copy(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = color),
-                        modifier = Modifier.padding(vertical = 10.dp),
-                    )
-                }
-            }
-        }
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = indicatorOffset)
-                .width(tabWidth)
-                .height(2.dp)
-                .background(HN.accent, RoundedCornerShape(1.dp)),
-        )
     }
 }
 

@@ -63,6 +63,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 @Serializable object Saved
 @Serializable object New
 @Serializable object Settings
+@Serializable object Search
 @Serializable object SignIn
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
@@ -176,6 +177,22 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                     openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
                     openItem = { openComments(it) },
                     openSettings = { nav.navigate(Settings) },
+                    openSearch = { nav.navigate(Search) },
+                    signIn = { nav.navigate(SignIn) },
+                )
+            }
+        }
+        composable<Search> {
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+                se.lindskogen.hakkerneus.ui.search.SearchScreen(
+                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                    openLink = { url ->
+                        when (val link = HackerNewsLink.parse(url)) {
+                            is HackerNewsLink.Item -> openComments(link.id)
+                            is HackerNewsLink.User -> openUser(link.name)
+                            else -> context.openInBrowser(url)
+                        }
+                    },
                     signIn = { nav.navigate(SignIn) },
                 )
             }

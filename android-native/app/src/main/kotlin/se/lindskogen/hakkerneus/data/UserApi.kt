@@ -34,27 +34,29 @@ class UserApi(
     }
 
     suspend fun stories(name: String, page: Int): UserActivityPage<Story> {
-        val result = search("story", name, page)
-        val stories = result.hits.mapNotNull { hit ->
-            val id = hit.objectID.toLongOrNull() ?: return@mapNotNull null
-            Story(
-                id, hit.title ?: return@mapNotNull null, hit.author, hit.url?.ifEmpty { null }, hit.storyText,
-                hit.points ?: 0, hit.numComments ?: 0, hit.createdAtI,
-            )
-        }
-        return UserActivityPage(stories, result.page + 1 < result.nbPages)
+        val result = search("story,author_${encode(name)}", byDate = true, page = page)
+        return UserActivityPage(result.hits.mapNotNull { it.story() }, result.page + 1 < result.nbPages)
+    }
+
+    /** Stories matching [query], best matches first or (with [byDate]) newest first. */
+    suspend fun searchStories(query: String, byDate: Boolean, page: Int): UserActivityPage<Story> {
+        val result = search("story", query = query, byDate = byDate, page = page)
+        return UserActivityPage(result.hits.mapNotNull { it.story() }, result.page + 1 < result.nbPages)
     }
 
     suspend fun comments(name: String, page: Int): UserActivityPage<UserComment> {
-        val result = search("comment", name, page)
+        val result = search("comment,author_${encode(name)}", byDate = true, page = page)
         val comments = result.hits.mapNotNull { hit ->
             UserComment(hit.objectID.toLongOrNull() ?: return@mapNotNull null, hit.commentText ?: return@mapNotNull null, hit.createdAtI, hit.storyId, hit.storyTitle)
         }
         return UserActivityPage(comments, result.page + 1 < result.nbPages)
     }
 
-    private suspend fun search(tag: String, name: String, page: Int): SearchResult =
-        json.decodeFromString(transport.get("${algolia}search_by_date?tags=$tag,author_${encode(name)}&hitsPerPage=$pageSize&page=$page"))
+    private suspend fun search(tags: String, query: String? = null, byDate: Boolean, page: Int): SearchResult {
+        val endpoint = if (byDate) "search_by_date" else "search"
+        val queryParameter = query?.let { "&query=${encode(it)}" } ?: ""
+        return json.decodeFromString(transport.get("$algolia$endpoint?tags=$tags&hitsPerPage=$pageSize&page=$page$queryParameter"))
+    }
 
     private fun encode(text: String) = URLEncoder.encode(text, "UTF-8")
 
@@ -77,5 +79,10 @@ class UserApi(
         @SerialName("story_id") val storyId: Long? = null,
         @SerialName("story_title") val storyTitle: String? = null,
         @SerialName("created_at_i") val createdAtI: Long,
-    )
+    ) {
+        fun story(): Story? {
+            val id = objectID.toLongOrNull() ?: return null
+            return Story(id, title ?: return null, author, url?.ifEmpty { null }, storyText, points ?: 0, numComments ?: 0, createdAtI)
+        }
+    }
 }

@@ -60,6 +60,7 @@ fun SavedScreen(
     openComments: (Story) -> Unit,
     openItem: (Long) -> Unit,
     openSettings: () -> Unit,
+    openSearch: () -> Unit,
     signIn: () -> Unit,
 ) {
     val upvoted by AppContainer.session.upvoted.collectAsState()
@@ -111,6 +112,7 @@ fun SavedScreen(
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
                     }
+                    IconButton(onClick = openSearch, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.search, contentDescription = "Search", tint = Color.White) }
                     // 48dp to tap, with the gear at its right edge so the margins match the name's.
                     IconButton(onClick = openSettings, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
                 }
