@@ -102,7 +102,7 @@ fun StoryRow(
     var savedAtSwipeStart by remember { mutableStateOf(isSaved) }
     var upvotedAtSwipeStart by remember { mutableStateOf(isUpvoted) }
     val swipe = StorySwipe(offset.value)
-    val upvoteStage = swipe.armedAction(canUpvote = true) == StorySwipe.Action.Upvote
+    val upvoteStage = swipe.armedAction(canUpvote = AppContainer.session.isSignedIn) == StorySwipe.Action.Upvote
 
     fun settle(after: Long = 0) = scope.launch {
         delay(after)
@@ -163,9 +163,9 @@ fun StoryRow(
                         onHorizontalDrag = { change, dx ->
                             change.consume()
                             translation += dx / density.density
-                            val next = StorySwipe.forTranslation(translation, canUpvote = true)
+                            val next = StorySwipe.forTranslation(translation, canUpvote = AppContainer.session.isSignedIn)
                             scope.launch { offset.snapTo(next.offset) }
-                            val action = next.armedAction(canUpvote = true)
+                            val action = next.armedAction(canUpvote = AppContainer.session.isSignedIn)
                             if (action != armed) {
                                 armed = action
                                 if (action != null) {

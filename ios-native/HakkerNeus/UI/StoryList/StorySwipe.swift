@@ -19,11 +19,14 @@ struct StorySwipe: Equatable {
 
     /// How far the row has moved, after resistance.
     let offset: CGFloat
+    /// Signed out, there's no upvote stage: any long enough swipe right saves, without asking to sign in.
+    let canUpvote: Bool
 
     /// The row follows the finger up to the last threshold, then moves at a quarter of the speed,
     /// so it's clear the action is armed without letting the row fly off screen.
-    init(translation: CGFloat) {
-        let threshold = translation > 0 ? Self.upvoteThreshold : Self.commentsThreshold
+    init(translation: CGFloat, canUpvote: Bool = true) {
+        self.canUpvote = canUpvote
+        let threshold = translation > 0 ? (canUpvote ? Self.upvoteThreshold : Self.saveThreshold) : Self.commentsThreshold
         let magnitude = abs(translation)
         let resisted = magnitude <= threshold ? magnitude : threshold + (magnitude - threshold) / 4
         offset = translation < 0 ? -resisted : resisted
@@ -31,7 +34,7 @@ struct StorySwipe: Equatable {
 
     /// The action that fires if the finger lifts now.
     var armedAction: Action? {
-        if offset >= Self.upvoteThreshold { return .upvote }
+        if canUpvote, offset >= Self.upvoteThreshold { return .upvote }
         if offset >= Self.saveThreshold { return .save }
         if offset <= -Self.commentsThreshold { return .comments }
         return nil

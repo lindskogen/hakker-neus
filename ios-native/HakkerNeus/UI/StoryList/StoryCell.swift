@@ -157,6 +157,7 @@ final class StoryCell: UICollectionViewListCell {
         score: Int? = nil,
         isVisited: Bool = false,
         isActive: Bool = false,
+        canUpvote: Bool = true,
         newComments: Int? = nil,
         showsSavedBadge: Bool = true,
         compact: Bool = false,
@@ -166,6 +167,7 @@ final class StoryCell: UICollectionViewListCell {
         storyID = story.id
         self.isSaved = isSaved
         self.isUpvoted = isUpvoted
+        self.canUpvote = canUpvote
 
         // The story open beside the list (iPad) turns black.
         let backgroundColor = isActive ? Palette.activeStoryBackground : backgroundColor
@@ -259,7 +261,7 @@ final class StoryCell: UICollectionViewListCell {
     // MARK: Swiping
 
     @objc private func handlePan(_ pan: UIPanGestureRecognizer) {
-        let swipe = StorySwipe(translation: pan.translation(in: self).x)
+        let swipe = StorySwipe(translation: pan.translation(in: self).x, canUpvote: canUpvote)
 
         switch pan.state {
         case .began:
@@ -298,6 +300,7 @@ final class StoryCell: UICollectionViewListCell {
         }
     }
 
+    private var canUpvote = true
     private var swipeStartedSaved = false
     private var swipeStartedUpvoted = false
 
