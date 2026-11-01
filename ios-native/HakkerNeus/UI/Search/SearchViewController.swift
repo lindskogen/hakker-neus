@@ -138,6 +138,12 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
 
     // MARK: Searching
 
+    /// Fills in the search field and searches.
+    func search(for text: String) {
+        searchField.text = text
+        queryChanged(debounce: false)
+    }
+
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         textField.resignFirstResponder()
         queryChanged(debounce: false)

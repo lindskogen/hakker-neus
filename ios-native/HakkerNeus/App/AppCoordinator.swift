@@ -183,6 +183,9 @@ final class AppCoordinator {
         case "user":
             guard let name = query.first(where: { $0.name == "id" })?.value, !name.isEmpty else { return false }
             showUser(name)
+        case "search":
+            // From the "Search on HN" share action, usually with a page's link.
+            showSearch(query: query.first(where: { $0.name == "q" })?.value ?? "")
         default:
             return false
         }
@@ -279,6 +282,15 @@ final class AppCoordinator {
     func showSearch() {
         guard navigationController.topViewController === savedList else { return }
         navigationController.pushViewController(search, animated: true)
+    }
+
+    /// Story search for `query`, from wherever the app was.
+    func showSearch(query: String) {
+        search.loadViewIfNeeded()
+        search.search(for: query)
+        if navigationController.topViewController !== search {
+            navigationController.setViewControllers([savedList, search], animated: navigationController.view.window != nil)
+        }
     }
 
     func showFrontPage(animated: Bool = true) {
