@@ -37,8 +37,9 @@ final class ArticleViewController: UIViewController {
 
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.allowsBackForwardNavigationGestures = false // The swipe goes back to the previous screen.
-        webView.isOpaque = false
-        webView.backgroundColor = Theme.Color.backgroundDark
+        // Pages in light mode: the app is always dark (and can't see the phone's setting), and
+        // sites forced into dark mode switch to (or improvise) dark themes.
+        webView.overrideUserInterfaceStyle = .light
         view.insertSubview(webView, belowSubview: bar)
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: bar.bottomAnchor),
