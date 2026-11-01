@@ -110,6 +110,7 @@ fun CommentsScreen(
     }
 
     val upvoted by AppContainer.session.upvoted.collectAsState()
+    val savedComments by AppContainer.savedComments.entries.collectAsState()
     val visible = state.thread.visible
     // List positions: 0 is the header, comments follow.
     LaunchedEffect(state.focusCommentId, visible.size) {
@@ -162,6 +163,11 @@ fun CommentsScreen(
                             },
                             onLink = openLink,
                             onShare = { context.share(flat.comment.hackerNewsUrl) },
+                            isSaved = savedComments.any { it.id == flat.id },
+                            onToggleSaved = {
+                                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                                AppContainer.savedComments.toggle(flat.comment, state.story)
+                            },
                             onCopyText = { context.copyToClipboard(state.bodies[flat.id]?.plainText ?: "", "Comment") },
                             onCopyLink = { context.copyToClipboard(flat.comment.hackerNewsUrl) },
                         )
@@ -290,6 +296,8 @@ private fun CommentRow(
     onShare: () -> Unit,
     onCopyText: () -> Unit,
     onCopyLink: () -> Unit,
+    isSaved: Boolean,
+    onToggleSaved: () -> Unit,
 ) {
     val context = LocalContext.current
     val openUser = LocalOpenUser.current
@@ -310,6 +318,7 @@ private fun CommentRow(
                 if (isCollapsed) stateDescription = if (hiddenReplies > 0) "Collapsed, $hiddenReplies hidden replies" else "Collapsed"
                 customActions = listOf(
                     CustomAccessibilityAction("Reply") { onReply(); true },
+                    CustomAccessibilityAction(if (isSaved) "Unsave" else "Save") { onToggleSaved(); true },
                     CustomAccessibilityAction("Share") { onShare(); true },
                     CustomAccessibilityAction("Copy text") { onCopyText(); true },
                     CustomAccessibilityAction("Copy link") { onCopyLink(); true },
@@ -347,6 +356,7 @@ private fun CommentRow(
 
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             DropdownMenuItem(text = { Text("Reply") }, onClick = { menuOpen = false; onReply() })
+            DropdownMenuItem(text = { Text(if (isSaved) "Unsave" else "Save") }, onClick = { menuOpen = false; onToggleSaved() })
             DropdownMenuItem(text = { Text(if (isCollapsed) "Expand Thread" else "Collapse Thread") }, onClick = { menuOpen = false; onToggle() })
             DropdownMenuItem(text = { Text("Share") }, onClick = { menuOpen = false; onShare() })
             DropdownMenuItem(text = { Text("Copy Text") }, onClick = { menuOpen = false; onCopyText() })

@@ -196,7 +196,15 @@ fun UserScreen(
 /** A comment on a user page: which story it's on, the text, and how long ago. Opens its thread. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun UserCommentRow(comment: UserComment, body: CommentBody?, openItem: (Long) -> Unit, onLink: (String) -> Unit) {
+internal fun UserCommentRow(
+    comment: UserComment,
+    body: CommentBody?,
+    openItem: (Long) -> Unit,
+    onLink: (String) -> Unit,
+    /** Who wrote it, for comments that aren't all by one user (saved comments). */
+    author: String? = null,
+    onUnsave: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     val url = "https://news.ycombinator.com/item?id=${comment.id}"
@@ -222,7 +230,7 @@ private fun UserCommentRow(comment: UserComment, body: CommentBody?, openItem: (
         Column(Modifier.padding(horizontal = HN.padding, vertical = 15.dp), verticalArrangement = Arrangement.spacedBy(HN.padding)) {
             Row(verticalAlignment = Alignment.Top) {
                 Text(
-                    comment.storyTitle?.let { "on $it" } ?: "Comment",
+                    listOfNotNull(author, comment.storyTitle?.let { "on $it" }).joinToString(" ").ifEmpty { "Comment" },
                     style = HN.body.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.55f)),
                     maxLines = 2,
                     modifier = Modifier.weight(1f),
@@ -237,6 +245,7 @@ private fun UserCommentRow(comment: UserComment, body: CommentBody?, openItem: (
             DropdownMenuItem(text = { Text("Share") }, onClick = { menuOpen = false; context.share(url, null) })
             DropdownMenuItem(text = { Text("Copy Text") }, onClick = { menuOpen = false; context.copyToClipboard(body?.plainText ?: "") })
             DropdownMenuItem(text = { Text("Copy Link") }, onClick = { menuOpen = false; context.copyToClipboard(url) })
+            onUnsave?.let { unsave -> DropdownMenuItem(text = { Text("Unsave") }, onClick = { menuOpen = false; unsave() }) }
         }
     }
 }

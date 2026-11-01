@@ -91,6 +91,55 @@ class SavedStoriesStore(private val db: Database) {
     }
 }
 
+/** A comment the user saved, with the story it's on, kept whole so the list works offline. [text] is HN's HTML. */
+data class SavedComment(
+    val id: Long, val author: String?, val text: String, val time: Long,
+    val storyId: Long?, val storyTitle: String?, val savedAt: Double,
+) {
+    val hackerNewsUrl: String get() = se.lindskogen.hakkerneus.data.hackerNewsItemUrl(id)
+}
+
+/** Comments the user has saved, newest first, next to the saved stories. */
+class SavedCommentsStore(private val db: Database) {
+    private val _entries = MutableStateFlow(load())
+    val entries: StateFlow<List<SavedComment>> = _entries
+
+    fun isSaved(id: Long) = _entries.value.any { it.id == id }
+
+    fun toggle(comment: se.lindskogen.hakkerneus.data.Comment, story: Story?) =
+        if (isSaved(comment.id)) remove(comment.id) else save(comment, story)
+
+    fun save(comment: se.lindskogen.hakkerneus.data.Comment, story: Story?) {
+        val text = comment.text ?: return
+        val entry = SavedComment(comment.id, comment.author, text, comment.time, story?.id, story?.title, now())
+        _entries.value = (listOf(entry) + _entries.value.filterNot { it.id == comment.id })
+        io.launch {
+            db.writableDatabase.insertWithOnConflict("saved_comments", null, ContentValues().apply {
+                put("id", entry.id); put("story_id", entry.storyId); put("story_title", entry.storyTitle); put("author", entry.author)
+                put("text", entry.text); put("posted_at", entry.time.toDouble()); put("saved_at", entry.savedAt)
+            }, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        }
+    }
+
+    fun remove(id: Long) {
+        _entries.value = _entries.value.filterNot { it.id == id }
+        io.launch { db.writableDatabase.delete("saved_comments", "id = ?", arrayOf(id.toString())) }
+    }
+
+    private fun load(): List<SavedComment> = db.readableDatabase.rawQuery(
+        "SELECT id, story_id, story_title, author, text, posted_at, saved_at FROM saved_comments ORDER BY saved_at DESC", null,
+    ).use { c ->
+        buildList {
+            while (c.moveToNext()) {
+                add(SavedComment(
+                    c.getLong(0), c.getStringOrNull(3), c.getString(4), c.getDouble(5).toLong(),
+                    if (c.isNull(1)) null else c.getLong(1), c.getStringOrNull(2), c.getDouble(6),
+                ))
+            }
+        }
+    }
+}
+
 /** Which stories have been opened, and how many comments they had when last opened. */
 class VisitedStoriesStore(private val db: Database) {
     data class Visit(val openedAt: Double, val seenCommentCount: Int?)

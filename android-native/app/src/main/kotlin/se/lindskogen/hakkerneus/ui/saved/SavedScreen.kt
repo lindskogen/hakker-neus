@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +67,11 @@ fun SavedScreen(
     val upvoted by AppContainer.session.upvoted.collectAsState()
     val entries by AppContainer.saved.entries.collectAsState()
     val visits by AppContainer.visited.visits.collectAsState()
+    val savedComments by AppContainer.savedComments.entries.collectAsState()
+    var showsComments by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val commentBodies = androidx.compose.runtime.remember(savedComments) {
+        savedComments.associate { it.id to se.lindskogen.hakkerneus.html.CommentBody.parse(it.text) }
+    }
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val openUser = se.lindskogen.hakkerneus.ui.LocalOpenUser.current
@@ -107,8 +113,10 @@ fun SavedScreen(
                                     if (username == null) signIn() else openUser(username)
                                 },
                         )
+                        val stories = if (entries.size == 1) "1 saved story" else "${entries.size} saved stories"
+                        val comments = if (savedComments.size == 1) "1 comment" else "${savedComments.size} comments"
                         Text(
-                            if (entries.size == 1) "1 saved story" else "${entries.size} saved stories",
+                            if (savedComments.isEmpty()) stories else "$stories · $comments",
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
                     }
@@ -117,7 +125,26 @@ fun SavedScreen(
                     IconButton(onClick = openSettings, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
                 }
             }
-            itemsIndexed(entries, key = { _, entry -> entry.story.id }) { index, entry ->
+            item(key = "tabs") {
+                se.lindskogen.hakkerneus.ui.TextTabs(listOf("Stories", "Comments"), if (showsComments) 1 else 0, onSelect = { showsComments = it == 1 })
+            }
+            if (showsComments) itemsIndexed(savedComments, key = { _, comment -> "c${comment.id}" }) { _, comment ->
+                se.lindskogen.hakkerneus.ui.user.UserCommentRow(
+                    se.lindskogen.hakkerneus.data.UserComment(comment.id, comment.text, comment.time, comment.storyId, comment.storyTitle),
+                    commentBodies[comment.id],
+                    openItem = openItem,
+                    onLink = { url ->
+                        when (val link = HackerNewsLink.parse(url)) {
+                            is HackerNewsLink.Item -> openItem(link.id)
+                            is HackerNewsLink.User -> openUser(link.name)
+                            else -> context.openInBrowser(url)
+                        }
+                    },
+                    author = comment.author,
+                    onUnsave = { AppContainer.savedComments.remove(comment.id) },
+                )
+            }
+            if (!showsComments) itemsIndexed(entries, key = { _, entry -> entry.story.id }) { index, entry ->
                 visits.size // re-read when visits change
                 StoryRow(
                     entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
@@ -128,7 +155,7 @@ fun SavedScreen(
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = Color.Black)
             }
-            if (entries.isEmpty()) {
+            if (if (showsComments) savedComments.isEmpty() else entries.isEmpty()) {
                 item {
                     Column(
                         Modifier.fillMaxWidth().heightIn(min = 400.dp),
@@ -136,7 +163,7 @@ fun SavedScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Icon(HnIcons.heart, contentDescription = null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(60.dp))
-                        Text("No saved stories", style = HN.titleStyle().copy(fontSize = 24.sp, color = Color.White.copy(alpha = 0.3f)))
+                        Text(if (showsComments) "No saved comments" else "No saved stories", style = HN.titleStyle().copy(fontSize = 24.sp, color = Color.White.copy(alpha = 0.3f)))
                     }
                 }
             }

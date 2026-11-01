@@ -52,6 +52,8 @@ object AppContainer {
         private set
     lateinit var saved: SavedStoriesStore
         private set
+    lateinit var savedComments: se.lindskogen.hakkerneus.persistence.SavedCommentsStore
+        private set
     lateinit var visited: VisitedStoriesStore
         private set
     lateinit var offline: OfflineItemStore
@@ -158,6 +160,7 @@ object AppContainer {
         appContext = context.applicationContext
         val db = Database(appContext)
         saved = SavedStoriesStore(db)
+        savedComments = se.lindskogen.hakkerneus.persistence.SavedCommentsStore(db)
         visited = VisitedStoriesStore(db)
         offline = OfflineItemStore(db)
         session = HnSession(appContext)

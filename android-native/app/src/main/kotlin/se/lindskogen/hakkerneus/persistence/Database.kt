@@ -26,6 +26,15 @@ class Database(context: Context) : SQLiteOpenHelper(context, "hakkerneus.db", nu
             listOf("CREATE TABLE IF NOT EXISTS visited_stories (id INTEGER PRIMARY KEY, opened_at REAL NOT NULL, seen_comment_count INTEGER)"),
             // 3: Offline copies of comment threads, as StoryWithComments JSON.
             listOf("CREATE TABLE IF NOT EXISTS item_cache (id INTEGER PRIMARY KEY, json TEXT NOT NULL, fetched_at REAL NOT NULL)"),
+            // 4: Saved comments, with the story they're on.
+            listOf(
+                """
+                CREATE TABLE IF NOT EXISTS saved_comments (
+                    id INTEGER PRIMARY KEY, story_id INTEGER, story_title TEXT, author TEXT,
+                    text TEXT NOT NULL, posted_at REAL NOT NULL, saved_at REAL NOT NULL
+                )
+                """,
+            ),
         )
     }
 
