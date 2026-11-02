@@ -23,6 +23,10 @@ final class StoryHeaderCell: UICollectionViewListCell {
         titleLabel.textColor = .white
         titleLabel.numberOfLines = 0
         titleLabel.applyTextShadow()
+        // The width can change while showing (an iPhone Duo folding, iPad multitasking).
+        registerForTraitChanges([UITraitHorizontalSizeClass.self]) { (self: Self, _) in
+            self.titleLabel.font = Theme.Font.title(isWide: self.traitCollection.horizontalSizeClass == .regular)
+        }
 
         authorLabel.font = Theme.Font.body()
         authorLabel.textColor = .white
@@ -64,7 +68,7 @@ final class StoryHeaderCell: UICollectionViewListCell {
             bodyView.isHidden = true
         }
 
-        titleLabel.font = Theme.Font.title(isPad: traitCollection.userInterfaceIdiom == .pad)
+        titleLabel.font = Theme.Font.title(isWide: traitCollection.horizontalSizeClass == .regular)
         titleLabel.text = story.title
         let points = score.map { isUpvoted ? "▲ \($0) points" : "\($0) points" }
         let byline = [points, story.author.map { "by \($0)" }, story.displayDomain].compactMap { $0 }

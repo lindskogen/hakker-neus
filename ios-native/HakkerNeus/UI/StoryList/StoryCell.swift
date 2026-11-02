@@ -41,6 +41,8 @@ final class StoryCell: UICollectionViewListCell {
         titleLabel.textColor = .white
         titleLabel.numberOfLines = 0
         titleLabel.applyTextShadow()
+        // The width can change while showing (an iPhone Duo folding, iPad multitasking).
+        registerForTraitChanges([UITraitHorizontalSizeClass.self]) { (self: Self, _) in self.setCompact(self.isCompact) }
 
         domainLabel.font = Theme.Font.body(size: 14, style: .subheadline)
         // Next to the score, the domain is the one that gives way.
@@ -228,8 +230,8 @@ final class StoryCell: UICollectionViewListCell {
     }
 
     private func setCompact(_ compact: Bool) {
-        let isPad = traitCollection.userInterfaceIdiom == .pad
-        titleLabel.font = compact ? Theme.Font.light(size: isPad ? 24 : 20, style: .title3) : Theme.Font.title(isPad: isPad)
+        let isWide = traitCollection.horizontalSizeClass == .regular
+        titleLabel.font = compact ? Theme.Font.light(size: isWide ? 24 : 20, style: .title3) : Theme.Font.title(isWide: isWide)
         guard compact != isCompact else { return }
         isCompact = compact
         let padding = Theme.padding

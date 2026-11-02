@@ -16,9 +16,9 @@ enum Theme {
     /// closest to its role, so at the default text size it is exactly the RN app's size.
     /// Labels using these need `adjustsFontForContentSizeCategory` to follow changes live.
     enum Font {
-        /// Story titles: Helvetica Neue Light, 25pt on iPhone and 30pt on iPad.
-        static func title(isPad: Bool, traits: UITraitCollection? = nil) -> UIFont {
-            scaled(helveticaNeue("HelveticaNeue-Light", size: isPad ? 30 : 25, weight: .light), .title1, traits)
+        /// Story titles: Helvetica Neue Light, 25pt, or 30pt with a regular width (iPad, the open iPhone Duo).
+        static func title(isWide: Bool, traits: UITraitCollection? = nil) -> UIFont {
+            scaled(helveticaNeue("HelveticaNeue-Light", size: isWide ? 30 : 25, weight: .light), .title1, traits)
         }
 
         static func body(size: CGFloat = postAuthorFontSize, style: UIFont.TextStyle = .body, maximum: CGFloat? = nil, traits: UITraitCollection? = nil) -> UIFont {

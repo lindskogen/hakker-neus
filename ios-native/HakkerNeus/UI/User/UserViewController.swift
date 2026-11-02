@@ -375,7 +375,7 @@ final class UserProfileCell: UICollectionViewListCell {
         background.backgroundColor = Theme.Color.backgroundDark
         backgroundConfiguration = background
 
-        nameLabel.font = Theme.Font.title(isPad: false)
+        nameLabel.font = Theme.Font.title(isWide: false)
         nameLabel.adjustsFontForContentSizeCategory = true
         nameLabel.textColor = .white
         nameLabel.numberOfLines = 0

@@ -38,7 +38,7 @@ final class ProfileHeaderView: UICollectionReusableView {
         super.init(frame: frame)
         backgroundColor = Theme.Color.backgroundDark
 
-        nameLabel.font = Theme.Font.title(isPad: false)
+        nameLabel.font = Theme.Font.title(isWide: false)
         nameLabel.adjustsFontForContentSizeCategory = true
         nameLabel.textColor = .white
         nameLabel.numberOfLines = 0
