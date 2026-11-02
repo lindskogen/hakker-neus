@@ -66,7 +66,8 @@ final class CloudSync {
         savedComments: SavedCommentsStore,
         visitedStories: VisitedStoriesStore,
         hiddenStories: HiddenStoriesStore,
-        stateURL: URL = .applicationSupportDirectory.appending(path: "CloudSync.state")
+        // Named for the environment: earlier builds synced with Development.
+        stateURL: URL = .applicationSupportDirectory.appending(path: "CloudSync-Production.state")
     ) throws {
         self.database = database
         self.savedStories = savedStories
@@ -85,8 +86,11 @@ final class CloudSync {
         }
         let container = CKContainer(identifier: Self.containerIdentifier)
         engine = CKSyncEngine(.init(database: container.privateCloudDatabase, stateSerialization: state, delegate: self))
-        // The first time, everything already on this device goes up.
-        if state == nil { sendEverything() }
+        // The first time, everything already on this device goes up, as new records.
+        if state == nil {
+            clearCache()
+            sendEverything()
+        }
 
         savedStories.onChange = { [unowned self] in changed(.savedStory($0)) }
         savedComments.onChange = { [unowned self] in changed(.savedComment($0)) }
