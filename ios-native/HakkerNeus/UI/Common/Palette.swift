@@ -1,7 +1,8 @@
 import UIKit
 
 /// The colour of the front page and the accents that go with it. Orange is the original;
-/// blue and green use d3's Blues and Greens the same way. The saved list stays red in all.
+/// blue and green use d3's Blues and Greens the same way. The saved list is the theme's ramp
+/// turned on the colour wheel (orange to red, blue to teal, green to a yellower green).
 enum ColorTheme: String, CaseIterable {
     case orange
     case blue
@@ -47,6 +48,26 @@ enum Palette {
         var uiColor: UIColor {
             UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: 1)
         }
+
+        /// The same saturation and brightness with the hue turned by `degrees`.
+        func rotatingHue(by degrees: Double) -> RGB {
+            let (r, g, b) = (Double(r) / 255, Double(g) / 255, Double(b) / 255)
+            let maximum = max(r, g, b), minimum = min(r, g, b), delta = maximum - minimum
+            guard delta > 0 else { return self }
+            var hue = switch maximum {
+            case r: (g - b) / delta
+            case g: (b - r) / delta + 2
+            default: (r - g) / delta + 4
+            }
+            hue = ((hue * 60 + degrees).truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) / 60
+            let saturation = delta / maximum
+            func channel(_ n: Double) -> UInt8 {
+                let k = (n + hue).truncatingRemainder(dividingBy: 6)
+                let value = maximum - maximum * saturation * max(0, min(k, 4 - k, 1))
+                return Palette.channel(value * 255)
+            }
+            return RGB(r: channel(5), g: channel(3), b: channel(1))
+        }
     }
 
     /// `d3.interpolateOranges(t)`: a uniform B-spline through the 9-class Oranges scheme.
@@ -56,11 +77,6 @@ enum Palette {
 
     static func orangesRGB(_ t: Double) -> RGB {
         interpolate(orangesStops, t)
-    }
-
-    /// `d3.interpolateReds(t)`, for the saved stories list.
-    static func redsRGB(_ t: Double) -> RGB {
-        interpolate(redsStops, t)
     }
 
     /// The current theme's ramp at `t`, like `d3.interpolateOranges(t)` for orange.
@@ -86,9 +102,14 @@ enum Palette {
         UIColor(rgb: tableau10[ColorTheme.current == .blue ? 1 : 0])
     }
 
-    /// Background for row `index` of the saved list: the same ramp in red, so it's clear which list you're on.
-    static func savedStoryBackground(at index: Int) -> UIColor {
-        redsRGB(rowPosition(index)).uiColor
+    /// How far the saved list's colours are turned from the theme's: about the step from d3's
+    /// Oranges to its Reds.
+    static let savedHueRotation: Double = -20
+
+    /// Background for row `index` of the saved list: the theme's ramp turned on the colour wheel,
+    /// related but clearly a different list.
+    static func savedStoryBackground(at index: Int, theme: ColorTheme = .current) -> UIColor {
+        themeRGB(rowPosition(index), theme: theme).rotatingHue(by: savedHueRotation).uiColor
     }
 
     private static func rowPosition(_ index: Int) -> Double {
@@ -129,11 +150,6 @@ enum Palette {
         0xF16913, 0xD94801, 0xA63603, 0x7F2704,
     ])
 
-    private static let redsStops = stops([
-        0xFFF5F0, 0xFEE0D2, 0xFCBBA1, 0xFC9272, 0xFB6A4A,
-        0xEF3B2C, 0xCB181D, 0xA50F15, 0x67000D,
-    ])
-
     private static func stops(_ colors: [UInt32]) -> [(Double, Double, Double)] {
         colors.map { (Double(($0 >> 16) & 0xFF), Double(($0 >> 8) & 0xFF), Double($0 & 0xFF)) }
     }
@@ -157,7 +173,7 @@ enum Palette {
             + t3 * v3) / 6
     }
 
-    private static func channel(_ value: Double) -> UInt8 {
+    fileprivate static func channel(_ value: Double) -> UInt8 {
         UInt8(min(max(value.rounded(), 0), 255))
     }
 }

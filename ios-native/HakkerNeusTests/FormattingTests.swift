@@ -99,7 +99,7 @@ struct DynamicTypeTests {
     }
 
     @Test func defaultSizeMatchesTheRNApp() {
-        #expect(Theme.Font.title(isPad: false, traits: traits(.large)).pointSize == 25)
+        #expect(Theme.Font.title(isWide: false, traits: traits(.large)).pointSize == 25)
         #expect(Theme.Font.body(traits: traits(.large)).pointSize == 16)
         #expect(Theme.Font.medium(size: 13, traits: traits(.large)).pointSize == 13)
     }

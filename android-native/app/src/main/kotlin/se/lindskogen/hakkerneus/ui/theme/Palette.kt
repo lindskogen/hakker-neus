@@ -24,13 +24,30 @@ object Palette {
 
     data class Rgb(val r: Int, val g: Int, val b: Int) {
         val color: Color get() = Color(r, g, b)
+
+        /** The same saturation and brightness with the hue turned by [degrees]. */
+        fun rotatingHue(degrees: Double): Rgb {
+            val (rf, gf, bf) = Triple(r / 255.0, g / 255.0, b / 255.0)
+            val max = maxOf(rf, gf, bf)
+            val delta = max - minOf(rf, gf, bf)
+            if (delta <= 0) return this
+            val sector = when (max) {
+                rf -> (gf - bf) / delta
+                gf -> (bf - rf) / delta + 2
+                else -> (rf - gf) / delta + 4
+            }
+            val hue = (((sector * 60 + degrees) % 360 + 360) % 360) / 60
+            val saturation = delta / max
+            fun component(n: Double): Int {
+                val k = (n + hue) % 6
+                return channel((max - max * saturation * minOf(k, 4 - k, 1.0).coerceAtLeast(0.0)) * 255)
+            }
+            return Rgb(component(5.0), component(3.0), component(1.0))
+        }
     }
 
     /** `d3.interpolateOranges(t)`: a uniform B-spline through the 9-class Oranges scheme. */
     fun orangesRgb(t: Double): Rgb = interpolate(oranges, t)
-
-    /** `d3.interpolateReds(t)`, for the saved stories list. */
-    fun redsRgb(t: Double): Rgb = interpolate(reds, t)
 
     /** The theme's ramp at [t], like `d3.interpolateOranges(t)` for orange. */
     fun themeRgb(t: Double, theme: ColorTheme = this.theme): Rgb = interpolate(stops(*theme.stops), t)
@@ -44,7 +61,12 @@ object Palette {
     /** Behind a row at the upvote stage of a swipe: blue, or orange when the rows are blue. */
     val upvoteStage: Color get() = Color(tableau10[if (theme == ColorTheme.Blue) 1 else 0])
 
-    fun savedStoryBackground(index: Int): Color = redsRgb(rowPosition(index)).color
+    /** How far the saved list's colours are turned from the theme's: about the step from d3's Oranges to its Reds. */
+    const val SAVED_HUE_ROTATION = -20.0
+
+    /** Background for row [index] of the saved list: the theme's ramp turned on the colour wheel
+     * (orange to red, blue to teal, green to a yellower green), related but clearly a different list. */
+    fun savedStoryBackground(index: Int): Color = themeRgb(rowPosition(index)).rotatingHue(SAVED_HUE_ROTATION).color
 
     /** `d3.schemeTableau10[depth]` for nested comments' left border; depth 0 has none. */
     fun commentDepth(depth: Int): Color =
@@ -59,9 +81,6 @@ object Palette {
 
     private val oranges = stops(
         0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C, 0xF16913, 0xD94801, 0xA63603, 0x7F2704,
-    )
-    private val reds = stops(
-        0xFFF5F0, 0xFEE0D2, 0xFCBBA1, 0xFC9272, 0xFB6A4A, 0xEF3B2C, 0xCB181D, 0xA50F15, 0x67000D,
     )
 
     private fun stops(vararg colors: Int) = colors.map {
