@@ -1,8 +1,8 @@
 import UIKit
 
 /// The colour of the front page and the accents that go with it. Orange is the original;
-/// blue and green use d3's Blues and Greens the same way. The saved list is the theme's ramp
-/// turned on the colour wheel (orange to red, blue to teal, green to a yellower green).
+/// blue and green use d3's Blues and Greens the same way. The saved list has its own ramp:
+/// d3's Reds with orange, and darker blues and greens with the others.
 enum ColorTheme: String, CaseIterable {
     case orange
     case blue
@@ -35,6 +35,14 @@ enum ColorTheme: String, CaseIterable {
         case .green: Palette.greensStops
         }
     }
+
+    fileprivate var savedStops: [(Double, Double, Double)] {
+        switch self {
+        case .orange: Palette.redsStops
+        case .blue: Palette.darkBluesStops
+        case .green: Palette.darkGreensStops
+        }
+    }
 }
 
 /// Ports of the `d3-scale-chromatic` schemes the app uses.
@@ -47,26 +55,6 @@ enum Palette {
 
         var uiColor: UIColor {
             UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: 1)
-        }
-
-        /// The same saturation and brightness with the hue turned by `degrees`.
-        func rotatingHue(by degrees: Double) -> RGB {
-            let (r, g, b) = (Double(r) / 255, Double(g) / 255, Double(b) / 255)
-            let maximum = max(r, g, b), minimum = min(r, g, b), delta = maximum - minimum
-            guard delta > 0 else { return self }
-            var hue = switch maximum {
-            case r: (g - b) / delta
-            case g: (b - r) / delta + 2
-            default: (r - g) / delta + 4
-            }
-            hue = ((hue * 60 + degrees).truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) / 60
-            let saturation = delta / maximum
-            func channel(_ n: Double) -> UInt8 {
-                let k = (n + hue).truncatingRemainder(dividingBy: 6)
-                let value = maximum - maximum * saturation * max(0, min(k, 4 - k, 1))
-                return Palette.channel(value * 255)
-            }
-            return RGB(r: channel(5), g: channel(3), b: channel(1))
         }
     }
 
@@ -102,14 +90,10 @@ enum Palette {
         UIColor(rgb: tableau10[ColorTheme.current == .blue ? 1 : 0])
     }
 
-    /// How far the saved list's colours are turned from the theme's: about the step from d3's
-    /// Oranges to its Reds.
-    static let savedHueRotation: Double = -20
-
-    /// Background for row `index` of the saved list: the theme's ramp turned on the colour wheel,
-    /// related but clearly a different list.
+    /// Background for row `index` of the saved list: a ramp of its own that goes with the theme
+    /// (red with orange, darker with blue and green), so it's clear which list you're on.
     static func savedStoryBackground(at index: Int, theme: ColorTheme = .current) -> UIColor {
-        themeRGB(rowPosition(index), theme: theme).rotatingHue(by: savedHueRotation).uiColor
+        interpolate(theme.savedStops, rowPosition(index)).uiColor
     }
 
     private static func rowPosition(_ index: Int) -> Double {
@@ -150,6 +134,24 @@ enum Palette {
         0xF16913, 0xD94801, 0xA63603, 0x7F2704,
     ])
 
+    /// d3's Reds: the saved list with the orange theme.
+    fileprivate static let redsStops = stops([
+        0xFFF5F0, 0xFEE0D2, 0xFCBBA1, 0xFC9272, 0xFB6A4A,
+        0xEF3B2C, 0xCB181D, 0xA50F15, 0x67000D,
+    ])
+
+    /// Blues with a darker end, toward navy: the saved list with the blue theme.
+    fileprivate static let darkBluesStops = stops([
+        0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x4A90C8,
+        0x2166AC, 0x0F4C8C, 0x0A3466, 0x061E40,
+    ])
+
+    /// Greens with a darker end, toward forest green: the saved list with the green theme.
+    fileprivate static let darkGreensStops = stops([
+        0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x5AAE61,
+        0x2E8540, 0x1B6B32, 0x0E4F24, 0x063015,
+    ])
+
     private static func stops(_ colors: [UInt32]) -> [(Double, Double, Double)] {
         colors.map { (Double(($0 >> 16) & 0xFF), Double(($0 >> 8) & 0xFF), Double($0 & 0xFF)) }
     }
@@ -173,7 +175,7 @@ enum Palette {
             + t3 * v3) / 6
     }
 
-    fileprivate static func channel(_ value: Double) -> UInt8 {
+    private static func channel(_ value: Double) -> UInt8 {
         UInt8(min(max(value.rounded(), 0), 255))
     }
 }

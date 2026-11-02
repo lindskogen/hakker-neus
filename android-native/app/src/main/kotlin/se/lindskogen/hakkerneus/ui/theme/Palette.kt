@@ -9,12 +9,25 @@ import kotlin.math.roundToInt
 
 /**
  * The colour of the front page and the accents that go with it, as on iOS. Orange is the
- * original; blue and green use d3's Blues and Greens the same way. Saved stories stay red.
+ * original; blue and green use d3's Blues and Greens the same way. The saved list has its own
+ * ramp ([savedStops]): d3's Reds with orange, and darker blues and greens with the others.
  */
-enum class ColorTheme(val title: String, internal val stops: IntArray) {
-    Orange("Orange", intArrayOf(0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C, 0xF16913, 0xD94801, 0xA63603, 0x7F2704)),
-    Blue("Blue", intArrayOf(0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x6BAED6, 0x4292C6, 0x2171B5, 0x08519C, 0x08306B)),
-    Green("Green", intArrayOf(0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x74C476, 0x41AB5D, 0x238B45, 0x006D2C, 0x00441B)),
+enum class ColorTheme(val title: String, internal val stops: IntArray, internal val savedStops: IntArray) {
+    Orange(
+        "Orange",
+        intArrayOf(0xFFF5EB, 0xFEE6CE, 0xFDD0A2, 0xFDAE6B, 0xFD8D3C, 0xF16913, 0xD94801, 0xA63603, 0x7F2704),
+        intArrayOf(0xFFF5F0, 0xFEE0D2, 0xFCBBA1, 0xFC9272, 0xFB6A4A, 0xEF3B2C, 0xCB181D, 0xA50F15, 0x67000D), // d3's Reds
+    ),
+    Blue(
+        "Blue",
+        intArrayOf(0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x6BAED6, 0x4292C6, 0x2171B5, 0x08519C, 0x08306B),
+        intArrayOf(0xF7FBFF, 0xDEEBF7, 0xC6DBEF, 0x9ECAE1, 0x4A90C8, 0x2166AC, 0x0F4C8C, 0x0A3466, 0x061E40), // toward navy
+    ),
+    Green(
+        "Green",
+        intArrayOf(0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x74C476, 0x41AB5D, 0x238B45, 0x006D2C, 0x00441B),
+        intArrayOf(0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x5AAE61, 0x2E8540, 0x1B6B32, 0x0E4F24, 0x063015), // toward forest green
+    ),
 }
 
 /** Ports of the d3-scale-chromatic schemes the app uses, matching the iOS `Palette`. */
@@ -24,26 +37,6 @@ object Palette {
 
     data class Rgb(val r: Int, val g: Int, val b: Int) {
         val color: Color get() = Color(r, g, b)
-
-        /** The same saturation and brightness with the hue turned by [degrees]. */
-        fun rotatingHue(degrees: Double): Rgb {
-            val (rf, gf, bf) = Triple(r / 255.0, g / 255.0, b / 255.0)
-            val max = maxOf(rf, gf, bf)
-            val delta = max - minOf(rf, gf, bf)
-            if (delta <= 0) return this
-            val sector = when (max) {
-                rf -> (gf - bf) / delta
-                gf -> (bf - rf) / delta + 2
-                else -> (rf - gf) / delta + 4
-            }
-            val hue = (((sector * 60 + degrees) % 360 + 360) % 360) / 60
-            val saturation = delta / max
-            fun component(n: Double): Int {
-                val k = (n + hue) % 6
-                return channel((max - max * saturation * minOf(k, 4 - k, 1.0).coerceAtLeast(0.0)) * 255)
-            }
-            return Rgb(component(5.0), component(3.0), component(1.0))
-        }
     }
 
     /** `d3.interpolateOranges(t)`: a uniform B-spline through the 9-class Oranges scheme. */
@@ -61,12 +54,8 @@ object Palette {
     /** Behind a row at the upvote stage of a swipe: blue, or orange when the rows are blue. */
     val upvoteStage: Color get() = Color(tableau10[if (theme == ColorTheme.Blue) 1 else 0])
 
-    /** How far the saved list's colours are turned from the theme's: about the step from d3's Oranges to its Reds. */
-    const val SAVED_HUE_ROTATION = -20.0
-
-    /** Background for row [index] of the saved list: the theme's ramp turned on the colour wheel
-     * (orange to red, blue to teal, green to a yellower green), related but clearly a different list. */
-    fun savedStoryBackground(index: Int): Color = themeRgb(rowPosition(index)).rotatingHue(SAVED_HUE_ROTATION).color
+    /** Background for row [index] of the saved list: the theme's saved ramp, so it's clear which list you're on. */
+    fun savedStoryBackground(index: Int): Color = interpolate(stops(*theme.savedStops), rowPosition(index)).color
 
     /** `d3.schemeTableau10[depth]` for nested comments' left border; depth 0 has none. */
     fun commentDepth(depth: Int): Color =
