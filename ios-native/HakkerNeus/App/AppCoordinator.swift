@@ -29,6 +29,8 @@ final class AppCoordinator {
     let visitedStories: VisitedStoriesStore
     let hiddenStories: HiddenStoriesStore
     let offlineItems: OfflineItemStore
+    /// Nil in tests, which bring their own database.
+    let cloudSync: CloudSync?
     let settings: AppSettings
     let session = HNSession()
     let userCache = UserCache(api: UserAPI(transport: URLSession.shared))
@@ -63,11 +65,17 @@ final class AppCoordinator {
         ColorTheme.current = settings.colorTheme
         CommentTextStyle.current = settings.commentTextStyle
         do {
+            let injectedDatabase = database
             let database = try database ?? Database(url: URL.applicationSupportDirectory.appending(path: "HakkerNeus.sqlite"))
             self.savedStories = try SavedStoriesStore(database: database, legacyDefaults: defaults)
             self.savedComments = try SavedCommentsStore(database: database)
             self.visitedStories = try VisitedStoriesStore(database: database)
             self.offlineItems = try OfflineItemStore(database: database)
+            let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            self.cloudSync = injectedDatabase == nil && !isTesting ? try CloudSync(
+                database: database, savedStories: savedStories, savedComments: savedComments,
+                visitedStories: visitedStories, hiddenStories: hiddenStories
+            ) : nil
         } catch {
             fatalError("Couldn't open the database: \(error)")
         }
@@ -88,6 +96,12 @@ final class AppCoordinator {
 
     /// - Parameter state: Screens to restore from the previous launch, if any.
     func start(restoring state: RestorationState? = nil) {
+        cloudSync?.start()
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-SeedCloudKitSchema"), let cloudSync {
+            Task { try await cloudSync.seedSchema() }
+        }
+        #endif
         #if DEBUG
         importSeedBookmarks()
         #endif

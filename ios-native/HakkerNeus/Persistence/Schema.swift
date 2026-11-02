@@ -47,6 +47,14 @@ enum Schema {
             saved_at REAL NOT NULL
         );
         """,
+        // 5: iCloud sync: each synced record's CloudKit system fields (base64 archives), so
+        // changes go out as updates to the server's copy.
+        """
+        CREATE TABLE IF NOT EXISTS cloud_records (
+            name TEXT PRIMARY KEY,
+            system_fields TEXT NOT NULL
+        );
+        """,
     ]
 
     /// Runs any migrations the database hasn't had yet. Safe to call repeatedly.

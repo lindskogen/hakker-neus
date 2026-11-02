@@ -15,6 +15,8 @@ final class SavedStoriesStore {
 
     private let database: Database
     private var entries: [Int: Entry] = [:]
+    /// Called with the story ID after a change made on this device (not one from iCloud).
+    var onChange: ((Int) -> Void)?
 
     /// - Parameters:
     ///   - database: The app database; the saved stories table is created if needed.
@@ -53,6 +55,7 @@ final class SavedStoriesStore {
                 }
             }
         }
+        for (id, entry) in merged where entries[id] != entry { onChange?(id) }
         entries = merged
         // No single ID: lists refresh everything.
         NotificationCenter.default.post(name: Self.didChange, object: nil)
@@ -70,12 +73,17 @@ final class SavedStoriesStore {
         entries[id] != nil
     }
 
+    func entry(_ id: Int) -> Entry? {
+        entries[id]
+    }
+
     func save(_ story: Story, at date: Date = Date()) {
         let entry = Entry(story: story, savedAt: date)
         do {
             try insert(entry)
             entries[story.id] = entry
             NotificationCenter.default.post(name: Self.didChange, object: story.id)
+            onChange?(story.id)
         } catch {
             assertionFailure("Couldn't save story \(story.id): \(error)")
         }
@@ -86,6 +94,7 @@ final class SavedStoriesStore {
             try database.run("DELETE FROM saved_stories WHERE id = ?", [.init(id)])
             entries[id] = nil
             NotificationCenter.default.post(name: Self.didChange, object: id)
+            onChange?(id)
         } catch {
             assertionFailure("Couldn't remove story \(id): \(error)")
         }
@@ -100,6 +109,20 @@ final class SavedStoriesStore {
         }
         save(story)
         return true
+    }
+
+    /// Changes from another device, through iCloud.
+    func applyRemote(saved: [Entry], removed: [Int]) throws {
+        let removed = removed.filter { entries[$0] != nil }
+        guard !saved.isEmpty || !removed.isEmpty else { return }
+        try database.transaction {
+            for entry in saved { try insert(entry) }
+            for id in removed { try database.run("DELETE FROM saved_stories WHERE id = ?", [.init(id)]) }
+        }
+        for entry in saved { entries[entry.story.id] = entry }
+        for id in removed { entries[id] = nil }
+        let ids = saved.map(\.story.id) + removed
+        NotificationCenter.default.post(name: Self.didChange, object: ids.count == 1 ? ids[0] : nil)
     }
 
     // MARK: SQL

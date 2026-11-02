@@ -43,6 +43,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
     }
 
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        coordinator?.cloudSync?.syncNow()
+    }
+
     func sceneDidEnterBackground(_ scene: UIScene) {
         coordinator?.restorationState.save()
     }

@@ -23,6 +23,8 @@ final class SavedCommentsStore {
 
     private let database: Database
     private var entries: [Int: SavedComment] = [:]
+    /// Called with the comment ID after a change made on this device (not one from iCloud).
+    var onChange: ((Int) -> Void)?
 
     init(database: Database) throws {
         self.database = database
@@ -39,6 +41,10 @@ final class SavedCommentsStore {
         entries[id] != nil
     }
 
+    func entry(_ id: Int) -> SavedComment? {
+        entries[id]
+    }
+
     /// Saves `comment`, on the story with `storyID` and `storyTitle` if known.
     func save(_ comment: Comment, storyID: Int?, storyTitle: String?) {
         guard let text = comment.text else { return }
@@ -47,18 +53,10 @@ final class SavedCommentsStore {
             storyID: storyID, storyTitle: storyTitle, savedAt: Date()
         )
         do {
-            try database.run(
-                """
-                INSERT OR REPLACE INTO saved_comments (id, story_id, story_title, author, text, posted_at, saved_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    .init(entry.id), .init(entry.storyID), .init(entry.storyTitle), .init(entry.author),
-                    .text(entry.text), .init(entry.time), .init(entry.savedAt),
-                ]
-            )
+            try insert(entry)
             entries[entry.id] = entry
             NotificationCenter.default.post(name: Self.didChange, object: entry.id)
+            onChange?(entry.id)
         } catch {
             assertionFailure("Couldn't save comment \(comment.id): \(error)")
         }
@@ -69,9 +67,37 @@ final class SavedCommentsStore {
             try database.run("DELETE FROM saved_comments WHERE id = ?", [.init(id)])
             entries[id] = nil
             NotificationCenter.default.post(name: Self.didChange, object: id)
+            onChange?(id)
         } catch {
             assertionFailure("Couldn't remove comment \(id): \(error)")
         }
+    }
+
+    /// Changes from another device, through iCloud.
+    func applyRemote(saved: [SavedComment], removed: [Int]) throws {
+        let removed = removed.filter { entries[$0] != nil }
+        guard !saved.isEmpty || !removed.isEmpty else { return }
+        try database.transaction {
+            for entry in saved { try insert(entry) }
+            for id in removed { try database.run("DELETE FROM saved_comments WHERE id = ?", [.init(id)]) }
+        }
+        for entry in saved { entries[entry.id] = entry }
+        for id in removed { entries[id] = nil }
+        let ids = saved.map(\.id) + removed
+        NotificationCenter.default.post(name: Self.didChange, object: ids.count == 1 ? ids[0] : nil)
+    }
+
+    private func insert(_ entry: SavedComment) throws {
+        try database.run(
+            """
+            INSERT OR REPLACE INTO saved_comments (id, story_id, story_title, author, text, posted_at, saved_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                .init(entry.id), .init(entry.storyID), .init(entry.storyTitle), .init(entry.author),
+                .text(entry.text), .init(entry.time), .init(entry.savedAt),
+            ]
+        )
     }
 
     private func loadEntries() throws -> [Int: SavedComment] {
