@@ -1,8 +1,9 @@
 import UIKit
 
 /// The root screen. Narrow windows show one stack (`primary`), as on the iPhone. Wide windows
-/// (iPads in landscape, and large iPads in portrait) keep the lists in a column on the left and
-/// open articles, comments and user pages in a second stack (`detail`) beside them.
+/// (iPads in landscape, large iPads in portrait, the open iPhone Duo on its side or held like a
+/// book) keep the lists in a column on the left and open articles, comments and user pages in a
+/// second stack (`detail`) beside them.
 ///
 /// When the window changes between the two (rotation, Split View, Stage Manager), the screens
 /// above the lists move across, so nothing that was open is lost.
@@ -14,6 +15,12 @@ final class SplitViewController: UIViewController {
 
     /// From this width on, articles and comments open beside the list.
     static let minimumSplitWidth: CGFloat = 1000
+
+    /// Whether a window this size gets two columns: wide ones, and narrower ones on their side
+    /// that are still tall enough for a list, like the open iPhone Duo (not an iPhone on its side).
+    static func isSplit(_ size: CGSize) -> Bool {
+        size.width >= minimumSplitWidth || (size.width > size.height && size.width >= 800 && size.height >= 560)
+    }
 
     private(set) var isSplit = false
 
@@ -62,7 +69,7 @@ final class SplitViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let bounds = view.bounds
-        let split = bounds.width >= Self.minimumSplitWidth
+        let split = Self.isSplit(bounds.size)
         if split != isSplit {
             isSplit = split
             // Articles open beside the list from now on; have the ad blocking rules ready.
@@ -75,7 +82,11 @@ final class SplitViewController: UIViewController {
             primary.view.frame = bounds
             return
         }
-        let listWidth = (bounds.width * 0.38).clamped(to: 380...480).rounded()
+        // Narrower windows split in the middle: on the iPhone Duo that's the fold, so held like a
+        // book the list is one page and the article the other.
+        let listWidth = bounds.width < Self.minimumSplitWidth
+            ? (bounds.width / 2).rounded()
+            : (bounds.width * 0.38).clamped(to: 380...480).rounded()
         let hairline = 1 / max(traitCollection.displayScale, 1)
         primary.view.frame = CGRect(x: 0, y: 0, width: listWidth, height: bounds.height)
         divider.frame = CGRect(x: listWidth, y: 0, width: hairline, height: bounds.height)
