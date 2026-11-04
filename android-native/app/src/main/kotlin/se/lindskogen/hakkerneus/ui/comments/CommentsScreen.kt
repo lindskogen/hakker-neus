@@ -198,9 +198,9 @@ fun CommentsScreen(
                 containerColor = Color(0xE6404040),
                 contentColor = Color.White,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(if (AppContainer.cornerButtonOnLeft) Alignment.BottomStart else Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 20.dp, bottom = if (visible.count { it.depth == 0 } > 1) HN.padding + 62.dp else HN.padding)
+                    .padding(start = if (AppContainer.cornerButtonOnLeft) 20.dp else 0.dp, end = if (AppContainer.cornerButtonOnLeft) 0.dp else 20.dp, bottom = if (visible.count { it.depth == 0 } > 1) HN.padding + 62.dp else HN.padding)
                     .size(52.dp)
                     .semantics { contentDescription = "Comment" },
             ) { Icon(HnIcons.compose, contentDescription = null, modifier = Modifier.size(20.dp)) }
@@ -221,9 +221,9 @@ fun CommentsScreen(
                 containerColor = Color(0xE6404040),
                 contentColor = Color.White,
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
+                    .align(if (AppContainer.cornerButtonOnLeft) Alignment.BottomStart else Alignment.BottomEnd)
                     .navigationBarsPadding()
-                    .padding(end = 20.dp, bottom = HN.padding)
+                    .padding(start = if (AppContainer.cornerButtonOnLeft) 20.dp else 0.dp, end = if (AppContainer.cornerButtonOnLeft) 0.dp else 20.dp, bottom = HN.padding)
                     .size(52.dp)
                     .semantics { contentDescription = "Next thread" },
             ) { Icon(HnIcons.chevronDown, contentDescription = null, modifier = Modifier.size(22.dp)) }

@@ -34,6 +34,8 @@ final class LobstersCommentsViewController: UIViewController, UICollectionViewDe
     private let offlineBanner = OfflineBanner()
     private let collapseHaptics = UIImpactFeedbackGenerator(style: .light)
     private let nextThreadButton = UIButton(type: .system)
+    private var nextThreadLeading: NSLayoutConstraint!
+    private var nextThreadTrailing: NSLayoutConstraint!
     private let jumpHaptics = UISelectionFeedbackGenerator()
 
     /// The thread, when it was already loaded before the screen was pushed.
@@ -301,9 +303,19 @@ final class LobstersCommentsViewController: UIViewController, UICollectionViewDe
         NSLayoutConstraint.activate([
             nextThreadButton.widthAnchor.constraint(equalToConstant: 52),
             nextThreadButton.heightAnchor.constraint(equalToConstant: 52),
-            nextThreadButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding * 2),
             nextThreadButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -Theme.padding),
         ])
+        nextThreadLeading = nextThreadButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2)
+        nextThreadTrailing = nextThreadButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding * 2)
+        placeFloatingButtons()
+        NotificationCenter.default.addObserver(self, selector: #selector(placeFloatingButtons), name: AppSettings.cornerButtonSideDidChange, object: nil)
+    }
+
+    /// In the lower-left corner in Leftie Mode, like the corner button on the lists.
+    @objc private func placeFloatingButtons() {
+        let onLeft = coordinator.settings.cornerButtonOnLeft
+        nextThreadLeading.isActive = onLeft
+        nextThreadTrailing.isActive = !onLeft
     }
 
     /// Scrolls the next top-level comment below the top of the screen up to the top.
