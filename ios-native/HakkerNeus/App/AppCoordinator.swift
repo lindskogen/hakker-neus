@@ -20,6 +20,8 @@ final class AppCoordinator {
         case detail
     }
     private var relativeTimeTimer: Timer?
+    /// The feed name shown briefly after switching feeds.
+    private weak var toast: UIView?
     let defaults: UserDefaults
 
     let client: HNClient
@@ -43,9 +45,9 @@ final class AppCoordinator {
     private(set) lazy var savedList = SavedStoriesViewController(coordinator: self)
     /// Story search, kept alive so the query and results survive going back.
     private(set) lazy var search = SearchViewController(coordinator: self, api: userCache.api)
-    /// HN's New list, kept alive like the front page so its place survives going back and forth.
+    /// HN's New list, kept alive like the front page so its place survives switching feeds.
     private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
-    /// lobste.rs's Hottest list, read-only, opened from the saved list like search.
+    /// lobste.rs's Hottest list, read-only, one of the feeds.
     private(set) lazy var lobstersList = StoryListViewController(
         feed: TopStoriesFeed(client: client, source: .lobsters), coordinator: self, rowBackground: { Palette.lobstersBackground(at: $0) }
     )
@@ -113,9 +115,9 @@ final class AppCoordinator {
         #if DEBUG
         importSeedBookmarks()
         #endif
-        var stack: [UIViewController] = [savedList]
-        if state?.showsFrontPage ?? true {
-            stack.append(frontPage)
+        var stack: [UIViewController] = [frontPage]
+        if state?.showsFrontPage == false {
+            stack.append(savedList)
         }
         savedList.pendingAnchor = state?.savedListAnchor
         if let feed = state?.frontPageFeed {
@@ -128,9 +130,12 @@ final class AppCoordinator {
         }
         navigationController.cornerButtonMode = { [weak self] screen in
             guard let self else { return .hidden }
-            if screen === frontPage { return .menu }
-            if screen === savedList || screen === newList || screen === lobstersList { return .close }
+            if isFeed(screen) { return .profile }
+            if screen === savedList { return .back }
             return .hidden
+        }
+        navigationController.cornerButtonMenu = { [weak self] screen in
+            self?.feedMenu(for: screen) ?? []
         }
         navigationController.cornerButtonOnLeft = settings.cornerButtonOnLeft
         NotificationCenter.default.addObserver(forName: AppSettings.cornerButtonSideDidChange, object: nil, queue: .main) { [weak self] _ in
@@ -141,7 +146,7 @@ final class AppCoordinator {
         }
         navigationController.onCornerButton = { [weak self] screen in
             guard let self else { return }
-            screen === savedList || screen === newList || screen === lobstersList ? showFrontPage() : showSavedStories()
+            screen === savedList ? showFrontPage() : showSavedStories()
         }
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
@@ -176,7 +181,7 @@ final class AppCoordinator {
     var restorationState: RestorationState {
         let stack = split.allViewControllers
         return RestorationState(
-            showsFrontPage: stack.contains(frontPage),
+            showsFrontPage: !stack.contains(savedList),
             frontPageFeed: frontPage.feedSnapshot,
             frontPageAnchor: frontPage.scrollAnchor,
             savedListAnchor: savedList.scrollAnchor,
@@ -291,25 +296,95 @@ final class AppCoordinator {
         navigationController.present(settings, animated: true)
     }
 
+    /// The profile and saved lists, pushed on top of the feed.
     func showSavedStories(animated: Bool = true) {
+        if navigationController.viewControllers.contains(savedList) {
+            navigationController.popToViewController(savedList, animated: animated)
+        } else {
+            navigationController.setViewControllers([currentFeed, savedList], animated: animated)
+        }
+    }
+
+    /// The feed at the root of the stack: the front page, New or lobste.rs.
+    var currentFeed: StoryListViewController {
+        navigationController.viewControllers.first as? StoryListViewController ?? frontPage
+    }
+
+    func isFeed(_ screen: UIViewController) -> Bool {
+        screen === frontPage || screen === newList || screen === lobstersList
+    }
+
+    /// Back to the feed showing, from wherever the app was.
+    func showFrontPage(animated: Bool = true) {
         navigationController.popToRootViewController(animated: animated)
     }
 
-    /// HN's New list, on top of the front page.
-    func showNewStories() {
-        guard navigationController.topViewController === frontPage else { return }
-        navigationController.pushViewController(newList, animated: true)
+    /// Puts `feed` at the root in place of the one showing, keeping each feed's place.
+    func showFeed(_ feed: StoryListViewController) {
+        guard feed !== currentFeed else { return showFrontPage() }
+        let swap = {
+            self.navigationController.setViewControllers([feed], animated: false)
+            self.navigationController.updateCornerButton(for: feed, animated: false)
+        }
+        if UIAccessibility.isReduceMotionEnabled || navigationController.view.window == nil {
+            swap()
+        } else {
+            UIView.transition(with: navigationController.view, duration: 0.25, options: .transitionCrossDissolve, animations: swap)
+        }
+        let name = feed === lobstersList ? "lobste.rs" : feed === newList ? "New" : "Top"
+        showToast(name)
+        UIAccessibility.post(notification: .screenChanged, argument: name)
     }
 
-    /// lobste.rs's Hottest list, on top of the saved list like search.
-    func showLobsters() {
-        guard navigationController.topViewController === savedList else { return }
-        navigationController.pushViewController(lobstersList, animated: true)
+    /// What the corner button offers when held on a feed: the feeds, search and hiding read stories.
+    private func feedMenu(for screen: UIViewController) -> [UIMenuElement] {
+        guard let feed = screen as? StoryListViewController else { return [] }
+        let feeds = [(frontPage, "Top", "arrow.up"), (newList, "New", "clock"), (lobstersList, "lobste.rs", "l.circle")].map { list, title, image in
+            UIAction(title: title, image: UIImage(systemName: image), state: list === feed ? .on : .off) { [weak self] _ in
+                self?.showFeed(list)
+            }
+        }
+        var tools: [UIMenuElement] = [
+            UIAction(title: "Search", image: UIImage(systemName: "magnifyingglass")) { [weak self] _ in self?.showSearch() },
+        ]
+        if feed.canUndoHideRead {
+            tools.append(UIAction(title: "Show Hidden Stories", image: UIImage(systemName: "eye")) { _ in feed.undoHideRead() })
+        } else if feed.hasReadStories {
+            tools.append(UIAction(title: "Hide Read Stories", image: UIImage(systemName: "eye.slash")) { _ in feed.hideReadStories() })
+        }
+        return [UIMenu(options: .displayInline, children: feeds), UIMenu(options: .displayInline, children: tools)]
     }
 
-    /// Story search, on top of the saved list (in the list column when the window is wide).
+    /// A short-lived label at the top, naming the feed just switched to.
+    private func showToast(_ text: String) {
+        toast?.removeFromSuperview()
+        let label = PaddedLabel()
+        label.insets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        label.text = text
+        label.font = Theme.Font.medium(size: 15, style: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = .white
+        label.backgroundColor = UIColor(white: 0.08, alpha: 0.85)
+        label.layer.cornerRadius = 17
+        label.layer.masksToBounds = true
+        label.isAccessibilityElement = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        window.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: window.centerXAnchor),
+            label.topAnchor.constraint(equalTo: window.safeAreaLayoutGuide.topAnchor, constant: 8),
+            label.heightAnchor.constraint(greaterThanOrEqualToConstant: 34),
+        ])
+        label.alpha = 0
+        toast = label
+        UIView.animate(withDuration: 0.2) { label.alpha = 1 } completion: { _ in
+            UIView.animate(withDuration: 0.3, delay: 1.2) { label.alpha = 0 } completion: { _ in label.removeFromSuperview() }
+        }
+    }
+
+    /// Story search, on top of a feed or the saved list (in the list column when the window is wide).
     func showSearch() {
-        guard navigationController.topViewController === savedList else { return }
+        guard let top = navigationController.topViewController, top === savedList || isFeed(top) else { return }
         navigationController.pushViewController(search, animated: true)
     }
 
@@ -318,15 +393,7 @@ final class AppCoordinator {
         search.loadViewIfNeeded()
         search.search(for: query)
         if navigationController.topViewController !== search {
-            navigationController.setViewControllers([savedList, search], animated: navigationController.view.window != nil)
-        }
-    }
-
-    func showFrontPage(animated: Bool = true) {
-        if navigationController.viewControllers.contains(frontPage) {
-            navigationController.popToViewController(frontPage, animated: animated)
-        } else {
-            navigationController.pushViewController(frontPage, animated: animated)
+            navigationController.setViewControllers([currentFeed, search], animated: navigationController.view.window != nil)
         }
     }
 

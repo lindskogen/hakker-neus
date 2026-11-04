@@ -4,7 +4,7 @@ import UIKit
 /// behind the front page: swipe in from the left edge of the front page to get here, and in
 /// from the right edge to go back. Story rows work like on the front page, in red instead of
 /// orange; comments are listed like on user pages.
-final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, ForwardNavigating, StoryTransitionSource {
+final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack, StoryTransitionSource {
     private enum Section { case main }
 
     enum Tab: Int, TextTab {
@@ -42,8 +42,6 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    var forwardViewController: UIViewController? { coordinator.frontPage }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -111,7 +109,6 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             configureProfileHeader()
             view.onSettings = { [unowned self] in coordinator.showSettings() }
             view.onSearch = { [unowned self] in coordinator.showSearch() }
-            view.onLobsters = { [unowned self] in coordinator.showLobsters() }
             view.onSignIn = { [unowned self] in coordinator.showSignIn() }
             view.onShowUser = { [unowned self] in coordinator.showUser($0, from: .list) }
             view.onTab = { [unowned self] tab in

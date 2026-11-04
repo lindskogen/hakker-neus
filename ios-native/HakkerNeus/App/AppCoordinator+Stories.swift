@@ -79,7 +79,7 @@ extension AppCoordinator {
     func savedStoryChanged(_ id: Int?) {
         guard let id, savedStories.isSaved(id),
               !defaults.bool(forKey: Self.savedHintKey),
-              navigationController.topViewController === frontPage
+              let top = navigationController.topViewController, isFeed(top)
         else { return }
         defaults.set(true, forKey: Self.savedHintKey)
 
@@ -89,34 +89,12 @@ extension AppCoordinator {
         }
     }
 
-    /// Nudges the front page to the right, showing a heart in the gap at the left edge,
-    /// where the swipe to the saved list starts, then springs back.
+    /// Bounces the corner button, which leads to the saved list.
     private func playSavedHint() {
-        guard navigationController.topViewController === frontPage,
-              navigationController.presentedViewController == nil,
-              !UIAccessibility.isReduceMotionEnabled
+        guard let top = navigationController.topViewController, isFeed(top),
+              navigationController.presentedViewController == nil
         else { return }
-
-        let heart = UIImageView(image: UIImage(systemName: "heart.fill"))
-        heart.tintColor = .white
-        heart.preferredSymbolConfiguration = .init(pointSize: 26)
-        heart.sizeToFit()
-        heart.center = CGPoint(x: 32, y: window.bounds.midY)
-        heart.alpha = 0
-        let page = navigationController.view!
-        // Behind the navigation controller's view, so it's only visible in the gap.
-        page.superview?.insertSubview(heart, belowSubview: page)
-        UIView.animate(withDuration: 0.35, delay: 0, options: .curveEaseOut) {
-            page.transform = CGAffineTransform(translationX: 64, y: 0)
-            heart.alpha = 1
-        } completion: { _ in
-            UIView.animate(withDuration: 0.6, delay: 0.6, usingSpringWithDamping: 0.75, initialSpringVelocity: 0) {
-                page.transform = .identity
-                heart.alpha = 0
-            } completion: { _ in
-                heart.removeFromSuperview()
-            }
-        }
+        navigationController.nudgeCornerButton()
     }
 }
 

@@ -22,8 +22,8 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     private var interactivePush: UIPercentDrivenInteractiveTransition?
 
     /// The lower-right button (lower-left if set for left hands), above every screen so it stays
-    /// put while they change underneath: a hamburger on the front page (to the profile), a close
-    /// button on the profile (back).
+    /// put while they change underneath: on a feed, a person (to the profile) that opens the feed
+    /// menu when held; on the profile, a back button.
     private let cornerButton = UIButton(type: .system)
     private var cornerButtonLeading: NSLayoutConstraint!
     private var cornerButtonTrailing: NSLayoutConstraint!
@@ -34,12 +34,16 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     }
     /// Called when the corner button is tapped, with the screen it was tapped on.
     var onCornerButton: ((UIViewController) -> Void)?
-    /// Screens that show the corner button, and whether it shows as close on them.
+    /// Screens that show the corner button, and how.
     var cornerButtonMode: (UIViewController) -> CornerButtonMode = { _ in .hidden }
+    /// The menu the corner button opens when held on a screen, built as it opens.
+    var cornerButtonMenu: ((UIViewController) -> [UIMenuElement])?
 
     enum CornerButtonMode: Equatable {
-        case menu
-        case close
+        /// On a feed: opens the profile; held, the feed menu.
+        case profile
+        /// On the profile: back to the feed.
+        case back
         case hidden
     }
 
@@ -79,7 +83,7 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
-        // The icon morphs between the hamburger and the close button (cross-fades before iOS 26).
+        // The icon morphs between the person and the back button (cross-fades before iOS 26).
         if #available(iOS 26, *) {
             config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
         }
@@ -89,6 +93,17 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         cornerButton.addAction(UIAction { [unowned self] _ in
             if let top = topViewController { onCornerButton?(top) }
         }, for: .touchUpInside)
+
+        // Held, the feed menu. Built as it opens, so it reflects the feed showing.
+        cornerButton.menu = UIMenu(children: [
+            UIDeferredMenuElement.uncached { [weak self] completion in
+                guard let self, let top = topViewController else { return completion([]) }
+                completion(cornerButtonMenu?(top) ?? [])
+            },
+        ])
+        cornerButton.showsMenuAsPrimaryAction = false
+        // Top first, read from the top down, whichever corner the button is in.
+        cornerButton.preferredMenuElementOrder = .fixed
 
         cornerButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cornerButton)
@@ -113,7 +128,7 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         let mode = viewController.map(cornerButtonMode) ?? .hidden
         if mode != .hidden {
             let setIcon: () -> Void = {
-                self.cornerButton.configuration?.image = UIImage(systemName: mode == .close ? "xmark" : "line.3.horizontal")
+                self.cornerButton.configuration?.image = UIImage(systemName: mode == .back ? "chevron.backward" : "person")
             }
             if #available(iOS 26, *) {
                 setIcon()
@@ -122,11 +137,25 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
             } else {
                 setIcon()
             }
-            cornerButton.accessibilityLabel = mode == .close ? "Front Page" : "Profile and Saved Stories"
+            cornerButton.accessibilityLabel = mode == .back ? "Back" : "Profile and Saved Stories"
+            cornerButton.accessibilityHint = mode == .profile ? "Hold for feeds and search" : nil
+            cornerButton.isContextMenuInteractionEnabled = mode == .profile
         }
         view.bringSubviewToFront(cornerButton)
         let change = { self.cornerButton.alpha = mode == .hidden ? 0 : 1 }
         animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
+    }
+
+    /// Draws the eye to the corner button: a bounce, for the first saved story.
+    func nudgeCornerButton() {
+        guard cornerButton.alpha > 0, !UIAccessibility.isReduceMotionEnabled else { return }
+        UIView.animate(withDuration: 0.18, delay: 0, options: .curveEaseOut) {
+            self.cornerButton.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
+        } completion: { _ in
+            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0) {
+                self.cornerButton.transform = .identity
+            }
+        }
     }
 
     // MARK: Gesture delegate
