@@ -50,6 +50,9 @@ final class TextTabsView<Tab: TextTab>: UIView {
             underline.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
         update()
+        NotificationCenter.default.addObserver(forName: AppSettings.colorThemeDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.underline.backgroundColor = Theme.Color.accent }
+        }
     }
 
     @available(*, unavailable)

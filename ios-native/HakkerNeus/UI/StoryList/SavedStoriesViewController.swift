@@ -128,6 +128,8 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         for name in [VisitedStoriesStore.didChange, HNSession.votesChanged, SplitViewController.activeStoryDidChange] {
             NotificationCenter.default.addObserver(self, selector: #selector(visitedStoryChanged(_:)), name: name, object: nil)
         }
+        // The rows' colours go with the theme, which can change from Settings opened here.
+        NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
         NotificationCenter.default.addObserver(
             forName: HNSession.didChange, object: nil, queue: .main
         ) { [weak self] _ in
@@ -142,6 +144,10 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         let work = DispatchWorkItem { [weak self] in self?.reload(animated: true) }
         pendingReload = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
+    }
+
+    @objc private func colorThemeChanged() {
+        reload(animated: false)
     }
 
     @objc private func visitedStoryChanged(_ notification: Notification) {

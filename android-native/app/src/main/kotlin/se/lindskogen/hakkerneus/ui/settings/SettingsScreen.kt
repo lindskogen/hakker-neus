@@ -95,7 +95,7 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
             Footer("${entries.size} saved. Uses the same CSV format as hacker-feed's bookmarks export.")
             Section("Appearance")
             for (theme in ColorTheme.entries) ThemeRow(theme)
-            Footer("The front page's colours. Saved stories stay red.")
+            Footer("The colours of the front page and the saved stories.")
             Section("Front page button")
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().background(Color(0xFF26292E))

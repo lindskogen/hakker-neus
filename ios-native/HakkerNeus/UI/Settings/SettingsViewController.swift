@@ -41,7 +41,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 footer: "\(count) saved. Uses the same CSV format as hacker-feed's bookmarks export.",
                 rows: [.importCSV, .exportCSV]
             ),
-            Section(title: "Appearance", footer: "The front page's colours. Saved stories stay red.", rows: ColorTheme.allCases.map(Row.theme)),
+            Section(title: "Appearance", footer: "The colours of the front page and the saved stories.", rows: ColorTheme.allCases.map(Row.theme)),
             Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
             Section(title: "New Stories", footer: "Hides stories in the New list with fewer points than this.", rows: [.newMinimumScore]),
             Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
