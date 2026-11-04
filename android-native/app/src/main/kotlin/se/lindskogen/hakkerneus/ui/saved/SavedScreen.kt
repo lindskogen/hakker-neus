@@ -1,5 +1,7 @@
 package se.lindskogen.hakkerneus.ui.saved
 
+import se.lindskogen.hakkerneus.data.isLobsters
+import se.lindskogen.hakkerneus.ui.frontpage.LobstersStoryRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +16,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
@@ -62,6 +67,7 @@ fun SavedScreen(
     openItem: (Long) -> Unit,
     openSettings: () -> Unit,
     openSearch: () -> Unit,
+    openLobsters: () -> Unit,
     signIn: () -> Unit,
 ) {
     val upvoted by AppContainer.session.upvoted.collectAsState()
@@ -120,6 +126,9 @@ fun SavedScreen(
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
                     }
+                    IconButton(onClick = openLobsters, modifier = Modifier.offset(x = 12.dp)) {
+                        Text("L", style = HN.body.copy(fontSize = 15.sp, color = Color.White), modifier = Modifier.border(1.5.dp, Color.White, CircleShape).size(24.dp).wrapContentHeight(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
                     IconButton(onClick = openSearch, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.search, contentDescription = "Search", tint = Color.White) }
                     // 48dp to tap, with the gear at its right edge so the margins match the name's.
                     IconButton(onClick = openSettings, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
@@ -146,7 +155,11 @@ fun SavedScreen(
             }
             if (!showsComments) itemsIndexed(entries, key = { _, entry -> entry.story.id }) { index, entry ->
                 visits.size // re-read when visits change
-                StoryRow(
+                if (entry.story.isLobsters) LobstersStoryRow(
+                    entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
+                    isVisited = AppContainer.visited.isVisited(entry.story.id),
+                    showsSavedBadge = false,
+                ) else StoryRow(
                     entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,

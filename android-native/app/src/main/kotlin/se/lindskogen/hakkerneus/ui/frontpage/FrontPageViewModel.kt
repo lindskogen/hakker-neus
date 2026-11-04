@@ -20,9 +20,10 @@ data class FrontPageState(
     val hasMore: Boolean = true,
 )
 
-/** The front page, or HN's New list with [isNew] (not remembered between launches). */
-class FrontPageViewModel(private val isNew: Boolean = false) : ViewModel() {
-    private val feed = TopStoriesFeed(AppContainer.client, if (isNew) TopStoriesFeed.Source.New else TopStoriesFeed.Source.Top)
+/** The front page, or HN's New list or lobste.rs's Hottest (those two not remembered between launches). */
+class FrontPageViewModel(private val source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top) : ViewModel() {
+    private val isNew = source != TopStoriesFeed.Source.Top
+    private val feed = TopStoriesFeed(AppContainer.client, source)
     private val _state = MutableStateFlow(FrontPageState())
     val state: StateFlow<FrontPageState> = _state
 

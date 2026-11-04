@@ -15,7 +15,8 @@ data class Story(
     val commentCount: Int = 0,
     val time: Long = 0,
 ) {
-    val hackerNewsUrl: String get() = hackerNewsItemUrl(id)
+    /** The discussion's page: on HN, or lobste.rs for its stories. */
+    val hackerNewsUrl: String get() = if (Lobsters.isLobsters(id)) Lobsters.storyUrl(id) else hackerNewsItemUrl(id)
 
     /** The linked site, e.g. "github.com", without a leading "www.". Null for self posts. */
     val displayDomain: String?
@@ -34,7 +35,7 @@ data class Comment(
     val time: Long = 0,
     val children: List<Comment> = emptyList(),
 ) {
-    val hackerNewsUrl: String get() = hackerNewsItemUrl(id)
+    val hackerNewsUrl: String get() = if (Lobsters.isLobsters(id)) Lobsters.commentUrl(id) else hackerNewsItemUrl(id)
 }
 
 /** A comment placed in a flat list, with its nesting depth. */

@@ -31,6 +31,8 @@ sealed interface HackerNewsLink {
         private val hosts = setOf("news.ycombinator.com", "ycombinator.com", "www.ycombinator.com")
 
         fun parse(url: String): HackerNewsLink? {
+            // lobste.rs story links open in the app too.
+            Lobsters.storyId(url)?.let { return Item(it) }
             val uri = runCatching { URI(url) }.getOrNull() ?: return null
             if (uri.host?.lowercase() !in hosts) return null
             val id = uri.rawQuery?.split("&")

@@ -18,6 +18,9 @@ interface HnClient {
 
     /** An item with its full comment tree. */
     suspend fun item(id: Long): StoryWithComments
+
+    /** IDs of lobste.rs's Hottest list, in rank order (see [Lobsters]). Only [SourceRoutingClient] reads lobste.rs. */
+    suspend fun lobstersStoryIds(): List<Long> = emptyList()
 }
 
 private val json = Json { ignoreUnknownKeys = true }

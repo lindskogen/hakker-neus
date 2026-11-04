@@ -25,7 +25,8 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
 
 /** App-wide dependencies (the Android counterpart of the iOS AppCoordinator's properties). */
 object AppContainer {
-    val client: HnClient = LiveHnClient()
+    /** lobste.rs items (negative IDs) go to lobste.rs, everything else to HN. */
+    val client: HnClient = se.lindskogen.hakkerneus.data.SourceRoutingClient(LiveHnClient())
     val users = se.lindskogen.hakkerneus.data.UserCache(se.lindskogen.hakkerneus.data.UserApi())
     val items = se.lindskogen.hakkerneus.data.ItemCache(client)
 

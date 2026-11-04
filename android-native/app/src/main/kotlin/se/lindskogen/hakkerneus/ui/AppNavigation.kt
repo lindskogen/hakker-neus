@@ -1,5 +1,7 @@
 package se.lindskogen.hakkerneus.ui
 
+import se.lindskogen.hakkerneus.data.Lobsters
+import se.lindskogen.hakkerneus.ui.comments.LobstersCommentsScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
@@ -64,6 +66,7 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 @Serializable object New
 @Serializable object Settings
 @Serializable object Search
+@Serializable object LobstersList
 @Serializable object SignIn
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
@@ -128,6 +131,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
         entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Menu
         entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Close
         entry?.destination?.hasRoute<New>() == true -> CornerMode.Close
+        entry?.destination?.hasRoute<LobstersList>() == true -> CornerMode.Close
         else -> CornerMode.Hidden
     }
 
@@ -152,13 +156,24 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                 openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
                 openItem = { openComments(it) },
                 signIn = { nav.navigate(SignIn) },
-                isNew = true,
+                source = se.lindskogen.hakkerneus.data.TopStoriesFeed.Source.New,
+            )
+            }
+        }
+        composable<LobstersList> {
+            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+            FrontPageScreen(
+                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                openItem = { openComments(it) },
+                signIn = { nav.navigate(SignIn) },
+                source = se.lindskogen.hakkerneus.data.TopStoriesFeed.Source.Lobsters,
             )
             }
         }
         composable<Comments> { entry ->
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-                CommentsScreen(
+                val id = entry.toRoute<Comments>().id
+                if (Lobsters.isLobsters(id)) LobstersCommentsScreen(id, openItem = { openComments(it) }) else CommentsScreen(
                     entry.toRoute<Comments>().id,
                     openItem = { openComments(it) },
                     compose = { parent, story, context ->
@@ -178,6 +193,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                     openItem = { openComments(it) },
                     openSettings = { nav.navigate(Settings) },
                     openSearch = { nav.navigate(Search) },
+                    openLobsters = { nav.navigate(LobstersList) },
                     signIn = { nav.navigate(SignIn) },
                 )
             }
@@ -240,7 +256,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
             SmallFloatingActionButton(
-                onClick = { if (mode == CornerMode.Close) nav.popBackStack() else nav.navigate(Saved) },
+                onClick = { if (mode == CornerMode.Close) { if (!nav.popBackStack<FrontPage>(inclusive = false)) nav.popBackStack() } else nav.navigate(Saved) },
                 shape = CircleShape,
                 containerColor = Color(0xE6404040),
                 contentColor = Color.White,

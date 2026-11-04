@@ -1,5 +1,6 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import se.lindskogen.hakkerneus.data.isLobsters
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.compose.runtime.snapshotFlow
@@ -71,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.data.HackerNewsLink
 import se.lindskogen.hakkerneus.data.Story
+import se.lindskogen.hakkerneus.data.TopStoriesFeed
 import se.lindskogen.hakkerneus.ui.HnIcons
 import se.lindskogen.hakkerneus.ui.copyToClipboard
 import se.lindskogen.hakkerneus.ui.openInBrowser
@@ -84,8 +86,13 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit, openNew: () -> Unit = {}, isNew: Boolean = false) {
-    val model: FrontPageViewModel = viewModel(key = if (isNew) "new" else "front") { FrontPageViewModel(isNew) }
+fun FrontPageScreen(
+    openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit, openNew: () -> Unit = {},
+    source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top,
+) {
+    val isNew = source == TopStoriesFeed.Source.New
+    val isFront = source == TopStoriesFeed.Source.Top
+    val model: FrontPageViewModel = viewModel(key = source.name) { FrontPageViewModel(source) }
     val state by model.state.collectAsStateWithLifecycle()
     val savedEntries by AppContainer.saved.entries.collectAsState()
     val saved = savedEntries.mapTo(HashSet()) { it.story.id }
@@ -170,7 +177,11 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                 ) {
                     itemsIndexed(shown, key = { _, story -> story.id }) { index, story ->
                         visits.size // re-read when visits change
-                        StoryRow(
+                        if (story.isLobsters) LobstersStoryRow(
+                            story, Palette.storyBackground(index), story.id in saved, actions,
+                            isVisited = AppContainer.visited.isVisited(story.id),
+                            newComments = AppContainer.visited.newCommentCount(story),
+                        ) else StoryRow(
                             story, Palette.storyBackground(index), story.id in saved, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             newComments = AppContainer.visited.newCommentCount(story),
@@ -193,7 +204,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
 
         val onLeft = AppContainer.cornerButtonOnLeft
         // Above the corner button, same side: opens the New list.
-        if (!isNew) SmallFloatingActionButton(
+        if (isFront) SmallFloatingActionButton(
             onClick = openNew,
             shape = CircleShape,
             containerColor = Color(0xE6404040),
@@ -239,7 +250,7 @@ fun FrontPageScreen(openComments: (Story) -> Unit, openItem: (Long) -> Unit, sig
                 modifier = Modifier
                     .navigationBarsPadding()
                     // The corner button's size, stacked above it and the New button.
-                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * (if (isNew) 1 else 2))
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * (if (isFront) 2 else 1))
                     .size(52.dp)
                     .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
             ) {

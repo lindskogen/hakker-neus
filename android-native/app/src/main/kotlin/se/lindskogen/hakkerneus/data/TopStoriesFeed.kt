@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
  * the next slice of that snapshot in parallel. Concurrent page loads share one request.
  */
 class TopStoriesFeed(private val client: HnClient, val source: Source = Source.Top, private val pageSize: Int = PAGE_SIZE) {
-    /** Which HN list: the ranked front page or the newest stories. */
-    enum class Source { Top, New }
+    /** Which list: HN's ranked front page or newest stories, or lobste.rs's Hottest. */
+    enum class Source { Top, New, Lobsters }
 
     companion object {
         const val PAGE_SIZE = 40
@@ -39,7 +39,11 @@ class TopStoriesFeed(private val client: HnClient, val source: Source = Source.T
 
     /** Fetches a new ranking and its first page. Returns all loaded stories. */
     suspend fun reload(): List<Story> {
-        val fresh = if (source == Source.Top) client.topStoryIds() else client.newStoryIds()
+        val fresh = when (source) {
+            Source.Top -> client.topStoryIds()
+            Source.New -> client.newStoryIds()
+            Source.Lobsters -> client.lobstersStoryIds()
+        }
         mutex.withLock {
             ids = fresh
             nextOffset = 0
