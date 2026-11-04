@@ -53,7 +53,7 @@ final class LobstersCommentsViewController: UIViewController, UICollectionViewDe
         guard let indexPath = dataSource.indexPath(for: .story),
               let header = collectionView.cellForItem(at: indexPath) as? StoryHeaderCell
         else { return nil }
-        return (header, header.titleView, Theme.Color.accent)
+        return (header, header.titleView, Palette.lobstersAccent)
     }
 
     @available(*, unavailable)
@@ -131,7 +131,7 @@ final class LobstersCommentsViewController: UIViewController, UICollectionViewDe
     private func configureDataSource() {
         let storyCell = UICollectionView.CellRegistration<StoryHeaderCell, Item> { [unowned self] cell, _, _ in
             if let story {
-                cell.configure(with: story, body: storyBody, score: story.score)
+                cell.configure(with: story, body: storyBody, score: story.score, color: Palette.lobstersAccent)
             }
             cell.onLinkTap = { [unowned self] url in coordinator.open(url) }
             cell.linkMenu = { [unowned self] url, source in coordinator.linkMenu(for: url, sourceView: source) }
@@ -242,7 +242,7 @@ final class LobstersCommentsViewController: UIViewController, UICollectionViewDe
 
     private func applySnapshot(animated: Bool, reconfigureAll: Bool = false, reconfiguring ids: [Item] = []) {
         // The orange header reaches up under the clock.
-        topFill.color = story == nil ? nil : Theme.Color.accent
+        topFill.color = story == nil ? nil : Palette.lobstersAccent
 
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         if story != nil {

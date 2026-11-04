@@ -82,6 +82,14 @@ enum Palette {
         themeRGB(0.65, theme: theme).uiColor
     }
 
+    /// Background for row `index` of the lobste.rs list: dark reds around lobste.rs's own.
+    static func lobstersBackground(at index: Int) -> UIColor {
+        interpolate(lobstersStops, rowPosition(index)).uiColor
+    }
+
+    /// The lobste.rs comments header: its first row's colour.
+    static var lobstersAccent: UIColor { interpolate(lobstersStops, 0.65).uiColor }
+
     /// Behind the row of the story open in the iPad side column.
     static let activeStoryBackground = UIColor.black
 
@@ -150,6 +158,12 @@ enum Palette {
     fileprivate static let darkGreensStops = stops([
         0xF7FCF5, 0xE5F5E0, 0xC7E9C0, 0xA1D99B, 0x5AAE61,
         0x2E8540, 0x1B6B32, 0x0E4F24, 0x063015,
+    ])
+
+    /// Reds darkening through lobste.rs's #AC130D, for the lobste.rs list.
+    private static let lobstersStops = stops([
+        0xFFF0EE, 0xF8CFCB, 0xEC9C95, 0xDB6A61, 0xC63B31,
+        0xAC130D, 0x8E0F0A, 0x6C0B07, 0x480604,
     ])
 
     private static func stops(_ colors: [UInt32]) -> [(Double, Double, Double)] {

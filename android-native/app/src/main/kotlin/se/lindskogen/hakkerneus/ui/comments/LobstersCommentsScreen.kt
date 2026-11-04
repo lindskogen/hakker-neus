@@ -222,7 +222,7 @@ private fun StoryHeader(
         Modifier
             .fillMaxWidth()
             .sharedStory("card-$id")
-            .background(HN.accent)
+            .background(Palette.lobstersAccent)
             .statusBarsPadding()
             .heightIn(min = 100.dp)
             .combinedClickable(

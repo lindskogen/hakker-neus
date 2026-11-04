@@ -92,6 +92,7 @@ fun FrontPageScreen(
 ) {
     val isNew = source == TopStoriesFeed.Source.New
     val isFront = source == TopStoriesFeed.Source.Top
+    val rowBackground: (Int) -> Color = if (source == TopStoriesFeed.Source.Lobsters) Palette::lobstersBackground else Palette::storyBackground
     val model: FrontPageViewModel = viewModel(key = source.name) { FrontPageViewModel(source) }
     val state by model.state.collectAsStateWithLifecycle()
     val savedEntries by AppContainer.saved.entries.collectAsState()
@@ -155,10 +156,10 @@ fun FrontPageScreen(
 
     Box(Modifier.fillMaxSize().background(HN.backgroundDark)) {
         // The first row's colour reaches up behind the status bar.
-        Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(Palette.storyBackground(0)))
+        Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(rowBackground(0)))
 
         when {
-            state.stories.isEmpty() && state.isLoading -> SkeletonRows()
+            state.stories.isEmpty() && state.isLoading -> SkeletonRows(rowBackground)
             state.stories.isEmpty() && state.error != null -> ErrorState(state.error!!)
             isNew && shown.isEmpty() && state.stories.isNotEmpty() && !state.hasMore ->
                 Text(
@@ -178,11 +179,11 @@ fun FrontPageScreen(
                     itemsIndexed(shown, key = { _, story -> story.id }) { index, story ->
                         visits.size // re-read when visits change
                         if (story.isLobsters) LobstersStoryRow(
-                            story, Palette.storyBackground(index), story.id in saved, actions,
+                            story, rowBackground(index), story.id in saved, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             newComments = AppContainer.visited.newCommentCount(story),
                         ) else StoryRow(
-                            story, Palette.storyBackground(index), story.id in saved, actions,
+                            story, rowBackground(index), story.id in saved, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             newComments = AppContainer.visited.newCommentCount(story),
                             isUpvoted = story.id in upvoted,
@@ -272,7 +273,7 @@ private fun ErrorState(message: String) {
 
 /** Placeholder rows while the front page loads, with a highlight sweeping across. */
 @Composable
-private fun SkeletonRows() {
+private fun SkeletonRows(rowBackground: (Int) -> Color) {
     val sweep by rememberInfiniteTransition(label = "skeleton").animateFloat(
         initialValue = -1f, targetValue = 2f,
         animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),
@@ -282,7 +283,7 @@ private fun SkeletonRows() {
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         for (index in 0 until 10) {
             Box(
-                Modifier.fullWidth().height(100.dp).background(Palette.storyBackground(index))
+                Modifier.fullWidth().height(100.dp).background(rowBackground(index))
                     .background(Brush.linearGradient(
                         listOf(Color.Transparent, Color.White.copy(alpha = 0.12f), Color.Transparent),
                         start = Offset(sweep * 1200f - 400f, 0f), end = Offset(sweep * 1200f + 400f, 400f),

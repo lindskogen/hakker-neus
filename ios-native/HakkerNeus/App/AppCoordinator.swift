@@ -46,7 +46,9 @@ final class AppCoordinator {
     /// HN's New list, kept alive like the front page so its place survives going back and forth.
     private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
     /// lobste.rs's Hottest list, read-only, opened from the saved list like search.
-    private(set) lazy var lobstersList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .lobsters), coordinator: self)
+    private(set) lazy var lobstersList = StoryListViewController(
+        feed: TopStoriesFeed(client: client, source: .lobsters), coordinator: self, rowBackground: { Palette.lobstersBackground(at: $0) }
+    )
 
     init(
         window: UIWindow,

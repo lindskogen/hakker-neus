@@ -40,9 +40,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     /// Everything the feed has loaded, hidden stories included.
     private var feedStories: [Story] = []
 
-    init(feed: TopStoriesFeed, coordinator: AppCoordinator) {
+    /// The colour of row `index`: the theme's, or lobste.rs's reds.
+    private let rowBackground: (Int) -> UIColor
+
+    init(feed: TopStoriesFeed, coordinator: AppCoordinator, rowBackground: @escaping (Int) -> UIColor = { Palette.storyBackground(at: $0) }) {
         self.feed = feed
         self.coordinator = coordinator
+        self.rowBackground = rowBackground
         super.init(nibName: nil, bundle: nil)
         title = switch feed.source {
         case .top: "Front Page"
@@ -112,13 +116,13 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         offlineBanner.install(in: view)
         // Room to scroll the last row out from under the corner button.
         collectionView.contentInset.bottom = 64
-        topFill.color = Palette.storyBackground(at: 0)
+        topFill.color = rowBackground(0)
     }
 
     private func configureDataSource() {
         let cell = UICollectionView.CellRegistration<StoryCell, Story.ID> { [unowned self] cell, indexPath, id in
             guard let story = stories[id] else { return }
-            coordinator.configure(cell, with: story, backgroundColor: Palette.storyBackground(at: indexPath.item), inSavedList: false)
+            coordinator.configure(cell, with: story, backgroundColor: rowBackground(indexPath.item), inSavedList: false)
         }
         let footer = UICollectionView.SupplementaryRegistration<LoadingFooterView>(
             elementKind: UICollectionView.elementKindSectionFooter
@@ -327,7 +331,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     }
 
     @objc private func colorThemeChanged() {
-        topFill.color = Palette.storyBackground(at: 0)
+        topFill.color = rowBackground(0)
         var snapshot = dataSource.snapshot()
         snapshot.reconfigureItems(snapshot.itemIdentifiers)
         dataSource.apply(snapshot, animatingDifferences: false)

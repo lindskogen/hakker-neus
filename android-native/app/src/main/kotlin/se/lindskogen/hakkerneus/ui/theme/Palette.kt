@@ -57,6 +57,15 @@ object Palette {
     /** Background for row [index] of the saved list: the theme's saved ramp, so it's clear which list you're on. */
     fun savedStoryBackground(index: Int): Color = interpolate(stops(*theme.savedStops), rowPosition(index)).color
 
+    /** Background for row [index] of the lobste.rs list: dark reds around lobste.rs's own. */
+    fun lobstersBackground(index: Int): Color = interpolate(lobsters, rowPosition(index)).color
+
+    /** The lobste.rs comments header: its first row's colour. */
+    val lobstersAccent: Color get() = interpolate(lobsters, 0.65).color
+
+    /** Reds darkening through lobste.rs's #AC130D, for the lobste.rs list. */
+    private val lobsters = stops(0xFFF0EE, 0xF8CFCB, 0xEC9C95, 0xDB6A61, 0xC63B31, 0xAC130D, 0x8E0F0A, 0x6C0B07, 0x480604)
+
     /** `d3.schemeTableau10[depth]` for nested comments' left border; depth 0 has none. */
     fun commentDepth(depth: Int): Color =
         if (depth == 0) Color.Transparent else Color(tableau10[depth % tableau10.size])

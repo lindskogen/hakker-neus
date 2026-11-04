@@ -60,7 +60,12 @@ final class StoryHeaderCell: UICollectionViewListCell {
     /// The title, for the transition from a story row.
     var titleView: UIView { titleLabel }
 
-    func configure(with story: Story, body: CommentBody?, score: Int? = nil, isUpvoted: Bool = false) {
+    /// Behind the header: the theme's accent, or lobste.rs's red.
+    private var color = Theme.Color.accent
+
+    func configure(with story: Story, body: CommentBody?, score: Int? = nil, isUpvoted: Bool = false, color: UIColor = Theme.Color.accent) {
+        self.color = color
+        setNeedsUpdateConfiguration()
         if let body, !body.blocks.isEmpty {
             bodyView.configure(with: body)
             bodyView.isHidden = false
@@ -86,7 +91,7 @@ final class StoryHeaderCell: UICollectionViewListCell {
 
     override func updateConfiguration(using state: UICellConfigurationState) {
         var background = UIBackgroundConfiguration.listCell()
-        background.backgroundColor = Theme.Color.accent
+        background.backgroundColor = color
         backgroundConfiguration = background
         contentView.alpha = state.isHighlighted ? 0.4 : 1
     }
