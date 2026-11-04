@@ -113,7 +113,7 @@ final class SplitViewController: UIViewController {
     /// The story of the first screen in the side column: what was opened from the list.
     private func updateActiveStory() {
         let opened = isSplit ? detail.viewControllers.dropFirst().first : nil
-        activeStoryID = (opened as? ArticleViewController)?.story?.id ?? (opened as? CommentsViewController)?.transitionStoryID
+        activeStoryID = (opened as? ArticleViewController)?.story?.id ?? (opened as? StoryTransitionDestination)?.transitionStoryID
     }
 
     /// Moves the screens above the lists into the side column, or back on top of the lists.

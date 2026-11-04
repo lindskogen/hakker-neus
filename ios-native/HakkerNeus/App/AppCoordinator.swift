@@ -260,7 +260,6 @@ final class AppCoordinator {
     /// Upvotes the story, or undoes the upvote. Updates the UI straight away and rolls it back
     /// if HN refuses; asks to sign in first when needed.
     func toggleVote(_ story: Story) {
-        guard !story.isLobsters else { return } // Read-only.
         guard session.isSignedIn else {
             showSignIn { [weak self] in self?.toggleVote(story) }
             return
@@ -329,8 +328,11 @@ final class AppCoordinator {
         }
     }
 
-    func makeCommentsViewController(id: Int, story: Story?, preloaded: LoadedItem? = nil) -> CommentsViewController {
+    func makeCommentsViewController(id: Int, story: Story?, preloaded: LoadedItem? = nil) -> UIViewController {
         itemCache.prefetch(id: id)
+        if Lobsters.isLobsters(id) {
+            return LobstersCommentsViewController(id: id, story: story, coordinator: self, preloaded: preloaded)
+        }
         return CommentsViewController(id: id, story: story, coordinator: self, preloaded: preloaded)
     }
 
@@ -442,11 +444,6 @@ final class AppCoordinator {
         browser.preferredControlTintColor = .white
         browser.dismissButtonStyle = .done
         return browser
-    }
-
-    /// A user's page: in the app for HN, on the web for lobste.rs (read-only for now).
-    func showUser(_ username: String, lobsters: Bool, from origin: OpenedFrom = .detail) {
-        lobsters ? open(Lobsters.userURL(username), from: origin) : showUser(username, from: origin)
     }
 
     /// An HN user's page: karma, about, their stories and comments.
@@ -564,11 +561,11 @@ final class AppCoordinator {
         var user: [UIMenuElement] = []
         if let author = story.author {
             user.append(UIAction(title: author, image: UIImage(systemName: "person")) { [weak self] _ in
-                self?.showUser(author, lobsters: story.isLobsters, from: origin)
+                self?.showUser(author, from: origin)
             })
         }
 
-        let sections: [[UIMenuElement]] = [open, story.isLobsters ? [save] : [vote, save], [share, copy] + [copyComments].compactMap { $0 }, user]
+        let sections: [[UIMenuElement]] = [open, [vote, save], [share, copy] + [copyComments].compactMap { $0 }, user]
         return UIMenu(children: sections.filter { !$0.isEmpty }.map { UIMenu(options: .displayInline, children: $0) })
     }
 }

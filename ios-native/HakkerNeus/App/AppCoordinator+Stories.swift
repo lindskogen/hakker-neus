@@ -5,6 +5,9 @@ extension AppCoordinator {
     /// - Parameter openedFrom: Where the row's comments open from; by default a list, or the side
     ///   column for compact rows (user pages).
     func configure(_ cell: StoryCell, with story: Story, backgroundColor: UIColor, inSavedList: Bool, compact: Bool = false, openedFrom: OpenedFrom? = nil) {
+        if story.isLobsters {
+            return configureLobsters(cell, with: story, backgroundColor: backgroundColor, inSavedList: inSavedList, compact: compact, openedFrom: openedFrom)
+        }
         let jump = inSavedList
             ? UIAccessibilityCustomAction(name: "Front Page") { [weak self] _ in
                 self?.showFrontPage()
@@ -23,7 +26,7 @@ extension AppCoordinator {
             score: session.displayedScore(for: story),
             isVisited: visitedStories.isVisited(story.id),
             isActive: split.activeStoryID == story.id,
-            canUpvote: session.isSignedIn && !story.isLobsters,
+            canUpvote: session.isSignedIn,
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
             compact: compact,
@@ -48,6 +51,7 @@ extension AppCoordinator {
     }
 
     func contextMenuConfiguration(for story: Story, sourceView: UIView) -> UIContextMenuConfiguration {
+        if story.isLobsters { return lobstersContextMenuConfiguration(for: story, sourceView: sourceView) }
         prefetchComments(for: story)
         return UIContextMenuConfiguration(
             identifier: story.id as NSNumber,

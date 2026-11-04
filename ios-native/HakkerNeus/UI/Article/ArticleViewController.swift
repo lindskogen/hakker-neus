@@ -104,7 +104,7 @@ final class ArticleViewController: UIViewController {
             trailing.append(barButton("bubble.left.and.bubble.right", label: "Comments") { [unowned self] in
                 // Back to the comments if that's where the page was opened from.
                 if let stack = navigationController?.viewControllers, let index = stack.firstIndex(of: self), index > 0,
-                   (stack[index - 1] as? CommentsViewController)?.transitionStoryID == story.id {
+                   (stack[index - 1] as? StoryTransitionDestination)?.transitionStoryID == story.id {
                     navigationController?.popViewController(animated: true)
                 } else {
                     coordinator.showComments(for: story, from: .detail)

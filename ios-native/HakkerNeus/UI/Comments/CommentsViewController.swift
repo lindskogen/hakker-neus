@@ -101,7 +101,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     private func advertiseForHandoff() {
         let activity = userActivity ?? NSUserActivity(activityType: "se.lindskogen.hakkerneues.item")
         activity.title = story?.title
-        activity.webpageURL = Lobsters.isLobsters(id) ? Lobsters.storyURL(id) : .hackerNewsItem(id)
+        activity.webpageURL = .hackerNewsItem(id)
         activity.isEligibleForHandoff = true
         userActivity = activity
         activity.becomeCurrent()
@@ -144,7 +144,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
     /// Whether the user already voted on this story, from HN, when signed in.
     private func syncVoteState() async {
         let session = coordinator.session
-        guard session.isSignedIn, !Lobsters.isLobsters(id), let state = try? await session.voteState(for: id),
+        guard session.isSignedIn, let state = try? await session.voteState(for: id),
               state.isUpvoted != session.isUpvoted(id)
         else { return }
         session.setLocalVote(id, upvoted: state.isUpvoted, counted: true)
@@ -432,8 +432,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         let showsButton: Bool
         if case .loaded = loadState { showsButton = threadCount > 1 } else { showsButton = false }
         nextThreadButton.isHidden = !showsButton
-        // lobste.rs threads are read-only.
-        if case .loaded = loadState, !Lobsters.isLobsters(id) { composeButton.isHidden = false } else { composeButton.isHidden = true }
+        if case .loaded = loadState { composeButton.isHidden = false } else { composeButton.isHidden = true }
         composeAboveNextThread.isActive = showsButton
         composeAtBottom.isActive = !showsButton
         // Room to scroll the last comment out from under the buttons.
@@ -557,7 +556,6 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
                 // The story menu's sections go in directly: nested as a menu of its own, it showed
                 // as an untitled, empty-looking row.
                 let storyMenu = coordinator.storyMenu(for: story, sourceView: cell ?? collectionView, includeComments: false)
-                if story.isLobsters { return storyMenu }
                 return UIMenu(children: [UIMenu(options: .displayInline, children: [comment])] + storyMenu.children)
             })
         case .comment(let id):
@@ -600,7 +598,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         var user: [UIMenuElement] = []
         if let author = comment.author {
             user.append(UIAction(title: author, image: UIImage(systemName: "person")) { [unowned self] _ in
-                coordinator.showUser(author, lobsters: comment.isLobsters)
+                coordinator.showUser(author)
             })
         }
 
@@ -615,7 +613,7 @@ final class CommentsViewController: UIViewController, UICollectionViewDelegate, 
         }
 
         return UIMenu(children: [
-            UIMenu(options: .displayInline, children: comment.isLobsters ? [save, collapse] : [reply, save, collapse]),
+            UIMenu(options: .displayInline, children: [reply, save, collapse]),
             UIMenu(options: .displayInline, children: [share, copyText, copyLink]),
             UIMenu(options: .displayInline, children: user),
         ])
