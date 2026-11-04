@@ -8,10 +8,16 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.ui.graphics.toArgb
 import android.net.Uri
+import se.lindskogen.hakkerneus.AppContainer
 import se.lindskogen.hakkerneus.ui.theme.HN
 
-/** Opens a link in a Chrome Custom Tab, coloured like the app. */
+/** Opens a link in a Chrome Custom Tab, coloured like the app; X links go through Nitter. */
 fun Context.openInBrowser(url: String) {
+    val nitter = AppContainer.nitter
+    if (nitter.redirects(url)) AppContainer.launch { openInCustomTab(nitter.resolve(url)) } else openInCustomTab(url)
+}
+
+private fun Context.openInCustomTab(url: String) {
     val colors = CustomTabColorSchemeParams.Builder().setToolbarColor(HN.backgroundDark.toArgb()).build()
     CustomTabsIntent.Builder()
         .setDefaultColorSchemeParams(colors)

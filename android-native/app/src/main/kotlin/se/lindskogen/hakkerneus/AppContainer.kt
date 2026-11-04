@@ -75,6 +75,15 @@ object AppContainer {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    /** Opens X links through Nitter. */
+    lateinit var nitter: se.lindskogen.hakkerneus.data.NitterRedirect
+        private set
+
+    /** Runs [block] on the app's main scope, for work that outlives a screen (like opening a link). */
+    fun launch(block: suspend () -> Unit) {
+        scope.launch { block() }
+    }
+
     /**
      * Upvotes the story or undoes it: the UI updates straight away and rolls back if HN
      * refuses. Signed out (or expired), asks to sign in first and then votes.
@@ -165,6 +174,9 @@ object AppContainer {
         offline = OfflineItemStore(db)
         session = HnSession(appContext)
         hidden = se.lindskogen.hakkerneus.persistence.HiddenStoriesStore(appContext)
+        nitter = se.lindskogen.hakkerneus.data.NitterRedirect(settings)
+        // Check the instances ahead of the first X link.
+        if (nitter.enabled) scope.launch { nitter.workingInstance() }
         cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
         newMinimumScore = settings.getInt("newMinimumScore", 0)
         CommentTextStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)

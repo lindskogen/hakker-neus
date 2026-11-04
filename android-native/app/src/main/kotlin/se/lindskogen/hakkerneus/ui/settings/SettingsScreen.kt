@@ -154,6 +154,7 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                 }
             }
             Footer("Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.")
+            XLinksSection()
         }
     }
 
