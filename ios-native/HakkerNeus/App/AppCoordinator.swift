@@ -32,6 +32,7 @@ final class AppCoordinator {
     /// Nil in tests, which bring their own database.
     let cloudSync: CloudSync?
     let settings: AppSettings
+    let nitter: NitterRedirect
     let session = HNSession()
     let userCache = UserCache(api: UserAPI(transport: URLSession.shared))
     /// Unsent comment drafts, by the ID of what they reply to.
@@ -61,6 +62,7 @@ final class AppCoordinator {
         _ = NetworkConditions.shared // Start watching the connection before it's asked about.
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
+        self.nitter = NitterRedirect(settings: settings)
         self.hiddenStories = HiddenStoriesStore(defaults: defaults)
         ColorTheme.current = settings.colorTheme
         CommentTextStyle.current = settings.commentTextStyle
@@ -144,6 +146,7 @@ final class AppCoordinator {
         // Lay out now, so links opened at launch know whether there's room beside the list.
         split.view.layoutIfNeeded()
         if !settings.opensLinksInSafari { AdBlocking.prepare() }
+        nitter.prepare()
 
         #if DEBUG
         if client is CommentsSinkClient {
@@ -397,6 +400,15 @@ final class AppCoordinator {
     /// list when the window is wide).
     /// - Parameter story: The story the link belongs to, if it's a story's link.
     func open(_ url: URL, story: Story? = nil, from origin: OpenedFrom = .detail) {
+        // X links go through Nitter, once an instance that's up is found (usually checked already).
+        if nitter.redirects(url) {
+            Task { show(link: await nitter.resolve(url), story: story, from: origin) }
+        } else {
+            show(link: url, story: story, from: origin)
+        }
+    }
+
+    private func show(link url: URL, story: Story?, from origin: OpenedFrom) {
         switch HackerNewsLink(url) {
         case .item(let id):
             showComments(id: id, from: origin)
@@ -436,7 +448,7 @@ final class AppCoordinator {
 
     /// Preview for long-pressing a story: the linked page, or the comments for self posts.
     func makePreview(for story: Story) -> UIViewController {
-        if let url = story.url {
+        if let url = story.url.map(nitter.resolveNow) {
             split.isSplit || !settings.opensLinksInSafari
                 ? ArticleViewController(url: url, story: story, coordinator: self)
                 : makeBrowser(for: url)

@@ -69,6 +69,24 @@ final class AppSettings {
         set { defaults.set(newValue, forKey: "opensLinksInSafari") }
     }
 
+    /// Open x.com and twitter.com links through Nitter (`NitterRedirect`). On unless turned off.
+    var opensXLinksViaNitter: Bool {
+        get { defaults.object(forKey: "opensXLinksViaNitter") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "opensXLinksViaNitter") }
+    }
+
+    /// Nitter instances tried after xcancel.com, in order.
+    var nitterFallbacks: [String] {
+        get { defaults.stringArray(forKey: "nitterFallbacks") ?? NitterRedirect.suggestedFallbacks }
+        set { defaults.set(newValue, forKey: "nitterFallbacks") }
+    }
+
+    /// Nitter instances the user added, offered beside the suggested ones.
+    var customNitterInstances: [String] {
+        get { defaults.stringArray(forKey: "customNitterInstances") ?? [] }
+        set { defaults.set(newValue, forKey: "customNitterInstances") }
+    }
+
     /// Open article links in Safari's Reader mode when the page supports it.
     var opensLinksInReaderMode: Bool {
         get { defaults.bool(forKey: "opensLinksInReaderMode") }

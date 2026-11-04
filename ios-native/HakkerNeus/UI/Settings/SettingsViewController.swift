@@ -17,6 +17,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case newMinimumScore
         case adBlocking
         case linkBrowser
+        case xLinks
     }
 
     private struct Section {
@@ -49,12 +50,12 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 ? Section(
                     title: "Links",
                     footer: "Safari keeps your logins and opens articles in Reader mode when the page supports it. Beside the list on iPad, articles use the built-in browser.",
-                    rows: [.linkBrowser, .readerMode]
+                    rows: [.linkBrowser, .readerMode, .xLinks]
                 )
                 : Section(
                     title: "Links",
                     footer: "The built-in browser blocks ads. Safari keeps your logins and has Reader mode.",
-                    rows: [.linkBrowser]
+                    rows: [.linkBrowser, .xLinks]
                 ),
             Section(
                 title: "Ad Blocking",
@@ -82,6 +83,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: HNSession.didChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(refreshAdBlockingState), name: UIApplication.didBecomeActiveNotification, object: nil)
         refreshAdBlockingState()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData() // Back from X Links, its row shows the choice.
     }
 
     /// Whether the content blocker is on, checked again on coming back from the Settings app.
@@ -165,6 +171,11 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             picker.sizeToFit()
             cell.accessoryView = picker
             cell.selectionStyle = .none
+        case .xLinks:
+            content.text = "X Links"
+            content.secondaryText = coordinator.settings.opensXLinksViaNitter ? "Nitter" : "X"
+            content.prefersSideBySideTextAndSecondaryText = true
+            cell.accessoryType = .disclosureIndicator
         case .adBlocking:
             content.text = "Block Ads in Safari"
             content.secondaryText = adBlockingEnabled.map { $0 ? "On" : "Off" }
@@ -244,6 +255,8 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             present(picker, animated: true)
         case .exportCSV:
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
+        case .xLinks:
+            navigationController?.pushViewController(NitterSettingsViewController(coordinator: coordinator), animated: true)
         case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking, .linkBrowser:
             break
         case .theme(let theme):
