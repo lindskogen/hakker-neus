@@ -23,7 +23,7 @@ extension AppCoordinator {
             score: session.displayedScore(for: story),
             isVisited: visitedStories.isVisited(story.id),
             isActive: split.activeStoryID == story.id,
-            canUpvote: session.isSignedIn,
+            canUpvote: session.isSignedIn && !story.isLobsters,
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
             compact: compact,

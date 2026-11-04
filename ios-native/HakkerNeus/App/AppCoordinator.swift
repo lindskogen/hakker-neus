@@ -45,6 +45,8 @@ final class AppCoordinator {
     private(set) lazy var search = SearchViewController(coordinator: self, api: userCache.api)
     /// HN's New list, kept alive like the front page so its place survives going back and forth.
     private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
+    /// lobste.rs's Hottest list, read-only, opened from the saved list like search.
+    private(set) lazy var lobstersList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .lobsters), coordinator: self)
 
     init(
         window: UIWindow,
@@ -57,8 +59,10 @@ final class AppCoordinator {
         let client = ProcessInfo.processInfo.arguments.contains(CommentsSinkClient.launchArgument)
             ? CommentsSinkClient(base: client) : client
         #endif
-        self.client = client
-        self.itemCache = ItemCache(client: client)
+        // lobste.rs items (negative IDs) go to lobste.rs, everything else to HN.
+        let routing = SourceRoutingClient(hn: client)
+        self.client = routing
+        self.itemCache = ItemCache(client: routing)
         _ = NetworkConditions.shared // Start watching the connection before it's asked about.
         self.defaults = defaults
         self.settings = AppSettings(defaults: defaults)
@@ -123,7 +127,7 @@ final class AppCoordinator {
         navigationController.cornerButtonMode = { [weak self] screen in
             guard let self else { return .hidden }
             if screen === frontPage { return .menu }
-            if screen === savedList || screen === newList { return .close }
+            if screen === savedList || screen === newList || screen === lobstersList { return .close }
             return .hidden
         }
         navigationController.cornerButtonOnLeft = settings.cornerButtonOnLeft
@@ -135,7 +139,7 @@ final class AppCoordinator {
         }
         navigationController.onCornerButton = { [weak self] screen in
             guard let self else { return }
-            screen === savedList || screen === newList ? showFrontPage() : showSavedStories()
+            screen === savedList || screen === newList || screen === lobstersList ? showFrontPage() : showSavedStories()
         }
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
@@ -149,7 +153,7 @@ final class AppCoordinator {
         nitter.prepare()
 
         #if DEBUG
-        if client is CommentsSinkClient {
+        if (client as? SourceRoutingClient)?.hn is CommentsSinkClient {
             showComments(id: CommentsSinkClient.itemID)
         }
         #endif
@@ -256,6 +260,7 @@ final class AppCoordinator {
     /// Upvotes the story, or undoes the upvote. Updates the UI straight away and rolls it back
     /// if HN refuses; asks to sign in first when needed.
     func toggleVote(_ story: Story) {
+        guard !story.isLobsters else { return } // Read-only.
         guard session.isSignedIn else {
             showSignIn { [weak self] in self?.toggleVote(story) }
             return
@@ -293,6 +298,12 @@ final class AppCoordinator {
     func showNewStories() {
         guard navigationController.topViewController === frontPage else { return }
         navigationController.pushViewController(newList, animated: true)
+    }
+
+    /// lobste.rs's Hottest list, on top of the saved list like search.
+    func showLobsters() {
+        guard navigationController.topViewController === savedList else { return }
+        navigationController.pushViewController(lobstersList, animated: true)
     }
 
     /// Story search, on top of the saved list (in the list column when the window is wide).
@@ -414,6 +425,8 @@ final class AppCoordinator {
             showComments(id: id, from: origin)
         case .user(let username):
             showUser(username, from: origin)
+        case nil where Lobsters.storyID(in: url) != nil:
+            showComments(id: Lobsters.storyID(in: url)!, from: origin)
         case nil where split.isSplit || !settings.opensLinksInSafari:
             show(ArticleViewController(url: url, story: story, coordinator: self), from: origin)
         case nil:
@@ -429,6 +442,11 @@ final class AppCoordinator {
         browser.preferredControlTintColor = .white
         browser.dismissButtonStyle = .done
         return browser
+    }
+
+    /// A user's page: in the app for HN, on the web for lobste.rs (read-only for now).
+    func showUser(_ username: String, lobsters: Bool, from origin: OpenedFrom = .detail) {
+        lobsters ? open(Lobsters.userURL(username), from: origin) : showUser(username, from: origin)
     }
 
     /// An HN user's page: karma, about, their stories and comments.
@@ -546,11 +564,11 @@ final class AppCoordinator {
         var user: [UIMenuElement] = []
         if let author = story.author {
             user.append(UIAction(title: author, image: UIImage(systemName: "person")) { [weak self] _ in
-                self?.showUser(author, from: origin)
+                self?.showUser(author, lobsters: story.isLobsters, from: origin)
             })
         }
 
-        let sections: [[UIMenuElement]] = [open, [vote, save], [share, copy] + [copyComments].compactMap { $0 }, user]
+        let sections: [[UIMenuElement]] = [open, story.isLobsters ? [save] : [vote, save], [share, copy] + [copyComments].compactMap { $0 }, user]
         return UIMenu(children: sections.filter { !$0.isEmpty }.map { UIMenu(options: .displayInline, children: $0) })
     }
 }

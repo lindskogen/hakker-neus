@@ -111,6 +111,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             configureProfileHeader()
             view.onSettings = { [unowned self] in coordinator.showSettings() }
             view.onSearch = { [unowned self] in coordinator.showSearch() }
+            view.onLobsters = { [unowned self] in coordinator.showLobsters() }
             view.onSignIn = { [unowned self] in coordinator.showSignIn() }
             view.onShowUser = { [unowned self] in coordinator.showUser($0, from: .list) }
             view.onTab = { [unowned self] tab in

@@ -11,7 +11,7 @@ struct SavedComment: Hashable, Sendable, Identifiable {
     let storyTitle: String?
     let savedAt: Date
 
-    var hackerNewsURL: URL { .hackerNewsItem(id) }
+    var hackerNewsURL: URL { Lobsters.isLobsters(id) ? Lobsters.commentURL(id) : .hackerNewsItem(id) }
 }
 
 /// Comments the user has saved, newest first, kept in the app's SQLite database next to the

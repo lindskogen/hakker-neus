@@ -40,7 +40,8 @@ final class CloudSync {
 
         init?(recordID: CKRecord.ID) {
             guard recordID.zoneID == CloudSync.zoneID else { return nil }
-            let parts = recordID.recordName.split(separator: "-")
+            // Split at the first dash only: lobste.rs IDs are negative ("SavedStory--1234").
+            let parts = recordID.recordName.split(separator: "-", maxSplits: 1)
             guard parts.count == 2, let id = Int(parts[1]) else { return nil }
             switch parts[0] {
             case "SavedStory": self = .savedStory(id)

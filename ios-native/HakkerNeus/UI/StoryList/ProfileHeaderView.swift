@@ -5,6 +5,7 @@ import UIKit
 final class ProfileHeaderView: UICollectionReusableView {
     var onSettings: (() -> Void)?
     var onSearch: (() -> Void)?
+    var onLobsters: (() -> Void)?
     /// Tapping "Sign in", shown when signed out.
     var onSignIn: (() -> Void)?
     /// Tapping your own name, when signed in.
@@ -22,6 +23,7 @@ final class ProfileHeaderView: UICollectionReusableView {
     private let detailLabel = UILabel()
     private let settingsButton = UIButton(type: .system)
     private let searchButton = UIButton(type: .system)
+    private let lobstersButton = UIButton(type: .system)
     private var leadingConstraint: NSLayoutConstraint!
     private var trailingConstraint: NSLayoutConstraint!
 
@@ -74,6 +76,16 @@ final class ProfileHeaderView: UICollectionReusableView {
         searchButton.addAction(UIAction { [weak self] _ in self?.onSearch?() }, for: .touchUpInside)
         searchButton.setContentHuggingPriority(.required, for: .horizontal)
 
+        var lobstersConfig = searchConfig
+        lobstersConfig.image = UIImage(systemName: "l.circle")
+        lobstersButton.configuration = lobstersConfig
+        lobstersButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        lobstersButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        lobstersButton.accessibilityLabel = "Lobsters"
+        lobstersButton.accessibilityIdentifier = "saved.lobsters"
+        lobstersButton.addAction(UIAction { [weak self] _ in self?.onLobsters?() }, for: .touchUpInside)
+        lobstersButton.setContentHuggingPriority(.required, for: .horizontal)
+
         nameLabel.isUserInteractionEnabled = true
         nameLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(nameTapped)))
 
@@ -81,7 +93,7 @@ final class ProfileHeaderView: UICollectionReusableView {
         text.axis = .vertical
         text.spacing = 4
 
-        let row = UIStackView(arrangedSubviews: [text, searchButton, settingsButton])
+        let row = UIStackView(arrangedSubviews: [text, lobstersButton, searchButton, settingsButton])
         row.alignment = .center
         row.spacing = Theme.padding
         row.translatesAutoresizingMaskIntoConstraints = false

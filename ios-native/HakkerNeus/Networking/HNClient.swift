@@ -12,6 +12,14 @@ protocol HNClient: Sendable {
 
     /// An item with its full comment tree.
     func item(id: Int) async throws -> StoryWithComments
+
+    /// IDs of lobste.rs's Hottest list, in rank order (see `Lobsters`).
+    func lobstersStoryIDs() async throws -> [Int]
+}
+
+extension HNClient {
+    /// Only `SourceRoutingClient` reads lobste.rs.
+    func lobstersStoryIDs() async throws -> [Int] { [] }
 }
 
 enum HNClientError: Error, LocalizedError, Equatable {

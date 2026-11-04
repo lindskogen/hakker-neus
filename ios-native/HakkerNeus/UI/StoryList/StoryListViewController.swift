@@ -44,7 +44,11 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         self.feed = feed
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
-        title = feed.source == .new ? "New" : "Front Page"
+        title = switch feed.source {
+        case .top: "Front Page"
+        case .new: "New"
+        case .lobsters: "Lobsters"
+        }
     }
 
     @available(*, unavailable)
@@ -214,7 +218,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     /// The New (front page only) and hide-read buttons, stacked above the corner button on the same side.
     private func configureFloatingButtons() {
-        if !isNewList { configureNewButton() }
+        if feed.source == .top { configureNewButton() }
         configureHideReadButton()
         placeFloatingButtons()
     }
@@ -280,7 +284,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         hideReadButton.alpha = 0
         hideReadButton.isHidden = true
         hideReadButton.addAction(UIAction { [unowned self] _ in hideReadTapped() }, for: .touchUpInside)
-        (hideReadLeading, hideReadTrailing) = stack(hideReadButton, slot: isNewList ? 1 : 2)
+        (hideReadLeading, hideReadTrailing) = stack(hideReadButton, slot: feed.source == .top ? 2 : 1)
         updateHideReadButton()
     }
 

@@ -8,9 +8,9 @@ import Foundation
 final class TopStoriesFeed {
     static let pageSize = 40
 
-    /// Which HN list: the ranked front page or the newest stories.
+    /// Which list: HN's ranked front page or newest stories, or lobste.rs's Hottest.
     enum Source {
-        case top, new
+        case top, new, lobsters
     }
 
     private let client: HNClient
@@ -61,7 +61,11 @@ final class TopStoriesFeed {
         pageTask = nil
 
         let generation = generation
-        let ids = try await source == .top ? client.topStoryIDs() : client.newStoryIDs()
+        let ids = switch source {
+        case .top: try await client.topStoryIDs()
+        case .new: try await client.newStoryIDs()
+        case .lobsters: try await client.lobstersStoryIDs()
+        }
         guard generation == self.generation else { throw CancellationError() }
 
         self.ids = ids

@@ -12,7 +12,8 @@ struct Story: Hashable, Sendable, Codable, Identifiable {
     let commentCount: Int
     let time: Date
 
-    var hackerNewsURL: URL { .hackerNewsItem(id) }
+    /// The discussion's page: on HN, or lobste.rs for its stories.
+    var hackerNewsURL: URL { isLobsters ? Lobsters.storyURL(id) : .hackerNewsItem(id) }
 
     /// The linked site, e.g. "github.com", without a leading "www.". Nil for self posts.
     var displayDomain: String? {
@@ -29,7 +30,7 @@ struct Comment: Hashable, Sendable, Codable, Identifiable {
     let time: Date
     let children: [Comment]
 
-    var hackerNewsURL: URL { .hackerNewsItem(id) }
+    var hackerNewsURL: URL { isLobsters ? Lobsters.commentURL(id) : .hackerNewsItem(id) }
 }
 
 /// A comment placed in a flat list, with its nesting depth.
