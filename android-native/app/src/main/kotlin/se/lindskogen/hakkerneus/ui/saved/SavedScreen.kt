@@ -67,7 +67,6 @@ fun SavedScreen(
     openItem: (Long) -> Unit,
     openSettings: () -> Unit,
     openSearch: () -> Unit,
-    openLobsters: () -> Unit,
     signIn: () -> Unit,
 ) {
     val upvoted by AppContainer.session.upvoted.collectAsState()
@@ -125,9 +124,6 @@ fun SavedScreen(
                             if (savedComments.isEmpty()) stories else "$stories · $comments",
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
-                    }
-                    IconButton(onClick = openLobsters, modifier = Modifier.offset(x = 12.dp)) {
-                        Text("L", style = HN.body.copy(fontSize = 15.sp, color = Color.White), modifier = Modifier.border(1.5.dp, Color.White, CircleShape).size(24.dp).wrapContentHeight(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
                     IconButton(onClick = openSearch, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.search, contentDescription = "Search", tint = Color.White) }
                     // 48dp to tap, with the gear at its right edge so the margins match the name's.

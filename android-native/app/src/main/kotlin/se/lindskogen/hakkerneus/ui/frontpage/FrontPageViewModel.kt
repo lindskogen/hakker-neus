@@ -33,6 +33,12 @@ class FrontPageViewModel(private val source: TopStoriesFeed.Source = TopStoriesF
     var restoredOffset = 0
         private set
 
+    /** Where the list was scrolled when the feed was switched away from. */
+    fun remember(index: Int, offset: Int) {
+        restoredIndex = index
+        restoredOffset = offset
+    }
+
     init {
         // Show the front page as it was last time, unchanged; pull to refresh gets a new ranking.
         val saved = if (isNew) null else FrontPageMemory.load()

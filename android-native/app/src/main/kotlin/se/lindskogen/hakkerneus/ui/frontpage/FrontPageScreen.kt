@@ -44,6 +44,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -84,11 +87,20 @@ import se.lindskogen.hakkerneus.ui.theme.Palette
  * The front page (`NewsList.tsx`), or with [isNew] HN's New list (opened from the front page's
  * New button, filtered by the minimum votes setting).
  */
+/** What the corner button's feed menu needs from the feed showing: set by [FrontPageScreen]. */
+class FeedMenuHooks {
+    var hasRead = false
+    var canUndo = false
+    var hide: () -> Unit = {}
+    var undo: () -> Unit = {}
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FrontPageScreen(
-    openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit, openNew: () -> Unit = {},
+    openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit,
     source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top,
+    menu: FeedMenuHooks? = null,
 ) {
     val isNew = source == TopStoriesFeed.Source.New
     val isFront = source == TopStoriesFeed.Source.Top
@@ -103,17 +115,15 @@ fun FrontPageScreen(
     // Stories hidden with the hide-read button stay out of the list.
     val minimumScore = if (isNew) AppContainer.newMinimumScore else 0
     val shown = remember(state.stories, hidden, minimumScore) { state.stories.filter { it.id !in hidden && it.score >= minimumScore } }
-    /** What the button just hid, while it offers to undo. */
-    var justHidden by remember { mutableStateOf<List<Long>?>(null) }
-    LaunchedEffect(justHidden) {
-        if (justHidden != null) {
-            delay(5000)
-            justHidden = null
-        }
-    }
+    /** What the menu last hid, which it offers to show again. Kept while switching feeds. */
+    var justHidden by rememberSaveable { mutableStateOf<List<Long>?>(null) }
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
+    // Switching feeds leaves this one; come back to the same place.
+    DisposableEffect(listState) {
+        onDispose { model.remember(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }
+    }
     // Remember the list and where it's scrolled when leaving the app, to show it again next launch.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { model.saveForNextLaunch(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }
 
@@ -203,61 +213,23 @@ fun FrontPageScreen(
         }
 
 
-        val onLeft = AppContainer.cornerButtonOnLeft
-        // Above the corner button, same side: opens the New list.
-        if (isFront) SmallFloatingActionButton(
-            onClick = openNew,
-            shape = CircleShape,
-            containerColor = Color(0xE6404040),
-            contentColor = Color.White,
-            modifier = Modifier
-                .align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + 52.dp + HN.padding)
-                .size(52.dp)
-                .semantics { contentDescription = "New stories" },
-        ) {
-            Icon(HnIcons.clock, contentDescription = null, modifier = Modifier.size(22.dp))
-        }
-
-        // Above the New button (the corner button on New): hides read stories, then briefly offers to undo.
+        // The corner button's menu hides read stories, and shows them again.
         visits.size // re-read when visits change
         val hasRead = shown.any { AppContainer.visited.isVisited(it.id) }
-        AnimatedVisibility(
-            visible = justHidden != null || hasRead,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
-        ) {
-            val undo = justHidden != null
-            SmallFloatingActionButton(
-                onClick = {
-                    val previous = justHidden
-                    if (previous != null) {
-                        justHidden = null
-                        AppContainer.hidden.unhide(previous)
-                    } else {
-                        val read = shown.map { it.id }.filter { AppContainer.visited.isVisited(it) }
-                        if (read.isNotEmpty()) {
-                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                            AppContainer.hidden.hide(read)
-                            justHidden = read
-                        }
-                    }
-                },
-                shape = CircleShape,
-                containerColor = Color(0xE6404040),
-                contentColor = Color.White,
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    // The corner button's size, stacked above it and the New button.
-                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding + (52.dp + HN.padding) * (if (isFront) 2 else 1))
-                    .size(52.dp)
-                    .semantics { contentDescription = if (undo) "Undo hide read stories" else "Hide read stories" },
-            ) {
-                Crossfade(undo, label = "hide-read") { isUndo ->
-                    Icon(if (isUndo) HnIcons.undo else HnIcons.eyeSlash, contentDescription = null, modifier = Modifier.size(22.dp))
+        SideEffect {
+            menu?.hasRead = hasRead
+            menu?.canUndo = justHidden != null
+            menu?.hide = {
+                val read = shown.map { it.id }.filter { AppContainer.visited.isVisited(it) }
+                if (read.isNotEmpty()) {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    AppContainer.hidden.hide(read)
+                    justHidden = read
                 }
+            }
+            menu?.undo = {
+                justHidden?.let { AppContainer.hidden.unhide(it) }
+                justHidden = null
             }
         }
     }

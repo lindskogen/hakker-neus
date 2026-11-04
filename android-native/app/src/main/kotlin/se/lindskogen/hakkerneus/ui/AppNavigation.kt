@@ -1,6 +1,26 @@
 package se.lindskogen.hakkerneus.ui
 
 import se.lindskogen.hakkerneus.data.Lobsters
+import se.lindskogen.hakkerneus.data.TopStoriesFeed
+import se.lindskogen.hakkerneus.ui.frontpage.FeedMenuHooks
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import se.lindskogen.hakkerneus.ui.comments.LobstersCommentsScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
@@ -63,18 +83,16 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 
 @Serializable object FrontPage
 @Serializable object Saved
-@Serializable object New
 @Serializable object Settings
 @Serializable object Search
-@Serializable object LobstersList
 @Serializable object SignIn
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
 @Serializable data class User(val name: String)
 
-private enum class CornerMode { Menu, Close, Hidden }
+private enum class CornerMode { Profile, Back, Hidden }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) {
     val nav = rememberNavController()
@@ -128,11 +146,25 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
     val entry by nav.currentBackStackEntryAsState()
     val mode = when {
-        entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Menu
-        entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Close
-        entry?.destination?.hasRoute<New>() == true -> CornerMode.Close
-        entry?.destination?.hasRoute<LobstersList>() == true -> CornerMode.Close
+        entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Profile
+        entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Back
         else -> CornerMode.Hidden
+    }
+    // The feed at the root, switched in place from the corner button's menu.
+    var feed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.Top) }
+    val feedMenu = remember { FeedMenuHooks() }
+    var menuOpen by remember { mutableStateOf(false) }
+    var toast by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(toast) {
+        if (toast != null) {
+            delay(1500)
+            toast = null
+        }
+    }
+    fun feedName(source: TopStoriesFeed.Source) = when (source) {
+        TopStoriesFeed.Source.Top -> "Top"
+        TopStoriesFeed.Source.New -> "New"
+        TopStoriesFeed.Source.Lobsters -> "lobste.rs"
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -142,32 +174,15 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
         composable<FrontPage> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-            FrontPageScreen(
-                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                openItem = { openComments(it) },
-                signIn = { nav.navigate(SignIn) },
-                openNew = { nav.navigate(New) },
-            )
+            Crossfade(feed, label = "feed") { source ->
+                FrontPageScreen(
+                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                    openItem = { openComments(it) },
+                    signIn = { nav.navigate(SignIn) },
+                    source = source,
+                    menu = feedMenu,
+                )
             }
-        }
-        composable<New> {
-            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-            FrontPageScreen(
-                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                openItem = { openComments(it) },
-                signIn = { nav.navigate(SignIn) },
-                source = se.lindskogen.hakkerneus.data.TopStoriesFeed.Source.New,
-            )
-            }
-        }
-        composable<LobstersList> {
-            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-            FrontPageScreen(
-                openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                openItem = { openComments(it) },
-                signIn = { nav.navigate(SignIn) },
-                source = se.lindskogen.hakkerneus.data.TopStoriesFeed.Source.Lobsters,
-            )
             }
         }
         composable<Comments> { entry ->
@@ -193,7 +208,6 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                     openItem = { openComments(it) },
                     openSettings = { nav.navigate(Settings) },
                     openSearch = { nav.navigate(Search) },
-                    openLobsters = { nav.navigate(LobstersList) },
                     signIn = { nav.navigate(SignIn) },
                 )
             }
@@ -246,8 +260,8 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
 
         // One lower-right button (lower-left for left hands) above every screen, so it stays put
-        // while they change underneath: the hamburger on the front page opens the profile, the
-        // close button returns.
+        // while they change underneath: on the feed a person, opening the profile, and held, the
+        // feed menu; on the profile, back.
         val onLeft = AppContainer.cornerButtonOnLeft
         AnimatedVisibility(
             visible = mode != CornerMode.Hidden,
@@ -255,29 +269,91 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             exit = fadeOut(),
             modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
-            SmallFloatingActionButton(
-                onClick = { if (mode == CornerMode.Close) { if (!nav.popBackStack<FrontPage>(inclusive = false)) nav.popBackStack() } else nav.navigate(Saved) },
-                shape = CircleShape,
-                containerColor = Color(0xE6404040),
-                contentColor = Color.White,
-                modifier = Modifier
+            val haptics = LocalHapticFeedback.current
+            Box(
+                Modifier
                     .navigationBarsPadding()
-                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding)
-                    .size(52.dp)
-                    .semantics { contentDescription = if (mode == CornerMode.Close) "Front page" else "Profile and saved stories" },
+                    .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding),
             ) {
-                // The icon turns between the hamburger and the close button: the hamburger rotates
-                // a quarter turn as it fades out, the close button rotates into place as it fades in.
-                val isClose = mode == CornerMode.Close
-                val turn by animateFloatAsState(if (isClose) 90f else 0f, label = "corner turn")
-                Crossfade(isClose, label = "corner icon") { close ->
-                    Icon(
-                        if (close) HnIcons.close else HnIcons.menu,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp).rotate(if (close) turn - 90f else turn),
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xE6404040),
+                    contentColor = Color.White,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            onClickLabel = if (mode == CornerMode.Back) "Back" else "Profile and saved stories",
+                            onClick = { if (mode == CornerMode.Back) nav.popBackStack() else nav.navigate(Saved) },
+                            onLongClickLabel = if (mode == CornerMode.Profile) "Feeds and search" else null,
+                            onLongClick = if (mode == CornerMode.Profile) {
+                                { haptics.performHapticFeedback(HapticFeedbackType.LongPress); menuOpen = true }
+                            } else null,
+                        )
+                        .semantics { contentDescription = if (mode == CornerMode.Back) "Back" else "Profile and saved stories" },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Crossfade(mode == CornerMode.Back, label = "corner icon") { back ->
+                            Icon(if (back) HnIcons.back else HnIcons.person, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    for (source in TopStoriesFeed.Source.entries) {
+                        DropdownMenuItem(
+                            text = { Text(feedName(source)) },
+                            leadingIcon = {
+                                when (source) {
+                                    TopStoriesFeed.Source.Top -> Icon(HnIcons.arrowUp, contentDescription = null)
+                                    TopStoriesFeed.Source.New -> Icon(HnIcons.clock, contentDescription = null)
+                                    TopStoriesFeed.Source.Lobsters -> Text("L", style = HN.body.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold), modifier = Modifier.width(24.dp), textAlign = TextAlign.Center)
+                                }
+                            },
+                            trailingIcon = { if (source == feed) Icon(HnIcons.check, contentDescription = "Showing") },
+                            onClick = {
+                                menuOpen = false
+                                if (source != feed) {
+                                    feed = source
+                                    toast = feedName(source)
+                                }
+                            },
+                        )
+                    }
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text("Search") },
+                        leadingIcon = { Icon(HnIcons.search, contentDescription = null) },
+                        onClick = { menuOpen = false; nav.navigate(Search) },
+                    )
+                    if (feedMenu.canUndo) DropdownMenuItem(
+                        text = { Text("Show hidden stories") },
+                        leadingIcon = { Icon(HnIcons.eye, contentDescription = null) },
+                        onClick = { menuOpen = false; feedMenu.undo() },
+                    ) else if (feedMenu.hasRead) DropdownMenuItem(
+                        text = { Text("Hide read stories") },
+                        leadingIcon = { Icon(HnIcons.eyeSlash, contentDescription = null) },
+                        onClick = { menuOpen = false; feedMenu.hide() },
                     )
                 }
             }
+        }
+
+        // The feed just switched to, named for a moment at the top.
+        AnimatedVisibility(
+            visible = toast != null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp),
+        ) {
+            Text(
+                toast ?: "",
+                style = HN.body.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Color.White),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(Color(0xD9141414))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
     }
 }
