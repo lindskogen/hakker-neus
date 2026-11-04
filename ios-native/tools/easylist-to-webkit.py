@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Converts EasyList (Adblock Plus syntax) into WebKit content blocker rules.
+"""Converts an Adblock Plus list (EasyList and friends) into WebKit content blocker rules.
 
-    curl -sL https://easylist.to/easylist/easylist.txt -o easylist.txt
-    python3 tools/easylist-to-webkit.py easylist.txt ContentBlocker/blockerList.json
+    python3 tools/easylist-to-webkit.py easylist.txt ContentBlocker/easylist.json
 
-The same JSON is used by the Safari content blocker extension (the in-app Safari sheet) and
-compiled with WKContentRuleListStore for the article view in the iPad side column.
+tools/update-blocking-lists.sh does this for every list the app ships. The JSON is used by the
+Safari content blocker extension (the in-app Safari sheet) and compiled with
+WKContentRuleListStore for the built-in browser.
 
 Covers the bulk of the list: network rules with domain anchors, wildcards, separators, the
 third-party, domain and resource type options, exceptions, and element hiding (generic and

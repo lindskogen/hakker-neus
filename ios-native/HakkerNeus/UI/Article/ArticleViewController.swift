@@ -57,21 +57,21 @@ final class ArticleViewController: UIViewController {
             },
         ]
         showTitle(nil)
-        if let rules = AdBlocking.ruleList {
-            webView.configuration.userContentController.add(rules)
+        if let rules = AdBlocking.ruleLists {
+            rules.forEach(webView.configuration.userContentController.add)
             webView.load(URLRequest(url: url))
         } else {
             // The first article after launch may come before the rules are compiled: wait briefly for them.
             Task {
                 let rules = AdBlocking.prepare()
-                let ready = await withTaskGroup(of: WKContentRuleList?.self) { group in
+                let ready = await withTaskGroup(of: [WKContentRuleList]?.self) { group in
                     group.addTask { await rules.value }
                     group.addTask { try? await Task.sleep(for: .seconds(2)); return nil }
                     let first = await group.next() ?? nil
                     group.cancelAll()
                     return first
                 }
-                if let ready { webView.configuration.userContentController.add(ready) }
+                ready?.forEach(webView.configuration.userContentController.add)
                 webView.load(URLRequest(url: url))
             }
         }

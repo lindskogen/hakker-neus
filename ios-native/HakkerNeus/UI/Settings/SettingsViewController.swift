@@ -16,6 +16,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         case leftHanded
         case newMinimumScore
         case adBlocking
+        case blockingList(BlockingList)
         case linkBrowser
         case xLinks
     }
@@ -58,8 +59,14 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                     rows: [.linkBrowser, .xLinks]
                 ),
             Section(
-                title: "Ad Blocking",
-                footer: "The built-in browser always blocks ads. To block them in Safari too, turn on HackerNeus in the Settings app under Apps › Safari › Extensions. Uses EasyList by The EasyList authors (easylist.to), CC BY-SA.",
+                title: "Blocking in the Built-in Browser",
+                footer: "Ads: EasyList. Trackers: EasyPrivacy. Both by The EasyList authors (easylist.to), CC BY-SA. "
+                    + "Cookie banners and social widgets: Fanboy's Cookie Monster and Social Blocking lists by Fanboy (fanboy.co.nz), CC BY.",
+                rows: BlockingList.allCases.map(Row.blockingList)
+            ),
+            Section(
+                title: "Ad Blocking in Safari",
+                footer: "To block ads in Safari too, turn on HackerNeus in the Settings app under Apps › Safari › Extensions. Uses EasyList.",
                 rows: [.adBlocking]
             ),
         ]
@@ -176,6 +183,17 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             content.secondaryText = coordinator.settings.opensXLinksViaNitter ? "Nitter" : "X"
             content.prefersSideBySideTextAndSecondaryText = true
             cell.accessoryType = .disclosureIndicator
+        case .blockingList(let list):
+            content.text = list.title
+            content.secondaryText = list.source
+            let toggle = UISwitch()
+            toggle.isOn = AdBlocking.isEnabled(list)
+            toggle.accessibilityIdentifier = "settings.blocking.\(list.rawValue)"
+            toggle.addAction(UIAction { [weak toggle] _ in
+                AdBlocking.setEnabled(list, toggle?.isOn ?? true)
+            }, for: .valueChanged)
+            cell.accessoryView = toggle
+            cell.selectionStyle = .none
         case .adBlocking:
             content.text = "Block Ads in Safari"
             content.secondaryText = adBlockingEnabled.map { $0 ? "On" : "Off" }
@@ -257,7 +275,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             exportCSV(from: tableView.cellForRow(at: indexPath) ?? tableView)
         case .xLinks:
             navigationController?.pushViewController(NitterSettingsViewController(coordinator: coordinator), animated: true)
-        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking, .linkBrowser:
+        case .readerMode, .codeWrap, .codeSize, .leftHanded, .newMinimumScore, .adBlocking, .linkBrowser, .blockingList:
             break
         case .theme(let theme):
             coordinator.settings.colorTheme = theme
