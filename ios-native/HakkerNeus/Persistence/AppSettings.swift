@@ -22,6 +22,12 @@ final class AppSettings {
         }
     }
 
+    /// The site the app was last about, which it opens to.
+    var site: Site {
+        get { defaults.string(forKey: "site").flatMap(Site.init(rawValue:)) ?? .hackerNews }
+        set { defaults.set(newValue.rawValue, forKey: "site") }
+    }
+
     static let cornerButtonSideDidChange = Notification.Name("AppSettings.cornerButtonSideDidChange")
 
     /// The front page's corner button sits lower-left (for left hands) instead of lower-right.

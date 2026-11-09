@@ -20,7 +20,10 @@ interface HnClient {
     suspend fun item(id: Long): StoryWithComments
 
     /** IDs of lobste.rs's Hottest list, in rank order (see [Lobsters]). Only [SourceRoutingClient] reads lobste.rs. */
-    suspend fun lobstersStoryIds(): List<Long> = emptyList()
+    suspend fun lobstersHottestIds(): List<Long> = emptyList()
+
+    /** IDs of lobste.rs's Newest list, newest first. Only [SourceRoutingClient] reads lobste.rs. */
+    suspend fun lobstersNewestIds(): List<Long> = emptyList()
 }
 
 private val json = Json { ignoreUnknownKeys = true }

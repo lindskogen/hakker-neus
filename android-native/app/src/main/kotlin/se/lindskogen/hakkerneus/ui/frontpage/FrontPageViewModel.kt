@@ -20,7 +20,7 @@ data class FrontPageState(
     val hasMore: Boolean = true,
 )
 
-/** The front page, or HN's New list or lobste.rs's Hottest (those two not remembered between launches). */
+/** The front page, or another list (HN's New, lobste.rs's Hottest or Newest: those not remembered between launches). */
 class FrontPageViewModel(private val source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top) : ViewModel() {
     private val isNew = source != TopStoriesFeed.Source.Top
     private val feed = TopStoriesFeed(AppContainer.client, source)

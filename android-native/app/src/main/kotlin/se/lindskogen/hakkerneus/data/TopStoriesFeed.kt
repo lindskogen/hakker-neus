@@ -5,12 +5,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 
 /**
- * Paginated front page (or HN's New list, with [Source.New]). [reload] takes a snapshot of the ranked IDs and [loadNextPage] fetches
+ * Paginated front page (or another list: see [Source]). [reload] takes a snapshot of the ranked IDs and [loadNextPage] fetches
  * the next slice of that snapshot in parallel. Concurrent page loads share one request.
  */
 class TopStoriesFeed(private val client: HnClient, val source: Source = Source.Top, private val pageSize: Int = PAGE_SIZE) {
-    /** Which list: HN's ranked front page or newest stories, or lobste.rs's Hottest. */
-    enum class Source { Top, New, Lobsters }
+    /** Which list: HN's ranked front page or newest stories, or lobste.rs's Hottest or Newest. */
+    enum class Source { Top, New, LobstersHottest, LobstersNewest }
 
     companion object {
         const val PAGE_SIZE = 40
@@ -42,7 +42,8 @@ class TopStoriesFeed(private val client: HnClient, val source: Source = Source.T
         val fresh = when (source) {
             Source.Top -> client.topStoryIds()
             Source.New -> client.newStoryIds()
-            Source.Lobsters -> client.lobstersStoryIds()
+            Source.LobstersHottest -> client.lobstersHottestIds()
+            Source.LobstersNewest -> client.lobstersNewestIds()
         }
         mutex.withLock {
             ids = fresh

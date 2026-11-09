@@ -1,6 +1,5 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
-import se.lindskogen.hakkerneus.data.isLobsters
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.compose.runtime.snapshotFlow
@@ -84,27 +83,30 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 import se.lindskogen.hakkerneus.ui.theme.Palette
 
 /**
- * The front page (`NewsList.tsx`), or with [isNew] HN's New list (opened from the front page's
- * New button, filtered by the minimum votes setting).
+ * What the hide-read button above the corner button needs from a feed: whether any story showing
+ * has been read, whether some were just hidden, and how to hide or show them. Compose state, set
+ * by the feed's screen, so the button follows along. One per feed.
  */
-/** What the corner button's feed menu needs from the feed showing: set by [FrontPageScreen]. */
-class FeedMenuHooks {
-    var hasRead = false
-    var canUndo = false
+class HideReadHooks {
+    var hasRead by mutableStateOf(false)
+    var canUndo by mutableStateOf(false)
     var hide: () -> Unit = {}
     var undo: () -> Unit = {}
 }
 
+/**
+ * Hacker News's front page (`NewsList.tsx`), or with [TopStoriesFeed.Source.New] its New list,
+ * filtered by the minimum votes setting. lobste.rs's lists are [LobstersFrontPageScreen].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FrontPageScreen(
     openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit,
     source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top,
-    menu: FeedMenuHooks? = null,
+    menu: HideReadHooks? = null,
 ) {
     val isNew = source == TopStoriesFeed.Source.New
-    val isFront = source == TopStoriesFeed.Source.Top
-    val rowBackground: (Int) -> Color = if (source == TopStoriesFeed.Source.Lobsters) Palette::lobstersBackground else Palette::storyBackground
+    val rowBackground: (Int) -> Color = Palette::storyBackground
     val model: FrontPageViewModel = viewModel(key = source.name) { FrontPageViewModel(source) }
     val state by model.state.collectAsStateWithLifecycle()
     val savedEntries by AppContainer.saved.entries.collectAsState()
@@ -115,7 +117,7 @@ fun FrontPageScreen(
     // Stories hidden with the hide-read button stay out of the list.
     val minimumScore = if (isNew) AppContainer.newMinimumScore else 0
     val shown = remember(state.stories, hidden, minimumScore) { state.stories.filter { it.id !in hidden && it.score >= minimumScore } }
-    /** What the menu last hid, which it offers to show again. Kept while switching feeds. */
+    /** What the hide-read button last hid, which it offers to show again. */
     var justHidden by rememberSaveable { mutableStateOf<List<Long>?>(null) }
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
@@ -188,11 +190,7 @@ fun FrontPageScreen(
                 ) {
                     itemsIndexed(shown, key = { _, story -> story.id }) { index, story ->
                         visits.size // re-read when visits change
-                        if (story.isLobsters) LobstersStoryRow(
-                            story, rowBackground(index), story.id in saved, actions,
-                            isVisited = AppContainer.visited.isVisited(story.id),
-                            newComments = AppContainer.visited.newCommentCount(story),
-                        ) else StoryRow(
+                        StoryRow(
                             story, rowBackground(index), story.id in saved, actions,
                             isVisited = AppContainer.visited.isVisited(story.id),
                             newComments = AppContainer.visited.newCommentCount(story),
@@ -213,7 +211,7 @@ fun FrontPageScreen(
         }
 
 
-        // The corner button's menu hides read stories, and shows them again.
+        // The hide-read button above the corner button hides read stories, and shows them again.
         visits.size // re-read when visits change
         val hasRead = shown.any { AppContainer.visited.isVisited(it.id) }
         SideEffect {
@@ -236,7 +234,7 @@ fun FrontPageScreen(
 }
 
 @Composable
-private fun ErrorState(message: String) {
+internal fun ErrorState(message: String) {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(HnIcons.error, contentDescription = null, tint = HN.backgroundRed.copy(alpha = 0.5f), modifier = Modifier.size(60.dp))
         Text(message, style = HN.titleStyle().copy(color = Color.White.copy(alpha = 0.3f)), modifier = Modifier.padding(20.dp))
@@ -245,7 +243,7 @@ private fun ErrorState(message: String) {
 
 /** Placeholder rows while the front page loads, with a highlight sweeping across. */
 @Composable
-private fun SkeletonRows(rowBackground: (Int) -> Color) {
+internal fun SkeletonRows(rowBackground: (Int) -> Color) {
     val sweep by rememberInfiniteTransition(label = "skeleton").animateFloat(
         initialValue = -1f, targetValue = 2f,
         animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart),

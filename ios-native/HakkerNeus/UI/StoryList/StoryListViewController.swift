@@ -25,7 +25,10 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     private var isNewList: Bool { feed.source == .new }
 
-    /// The stories the feed menu last hid, which it offers to show again.
+    /// Which list this is, to show the same one after a relaunch.
+    var source: TopStoriesFeed.Source { feed.source }
+
+    /// The stories last hidden, which the button above the corner button offers to show again.
     private var justHidden: [Int]?
     /// Everything the feed has loaded, hidden stories included.
     private var feedStories: [Story] = []
@@ -42,6 +45,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         case .top: "Front Page"
         case .new: "New"
         case .lobsters: "Lobsters"
+        case .lobstersNewest: "Lobsters Newest"
         }
     }
 
@@ -199,6 +203,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         }
         // Hiding can leave too few rows to scroll to the end, where the next page loads.
         if shown.count < 15 { loadMore() }
+        onReadStateChange?()
     }
 
     @objc private func minimumScoreChanged() {
@@ -207,12 +212,15 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     // MARK: Hide read stories
 
-    /// Whether any loaded story has been read, for the feed menu's Hide Read Stories.
+    /// Called when there may be different read stories to hide, or none left to show again.
+    var onReadStateChange: (() -> Void)?
+
+    /// Whether any story showing has been read, for Hide Read Stories.
     var hasReadStories: Bool {
         stories.keys.contains { coordinator.visitedStories.isVisited($0) }
     }
 
-    /// Whether the feed menu offers to show the stories it last hid.
+    /// Whether there are stories just hidden to offer to show again.
     var canUndoHideRead: Bool { justHidden != nil }
 
     func hideReadStories() {
@@ -250,6 +258,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
             snapshot.reconfigureItems(snapshot.itemIdentifiers)
         }
         dataSource.apply(snapshot, animatingDifferences: false)
+        if notification.name == VisitedStoriesStore.didChange { onReadStateChange?() }
     }
 
     private func story(at indexPath: IndexPath) -> Story? {

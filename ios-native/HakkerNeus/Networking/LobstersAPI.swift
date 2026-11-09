@@ -8,7 +8,15 @@ struct LobstersAPI: Sendable {
 
     /// One page (25 stories) of the Hottest list; pages start at 1.
     func hottest(page: Int) async throws -> [Story] {
-        let path = page == 1 ? "hottest.json" : "page/\(page).json"
+        try await stories(at: page == 1 ? "hottest.json" : "page/\(page).json")
+    }
+
+    /// One page (25 stories) of the Newest list, newest first; pages start at 1.
+    func newest(page: Int) async throws -> [Story] {
+        try await stories(at: page == 1 ? "newest.json" : "newest/page/\(page).json")
+    }
+
+    private func stories(at path: String) async throws -> [Story] {
         let data = try await transport.data(from: baseURL.appending(path: path))
         return try Self.decoder.decode([StoryJSON].self, from: data).compactMap(\.story)
     }
@@ -109,8 +117,17 @@ struct SourceRoutingClient: HNClient {
 
     /// The first four pages of Hottest (100 stories), fetched together.
     func lobstersStoryIDs() async throws -> [Int] {
+        try await firstPages { [lobsters] in try await lobsters.hottest(page: $0) }
+    }
+
+    /// The first four pages of Newest (100 stories), fetched together.
+    func lobstersNewestStoryIDs() async throws -> [Int] {
+        try await firstPages { [lobsters] in try await lobsters.newest(page: $0) }
+    }
+
+    private func firstPages(_ fetch: @escaping @Sendable (Int) async throws -> [Story]) async throws -> [Int] {
         let pages = try await withThrowingTaskGroup(of: (Int, [Story]).self) { group in
-            for page in 1...4 { group.addTask { [lobsters] in (page, try await lobsters.hottest(page: page)) } }
+            for page in 1...4 { group.addTask { (page, try await fetch(page)) } }
             var pages: [Int: [Story]] = [:]
             for try await (page, stories) in group { pages[page] = stories }
             return pages

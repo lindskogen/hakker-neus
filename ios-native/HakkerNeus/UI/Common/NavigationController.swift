@@ -22,8 +22,8 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     private var interactivePush: UIPercentDrivenInteractiveTransition?
 
     /// The lower-right button (lower-left if set for left hands), above every screen so it stays
-    /// put while they change underneath: on a feed, a person (to the profile) that opens the feed
-    /// menu when held; on the profile, a back button.
+    /// put while they change underneath: on a feed, a person (to the profile) that opens the reel
+    /// of places when dragged up or held; on the profile, a back button.
     private let cornerButton = UIButton(type: .system)
     private var cornerButtonLeading: NSLayoutConstraint!
     private var cornerButtonTrailing: NSLayoutConstraint!
@@ -36,11 +36,25 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     var onCornerButton: ((UIViewController) -> Void)?
     /// Screens that show the corner button, and how.
     var cornerButtonMode: (UIViewController) -> CornerButtonMode = { _ in .hidden }
-    /// The menu the corner button opens when held on a screen, built as it opens.
-    var cornerButtonMenu: ((UIViewController) -> [UIMenuElement])?
+    /// The places the corner button's reel offers on a screen, the current site's first; built
+    /// as it opens. Empty for no reel.
+    var reelColumns: ((UIViewController) -> [ReelColumn])?
+    private var reel: ReelView?
+
+    /// A smaller button stacked above the corner button, for something to do to the screen
+    /// showing (on a feed, hiding read stories); nil for none.
+    var stackedButton: ((UIViewController) -> StackedButton?)?
+    private let stackedButtonView = UIButton(type: .system)
+    private var stackedButtonAction: (() -> Void)?
+
+    struct StackedButton {
+        let systemImage: String
+        let accessibilityLabel: String
+        let action: () -> Void
+    }
 
     enum CornerButtonMode: Equatable {
-        /// On a feed: opens the profile; held, the feed menu.
+        /// On a feed: opens the profile; dragged up or held, the reel.
         case profile
         /// On the profile: back to the feed.
         case back
@@ -72,7 +86,8 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
     // MARK: Corner button
 
-    private func configureCornerButton() {
+    /// Glass on iOS 26, a dark disc before; icons change with a morph (cross-fades before iOS 26).
+    private static func floatingButtonConfiguration(pointSize: CGFloat) -> UIButton.Configuration {
         var config: UIButton.Configuration
         if #available(iOS 26, *) {
             config = .glass()
@@ -80,30 +95,33 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
             config = .filled()
             config.baseBackgroundColor = UIColor(white: 0.25, alpha: 0.9)
         }
-        config.preferredSymbolConfigurationForImage = .init(pointSize: 18, weight: .semibold)
+        config.preferredSymbolConfigurationForImage = .init(pointSize: pointSize, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
-        // The icon morphs between the person and the back button (cross-fades before iOS 26).
         if #available(iOS 26, *) {
             config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
         }
-        cornerButton.configuration = config
+        return config
+    }
+
+    private func configureCornerButton() {
+        cornerButton.configuration = Self.floatingButtonConfiguration(pointSize: 18)
         cornerButton.accessibilityIdentifier = "cornerButton"
         cornerButton.alpha = 0
         cornerButton.addAction(UIAction { [unowned self] _ in
             if let top = topViewController { onCornerButton?(top) }
         }, for: .touchUpInside)
 
-        // Held, the feed menu. Built as it opens, so it reflects the feed showing.
-        cornerButton.menu = UIMenu(children: [
-            UIDeferredMenuElement.uncached { [weak self] completion in
-                guard let self, let top = topViewController else { return completion([]) }
-                completion(cornerButtonMenu?(top) ?? [])
-            },
-        ])
-        cornerButton.showsMenuAsPrimaryAction = false
-        // Top first, read from the top down, whichever corner the button is in.
-        cornerButton.preferredMenuElementOrder = .fixed
+        // The reel opens as soon as the finger moves, or after a short hold without moving.
+        // Either one cancels the tap.
+        let drag = UIPanGestureRecognizer(target: self, action: #selector(handleReel(_:)))
+        let hold = UILongPressGestureRecognizer(target: self, action: #selector(handleReel(_:)))
+        hold.minimumPressDuration = 0.3
+        for gesture in [drag, hold] {
+            gesture.delegate = self
+            cornerButton.addGestureRecognizer(gesture)
+        }
+        reelGestures = [drag, hold]
 
         cornerButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cornerButton)
@@ -115,6 +133,21 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         cornerButtonLeading = cornerButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Theme.padding * 2)
         cornerButtonTrailing = cornerButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Theme.padding * 2)
         placeCornerButton()
+
+        stackedButtonView.configuration = Self.floatingButtonConfiguration(pointSize: 15)
+        stackedButtonView.accessibilityIdentifier = "stackedButton"
+        stackedButtonView.alpha = 0
+        stackedButtonView.addAction(UIAction { [unowned self] _ in
+            stackedButtonAction?()
+        }, for: .touchUpInside)
+        stackedButtonView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stackedButtonView)
+        NSLayoutConstraint.activate([
+            stackedButtonView.widthAnchor.constraint(equalToConstant: 42),
+            stackedButtonView.heightAnchor.constraint(equalToConstant: 42),
+            stackedButtonView.centerXAnchor.constraint(equalTo: cornerButton.centerXAnchor),
+            stackedButtonView.bottomAnchor.constraint(equalTo: cornerButton.topAnchor, constant: -Theme.padding * 1.5),
+        ])
     }
 
     private func placeCornerButton() {
@@ -138,11 +171,26 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
                 setIcon()
             }
             cornerButton.accessibilityLabel = mode == .back ? "Back" : "Profile and Saved Stories"
-            cornerButton.accessibilityHint = mode == .profile ? "Hold for feeds and search" : nil
-            cornerButton.isContextMenuInteractionEnabled = mode == .profile
+            cornerButton.accessibilityHint = mode == .profile ? "Drag up for places" : nil
+            cornerButton.accessibilityCustomActions = mode == .profile ? viewController.map(reelAccessibilityActions) : nil
         }
         view.bringSubviewToFront(cornerButton)
         let change = { self.cornerButton.alpha = mode == .hidden ? 0 : 1 }
+        animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
+        updateStackedButton(for: viewController, animated: animated)
+    }
+
+    /// Shows the button above the corner button as it should be for `viewController`; call
+    /// when what it offers changes.
+    func updateStackedButton(for viewController: UIViewController?, animated: Bool) {
+        let button = reel == nil ? viewController.flatMap { stackedButton?($0) } : nil
+        stackedButtonAction = button?.action
+        if let button {
+            stackedButtonView.configuration?.image = UIImage(systemName: button.systemImage)
+            stackedButtonView.accessibilityLabel = button.accessibilityLabel
+        }
+        view.bringSubviewToFront(stackedButtonView)
+        let change = { self.stackedButtonView.alpha = button == nil ? 0 : 1 }
         animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
     }
 
@@ -158,6 +206,62 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         }
     }
 
+    // MARK: Reel
+
+    private var reelGestures: [UIGestureRecognizer] = []
+
+    @objc private func handleReel(_ gesture: UIGestureRecognizer) {
+        let point = gesture.location(in: view)
+        switch gesture.state {
+        case .began:
+            guard reel == nil, let top = topViewController, cornerButtonMode(top) == .profile,
+                  let columns = reelColumns?(top), !columns.isEmpty
+            else { return }
+            let reel = ReelView(frame: view.bounds, columns: columns, anchor: cornerButton.frame, onLeft: cornerButtonOnLeft, start: point)
+            view.insertSubview(reel, belowSubview: cornerButton)
+            self.reel = reel
+            // Out of the thumb's way while the reel is up.
+            updateStackedButton(for: top, animated: true)
+            reel.show()
+            reel.track(point)
+        case .changed:
+            reel?.track(point)
+        case .ended:
+            guard let reel else { return }
+            self.reel = nil
+            // Acts while the reel is still up, so a site switch can flood out from under it.
+            reel.selectedItem?.action(view.convert(point, to: nil))
+            reel.dismiss(animated: true)
+            updateStackedButton(for: topViewController, animated: true)
+        default:
+            reel?.dismiss(animated: true)
+            reel = nil
+            updateStackedButton(for: topViewController, animated: true)
+        }
+    }
+
+    /// The reel's places as actions on the button, for VoiceOver: this site's, then switching site.
+    private func reelAccessibilityActions(for screen: UIViewController) -> [UIAccessibilityCustomAction] {
+        let columns = reelColumns?(screen) ?? []
+        let center = { [weak self] () -> CGPoint in
+            guard let self else { return .zero }
+            return cornerButton.convert(CGPoint(x: cornerButton.bounds.midX, y: cornerButton.bounds.midY), to: nil)
+        }
+        var actions = (columns.first?.items ?? []).filter { !$0.isCurrent }.map { item in
+            UIAccessibilityCustomAction(name: item.title) { _ in
+                item.action(center())
+                return true
+            }
+        }
+        if columns.count > 1, let first = columns[1].items.first {
+            actions.append(UIAccessibilityCustomAction(name: "Switch to \(columns[1].title)") { _ in
+                first.action(center())
+                return true
+            })
+        }
+        return actions
+    }
+
     // MARK: Gesture delegate
 
     private func isContentPop(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
@@ -166,6 +270,9 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     }
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if reelGestures.contains(gestureRecognizer) {
+            return topViewController.map(cornerButtonMode) == .profile
+        }
         if gestureRecognizer === forwardSwipe {
             return interactivePush == nil && (topViewController as? ForwardNavigating)?.forwardViewController != nil
         }

@@ -2,14 +2,40 @@ package se.lindskogen.hakkerneus.ui
 
 import se.lindskogen.hakkerneus.data.Lobsters
 import se.lindskogen.hakkerneus.data.TopStoriesFeed
-import se.lindskogen.hakkerneus.ui.frontpage.FeedMenuHooks
+import se.lindskogen.hakkerneus.ui.frontpage.HideReadHooks
+import se.lindskogen.hakkerneus.ui.frontpage.LobstersFrontPageScreen
+import se.lindskogen.hakkerneus.ui.reel.ReelOverlay
+import se.lindskogen.hakkerneus.ui.reel.ReelSite
+import se.lindskogen.hakkerneus.ui.reel.ReelState
+import se.lindskogen.hakkerneus.ui.reel.hnReel
+import se.lindskogen.hakkerneus.ui.reel.lobstersReel
+import se.lindskogen.hakkerneus.ui.reel.reelGesture
+import android.animation.ValueAnimator
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,10 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import se.lindskogen.hakkerneus.ui.comments.LobstersCommentsScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
@@ -150,39 +173,81 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
         entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Back
         else -> CornerMode.Hidden
     }
-    // The feed at the root, switched in place from the corner button's menu.
-    var feed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.Top) }
-    val feedMenu = remember { FeedMenuHooks() }
-    var menuOpen by remember { mutableStateOf(false) }
-    var toast by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(toast) {
-        if (toast != null) {
-            delay(1500)
-            toast = null
+    // The site the app is about, and the feed showing at the root for each, switched from the reel.
+    val site = AppContainer.site
+    var hnFeed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.Top) }
+    var lobstersFeed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.LobstersHottest) }
+    fun feedOf(site: Site) = if (site == Site.HackerNews) hnFeed else lobstersFeed
+    // Each feed's read stories, for the hide-read button above the corner button.
+    val hideRead = remember { TopStoriesFeed.Source.entries.associateWith { HideReadHooks() } }
+    val reel = remember { ReelState() }
+
+    // Switching site floods the new site's screen out from the finger: a snapshot of the old one
+    // is drawn on top with a growing hole in it. With animations off, it fades instead.
+    val screens = rememberGraphicsLayer()
+    var flood by remember { mutableStateOf<Flood?>(null) }
+    val floodProgress = remember { Animatable(0f) }
+    fun switchSite(to: Site, from: Offset, then: () -> Unit) {
+        navScope.launch {
+            val snapshot = runCatching { screens.toImageBitmap() }.getOrNull()
+            flood = snapshot?.let { Flood(it, from, circle = ValueAnimator.areAnimatorsEnabled()) }
+            AppContainer.switchSite(to)
+            then()
+            if (snapshot != null) {
+                floodProgress.snapTo(0f)
+                floodProgress.animateTo(1f, tween(450, easing = FastOutSlowInEasing))
+            }
+            flood = null
         }
     }
-    fun feedName(source: TopStoriesFeed.Source) = when (source) {
-        TopStoriesFeed.Source.Top -> "Top"
-        TopStoriesFeed.Source.New -> "New"
-        TopStoriesFeed.Source.Lobsters -> "lobste.rs"
+    /** Goes to [place] on [target], switching site first if it's the other one. */
+    fun go(target: Site, place: Place, from: Offset) {
+        val arrive = {
+            when (place) {
+                Place.Top, Place.New -> hnFeed = place.feed!!
+                Place.Hottest, Place.Newest -> lobstersFeed = place.feed!!
+                Place.Saved -> nav.navigate(Saved)
+                Place.Search -> nav.navigate(Search)
+            }
+        }
+        if (target == AppContainer.site) arrive() else switchSite(target, from, arrive)
+    }
+    /** The current site's reel, and the other site's, as they are now. */
+    fun reelSites(): Pair<ReelSite, ReelSite> = when (AppContainer.site) {
+        Site.HackerNews -> hnReel(Place.of(hnFeed)) to lobstersReel(here = null)
+        Site.Lobsters -> lobstersReel(Place.of(lobstersFeed)) to hnReel(here = null)
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { reel.origin = it.positionInRoot() }) {
+    Box(Modifier.fillMaxSize().drawWithContent {
+        screens.record { this@drawWithContent.drawContent() }
+        drawLayer(screens)
+    }) {
     CompositionLocalProvider(LocalOpenUser provides { name -> openUser(name) }) {
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
         composable<FrontPage> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-            Crossfade(feed, label = "feed") { source ->
-                FrontPageScreen(
-                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                    openItem = { openComments(it) },
-                    signIn = { nav.navigate(SignIn) },
-                    source = source,
-                    menu = feedMenu,
-                )
-            }
+                when (site) {
+                    Site.HackerNews -> Crossfade(hnFeed, label = "feed") { source ->
+                        FrontPageScreen(
+                            openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                            openItem = { openComments(it) },
+                            signIn = { nav.navigate(SignIn) },
+                            source = source,
+                            menu = hideRead.getValue(source),
+                        )
+                    }
+                    Site.Lobsters -> Crossfade(lobstersFeed, label = "lobste.rs feed") { source ->
+                        LobstersFrontPageScreen(
+                            openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                            openItem = { openComments(it) },
+                            source = source,
+                            menu = hideRead.getValue(source),
+                        )
+                    }
+                }
             }
         }
         composable<Comments> { entry ->
@@ -258,11 +323,74 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
     }
     }
+    }
+
+        // The old site's screen, with the new one showing through a growing hole.
+        flood?.let { current ->
+            Canvas(Modifier.fillMaxSize()) {
+                if (current.circle) {
+                    val radius = floodProgress.value * maxOf(
+                        (current.center - Offset.Zero).getDistance(), (current.center - Offset(size.width, 0f)).getDistance(),
+                        (current.center - Offset(0f, size.height)).getDistance(), (current.center - Offset(size.width, size.height)).getDistance(),
+                    )
+                    val hole = Path().apply { addOval(Rect(current.center, radius)) }
+                    clipPath(hole, ClipOp.Difference) { drawImage(current.image) }
+                    drawCircle(Color.White.copy(alpha = 0.12f * (1f - floodProgress.value)), radius, current.center, style = Stroke(6.dp.toPx()))
+                } else {
+                    drawImage(current.image, alpha = 1f - floodProgress.value)
+                }
+            }
+        }
+
+        ReelOverlay(reel)
+
+        // Above the corner button on a feed: hide the read stories (an eye with a slash) or, after
+        // hiding, show them again (an eye). Hiding wins: reading another story brings the slash
+        // back. Out of the way while the reel is open.
+        val onFeed = mode == CornerMode.Profile
+        val feedHooks = hideRead.getValue(feedOf(site))
+        val hides = feedHooks.hasRead
+        val offersHide = onFeed && !reel.isOpen && (hides || feedHooks.canUndo)
+        // Keeps its icon while fading out.
+        var showsHide by remember { mutableStateOf(true) }
+        if (offersHide) showsHide = hides
+        AnimatedVisibility(
+            visible = offersHide,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(if (AppContainer.cornerButtonOnLeft) Alignment.BottomStart else Alignment.BottomEnd),
+        ) {
+            val onLeft = AppContainer.cornerButtonOnLeft
+            // Centred over the 52dp corner button, 12dp above it.
+            val inset = 20.dp + (52.dp - 42.dp) / 2
+            Box(
+                Modifier
+                    .navigationBarsPadding()
+                    .padding(start = if (onLeft) inset else 0.dp, end = if (onLeft) 0.dp else inset, bottom = HN.padding + 52.dp + 12.dp),
+            ) {
+                val label = if (showsHide) "Hide read stories" else "Show hidden stories"
+                Surface(
+                    onClick = { if (showsHide) feedHooks.hide() else feedHooks.undo() },
+                    shape = CircleShape,
+                    color = Color(0xE6404040),
+                    contentColor = Color.White,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(42.dp).semantics { contentDescription = label },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Crossfade(showsHide, label = "hide-read icon") { hide ->
+                            Icon(if (hide) HnIcons.eyeSlash else HnIcons.eye, contentDescription = null, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+        }
 
         // One lower-right button (lower-left for left hands) above every screen, so it stays put
-        // while they change underneath: on the feed a person, opening the profile, and held, the
-        // feed menu; on the profile, back.
+        // while they change underneath: on the feed a person, opening the profile, and dragged up
+        // or held, the reel; on the profile, back.
         val onLeft = AppContainer.cornerButtonOnLeft
+        reel.onLeft = onLeft
         AnimatedVisibility(
             visible = mode != CornerMode.Hidden,
             enter = fadeIn(),
@@ -270,6 +398,8 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
             val haptics = LocalHapticFeedback.current
+            var pressed by remember { mutableStateOf(false) }
+            val currentMode by rememberUpdatedState(mode)
             Box(
                 Modifier
                     .navigationBarsPadding()
@@ -277,21 +407,39 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xE6404040),
+                    color = if (pressed) Color(0xF0585858) else Color(0xE6404040),
                     contentColor = Color.White,
                     shadowElevation = 6.dp,
                     modifier = Modifier
                         .size(52.dp)
-                        .clip(CircleShape)
-                        .combinedClickable(
-                            onClickLabel = if (mode == CornerMode.Back) "Back" else "Profile and saved stories",
-                            onClick = { if (mode == CornerMode.Back) nav.popBackStack() else nav.navigate(Saved) },
-                            onLongClickLabel = if (mode == CornerMode.Profile) "Feeds and search" else null,
-                            onLongClick = if (mode == CornerMode.Profile) {
-                                { haptics.performHapticFeedback(HapticFeedbackType.LongPress); menuOpen = true }
-                            } else null,
-                        )
-                        .semantics { contentDescription = if (mode == CornerMode.Back) "Back" else "Profile and saved stories" },
+                        .onGloballyPositioned { reel.button = it.boundsInRoot() }
+                        .pointerInput(Unit) {
+                            reelGesture(
+                                reel, haptics,
+                                sites = ::reelSites,
+                                pressed = { pressed = it },
+                                onTap = { if (currentMode == CornerMode.Back) nav.popBackStack() else if (currentMode == CornerMode.Profile) nav.navigate(Saved) },
+                                onChoose = { chosen, place, finger -> go(chosen.site, place, finger) },
+                                enabled = { currentMode == CornerMode.Profile },
+                            )
+                        }
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = if (mode == CornerMode.Back) "Back" else "Profile and saved stories"
+                            onClick(label = if (mode == CornerMode.Back) "Back" else "Profile and saved stories") {
+                                if (mode == CornerMode.Back) nav.popBackStack() else nav.navigate(Saved)
+                                true
+                            }
+                            if (mode == CornerMode.Profile) {
+                                val (home, other) = reelSites()
+                                val center = reel.button.center - reel.origin
+                                customActions = home.places.map { place ->
+                                    CustomAccessibilityAction(place.title) { go(home.site, place, center); true }
+                                } + CustomAccessibilityAction("Switch to ${other.site.title}") {
+                                    go(other.site, Place.of(feedOf(other.site)), center); true
+                                }
+                            }
+                        },
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Crossfade(mode == CornerMode.Back, label = "corner icon") { back ->
@@ -299,61 +447,10 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                         }
                     }
                 }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    for (source in TopStoriesFeed.Source.entries) {
-                        DropdownMenuItem(
-                            text = { Text(feedName(source)) },
-                            leadingIcon = {
-                                when (source) {
-                                    TopStoriesFeed.Source.Top -> Icon(HnIcons.arrowUp, contentDescription = null)
-                                    TopStoriesFeed.Source.New -> Icon(HnIcons.clock, contentDescription = null)
-                                    TopStoriesFeed.Source.Lobsters -> Text("L", style = HN.body.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold), modifier = Modifier.width(24.dp), textAlign = TextAlign.Center)
-                                }
-                            },
-                            trailingIcon = { if (source == feed) Icon(HnIcons.check, contentDescription = "Showing") },
-                            onClick = {
-                                menuOpen = false
-                                if (source != feed) {
-                                    feed = source
-                                    toast = feedName(source)
-                                }
-                            },
-                        )
-                    }
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Search") },
-                        leadingIcon = { Icon(HnIcons.search, contentDescription = null) },
-                        onClick = { menuOpen = false; nav.navigate(Search) },
-                    )
-                    if (feedMenu.canUndo) DropdownMenuItem(
-                        text = { Text("Show hidden stories") },
-                        leadingIcon = { Icon(HnIcons.eye, contentDescription = null) },
-                        onClick = { menuOpen = false; feedMenu.undo() },
-                    ) else if (feedMenu.hasRead) DropdownMenuItem(
-                        text = { Text("Hide read stories") },
-                        leadingIcon = { Icon(HnIcons.eyeSlash, contentDescription = null) },
-                        onClick = { menuOpen = false; feedMenu.hide() },
-                    )
-                }
             }
-        }
-
-        // The feed just switched to, named for a moment at the top.
-        AnimatedVisibility(
-            visible = toast != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp),
-        ) {
-            Text(
-                toast ?: "",
-                style = HN.body.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Color.White),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(Color(0xD9141414))
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
         }
     }
 }
+
+/** A site switch under way: the old screen, and where the new one floods out from. */
+private class Flood(val image: ImageBitmap, val center: Offset, val circle: Boolean)

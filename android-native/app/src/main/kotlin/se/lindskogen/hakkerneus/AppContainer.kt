@@ -146,6 +146,15 @@ object AppContainer {
         settings.edit().putBoolean("cornerButtonOnLeft", onLeft).apply()
     }
 
+    /** Which site the app is about; the app starts in the one it was left in. Compose state. */
+    var site by androidx.compose.runtime.mutableStateOf(se.lindskogen.hakkerneus.ui.Site.HackerNews)
+        private set
+
+    fun switchSite(to: se.lindskogen.hakkerneus.ui.Site) {
+        site = to
+        settings.edit().putString("site", to.name).apply()
+    }
+
     /** The choices for [newMinimumScore]; 0 shows everything. */
     val newMinimumScoreOptions = listOf(0, 2, 5, 10, 25)
 
@@ -180,6 +189,7 @@ object AppContainer {
         if (nitter.enabled) scope.launch { nitter.workingInstance() }
         cornerButtonOnLeft = settings.getBoolean("cornerButtonOnLeft", false)
         newMinimumScore = settings.getInt("newMinimumScore", 0)
+        site = settings.getString("site", null)?.let { name -> se.lindskogen.hakkerneus.ui.Site.entries.find { it.name == name } } ?: se.lindskogen.hakkerneus.ui.Site.HackerNews
         CommentTextStyle.wrapsLines = settings.getBoolean("codeWrapsLines", false)
         CommentTextStyle.size = settings.getString("codeSize", null)?.let { name -> CommentTextStyle.Size.entries.find { it.name == name } } ?: CommentTextStyle.Size.Medium
         Palette.theme = settings.getString("colorTheme", null)?.let { name -> ColorTheme.entries.find { it.name == name } } ?: ColorTheme.Orange

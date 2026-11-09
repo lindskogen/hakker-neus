@@ -43,13 +43,19 @@ object Lobsters {
 val Story.isLobsters get() = Lobsters.isLobsters(id)
 val Comment.isLobsters get() = Lobsters.isLobsters(id)
 
-/** Reading lobste.rs through its public JSON (no key): the Hottest list, and each story with its whole thread in one request. */
+/** Reading lobste.rs through its public JSON (no key): the Hottest and Newest lists, and each story with its whole thread in one request. */
 class LobstersApi(private val transport: HttpTransport, private val base: String = Lobsters.BASE) {
     private val json = Json { ignoreUnknownKeys = true }
 
     /** One page (25 stories) of the Hottest list; pages start at 1. */
     suspend fun hottest(page: Int): List<Story> {
         val path = if (page == 1) "hottest.json" else "page/$page.json"
+        return json.decodeFromString<List<StoryJson>>(transport.get(base + path)).mapNotNull { it.story }
+    }
+
+    /** One page (25 stories) of the Newest list, newest first; pages start at 1. */
+    suspend fun newest(page: Int): List<Story> {
+        val path = if (page == 1) "newest.json" else "newest/page/$page.json"
         return json.decodeFromString<List<StoryJson>>(transport.get(base + path)).mapNotNull { it.story }
     }
 
@@ -110,7 +116,7 @@ private fun seconds(text: String) = runCatching { OffsetDateTime.parse(text).toE
  * comments screen, prefetching and offline copies work the same for both.
  */
 class SourceRoutingClient(val hn: HnClient, private val lobsters: LobstersApi = LobstersApi(OkHttpTransport())) : HnClient {
-    /** Stories from the Hottest list, so rows don't need a request each. */
+    /** Stories from the Hottest and Newest lists, so rows don't need a request each. */
     private val known = HashMap<Long, Story>()
     private val mutex = Mutex()
 
@@ -118,8 +124,13 @@ class SourceRoutingClient(val hn: HnClient, private val lobsters: LobstersApi = 
     override suspend fun newStoryIds() = hn.newStoryIds()
 
     /** The first four pages of Hottest (100 stories), fetched together. */
-    override suspend fun lobstersStoryIds(): List<Long> {
-        val stories = coroutineScope { (1..4).map { async { lobsters.hottest(it) } }.awaitAll() }.flatten()
+    override suspend fun lobstersHottestIds() = firstPages(lobsters::hottest)
+
+    /** The first four pages of Newest (100 stories), fetched together. */
+    override suspend fun lobstersNewestIds() = firstPages(lobsters::newest)
+
+    private suspend fun firstPages(page: suspend (Int) -> List<Story>): List<Long> {
+        val stories = coroutineScope { (1..4).map { async { page(it) } }.awaitAll() }.flatten()
         mutex.withLock { stories.forEach { known[it.id] = it } }
         return stories.map { it.id }.distinct()
     }

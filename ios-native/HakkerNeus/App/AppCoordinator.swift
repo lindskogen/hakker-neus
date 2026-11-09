@@ -20,8 +20,6 @@ final class AppCoordinator {
         case detail
     }
     private var relativeTimeTimer: Timer?
-    /// The feed name shown briefly after switching feeds.
-    private weak var toast: UIView?
     let defaults: UserDefaults
 
     let client: HNClient
@@ -47,10 +45,17 @@ final class AppCoordinator {
     private(set) lazy var search = SearchViewController(coordinator: self, api: userCache.api)
     /// HN's New list, kept alive like the front page so its place survives switching feeds.
     private(set) lazy var newList = StoryListViewController(feed: TopStoriesFeed(client: client, source: .new), coordinator: self)
-    /// lobste.rs's Hottest list, read-only, one of the feeds.
+    /// lobste.rs's Hottest list, read-only: lobster mode's front page.
     private(set) lazy var lobstersList = StoryListViewController(
         feed: TopStoriesFeed(client: client, source: .lobsters), coordinator: self, rowBackground: { Palette.lobstersBackground(at: $0) }
     )
+    /// lobste.rs's Newest list.
+    private(set) lazy var lobstersNewestList = StoryListViewController(
+        feed: TopStoriesFeed(client: client, source: .lobstersNewest), coordinator: self, rowBackground: { Palette.lobstersBackground(at: $0) }
+    )
+
+    /// The site the app is about, whose feeds are at the root and in the reel.
+    private(set) var site = Site.hackerNews
 
     init(
         window: UIWindow,
@@ -115,7 +120,8 @@ final class AppCoordinator {
         #if DEBUG
         importSeedBookmarks()
         #endif
-        var stack: [UIViewController] = [frontPage]
+        site = settings.site
+        var stack: [UIViewController] = [feed(state?.rootFeed, on: site)]
         if state?.showsFrontPage == false {
             stack.append(savedList)
         }
@@ -134,8 +140,17 @@ final class AppCoordinator {
             if screen === savedList { return .back }
             return .hidden
         }
-        navigationController.cornerButtonMenu = { [weak self] screen in
-            self?.feedMenu(for: screen) ?? []
+        navigationController.reelColumns = { [weak self] screen in
+            self?.reelColumns(for: screen) ?? []
+        }
+        navigationController.stackedButton = { [weak self] screen in
+            self?.hideReadButton(for: screen)
+        }
+        for feed in [frontPage, newList, lobstersList, lobstersNewestList] {
+            feed.onReadStateChange = { [weak self, weak feed] in
+                guard let self, let feed, navigationController.topViewController === feed else { return }
+                navigationController.updateStackedButton(for: feed, animated: true)
+            }
         }
         navigationController.cornerButtonOnLeft = settings.cornerButtonOnLeft
         NotificationCenter.default.addObserver(forName: AppSettings.cornerButtonSideDidChange, object: nil, queue: .main) { [weak self] _ in
@@ -182,6 +197,7 @@ final class AppCoordinator {
         let stack = split.allViewControllers
         return RestorationState(
             showsFrontPage: !stack.contains(savedList),
+            rootFeed: currentFeed.source,
             frontPageFeed: frontPage.feedSnapshot,
             frontPageAnchor: frontPage.scrollAnchor,
             savedListAnchor: savedList.scrollAnchor,
@@ -311,7 +327,17 @@ final class AppCoordinator {
     }
 
     func isFeed(_ screen: UIViewController) -> Bool {
-        screen === frontPage || screen === newList || screen === lobstersList
+        screen === frontPage || screen === newList || screen === lobstersList || screen === lobstersNewestList
+    }
+
+    /// The site's feed for a restored source, or its first feed.
+    private func feed(_ source: TopStoriesFeed.Source?, on site: Site) -> StoryListViewController {
+        switch (site, source) {
+        case (.hackerNews, .new): newList
+        case (.hackerNews, _): frontPage
+        case (.lobsters, .lobstersNewest): lobstersNewestList
+        case (.lobsters, _): lobstersList
+        }
     }
 
     /// Back to the feed showing, from wherever the app was.
@@ -331,55 +357,115 @@ final class AppCoordinator {
         } else {
             UIView.transition(with: navigationController.view, duration: 0.25, options: .transitionCrossDissolve, animations: swap)
         }
-        let name = feed === lobstersList ? "lobste.rs" : feed === newList ? "New" : "Top"
-        showToast(name)
-        UIAccessibility.post(notification: .screenChanged, argument: name)
+        UIAccessibility.post(notification: .screenChanged, argument: feed.title)
     }
 
-    /// What the corner button offers when held on a feed: the feeds, search and hiding read stories.
-    private func feedMenu(for screen: UIViewController) -> [UIMenuElement] {
-        guard let feed = screen as? StoryListViewController else { return [] }
-        let feeds = [(frontPage, "Top", "arrow.up"), (newList, "New", "clock"), (lobstersList, "lobste.rs", "l.circle")].map { list, title, image in
-            UIAction(title: title, image: UIImage(systemName: image), state: list === feed ? .on : .off) { [weak self] _ in
-                self?.showFeed(list)
+    // MARK: Sites and the reel
+
+    /// The reel on a feed: this site's places, then the other site's, which switch to it.
+    private func reelColumns(for screen: UIViewController) -> [ReelColumn] {
+        guard let feed = screen as? StoryListViewController, isFeed(feed) else { return [] }
+        return [column(for: site, on: feed), column(for: site.other, on: nil)]
+    }
+
+    /// - Parameter feed: The feed showing, when `site` is the one showing.
+    private func column(for site: Site, on feed: StoryListViewController?) -> ReelColumn {
+        switch site {
+        case .hackerNews: hackerNewsColumn(on: feed)
+        case .lobsters: lobstersColumn(on: feed)
+        }
+    }
+
+    private func hackerNewsColumn(on feed: StoryListViewController?) -> ReelColumn {
+        let go = goingTo(.hackerNews)
+        let items = [
+            ReelItem(title: "Top", color: Palette.storyBackground(at: 0), isCurrent: feed === frontPage) { go($0) { $0.showFeed($0.frontPage) } },
+            ReelItem(title: "New", color: Palette.storyBackground(at: 14), isCurrent: feed === newList) { go($0) { $0.showFeed($0.newList) } },
+            ReelItem(title: "Saved", color: Palette.savedStoryBackground(at: 0)) { go($0) { $0.showSavedStories() } },
+            ReelItem(title: "Search", color: UIColor(white: 0.6, alpha: 1)) { go($0) { $0.showSearch() } },
+        ]
+        return ReelColumn(title: Site.hackerNews.name, color: Palette.accent(), items: items)
+    }
+
+    private func lobstersColumn(on feed: StoryListViewController?) -> ReelColumn {
+        let go = goingTo(.lobsters)
+        let items = [
+            ReelItem(title: "Hottest", color: Palette.lobstersBackground(at: 0), isCurrent: feed === lobstersList) { go($0) { $0.showFeed($0.lobstersList) } },
+            ReelItem(title: "Newest", color: Palette.lobstersBackground(at: 14), isCurrent: feed === lobstersNewestList) { go($0) { $0.showFeed($0.lobstersNewestList) } },
+            ReelItem(title: "Saved", color: Palette.savedStoryBackground(at: 0)) { go($0) { $0.showSavedStories() } },
+        ]
+        return ReelColumn(title: Site.lobsters.name, color: Palette.lobstersAccent, items: items)
+    }
+
+    /// Above the corner button on a feed: hides its read stories, or once they're hidden, shows
+    /// them again (until more are read).
+    private func hideReadButton(for screen: UIViewController) -> NavigationController.StackedButton? {
+        guard let feed = screen as? StoryListViewController, isFeed(feed) else { return nil }
+        if feed.hasReadStories {
+            return .init(systemImage: "eye.slash", accessibilityLabel: "Hide Read Stories") { feed.hideReadStories() }
+        }
+        if feed.canUndoHideRead {
+            return .init(systemImage: "eye", accessibilityLabel: "Show Hidden Stories") { feed.undoHideRead() }
+        }
+        return nil
+    }
+
+    /// Runs a place's action, switching to `site` first when the app is about the other one.
+    private func goingTo(_ site: Site) -> (CGPoint, @escaping (AppCoordinator) -> Void) -> Void {
+        { [weak self] point, go in
+            guard let self else { return }
+            if site == self.site {
+                go(self)
+            } else {
+                switchSite(to: site, from: point) { go($0) }
             }
         }
-        var tools: [UIMenuElement] = [
-            UIAction(title: "Search", image: UIImage(systemName: "magnifyingglass")) { [weak self] _ in self?.showSearch() },
-        ]
-        if feed.canUndoHideRead {
-            tools.append(UIAction(title: "Show Hidden Stories", image: UIImage(systemName: "eye")) { _ in feed.undoHideRead() })
-        } else if feed.hasReadStories {
-            tools.append(UIAction(title: "Hide Read Stories", image: UIImage(systemName: "eye.slash")) { _ in feed.hideReadStories() })
-        }
-        return [UIMenu(options: .displayInline, children: feeds), UIMenu(options: .displayInline, children: tools)]
     }
 
-    /// A short-lived label at the top, naming the feed just switched to.
-    private func showToast(_ text: String) {
-        toast?.removeFromSuperview()
-        let label = PaddedLabel()
-        label.insets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
-        label.text = text
-        label.font = Theme.Font.medium(size: 15, style: .subheadline)
-        label.adjustsFontForContentSizeCategory = true
-        label.textColor = .white
-        label.backgroundColor = UIColor(white: 0.08, alpha: 0.85)
-        label.layer.cornerRadius = 17
-        label.layer.masksToBounds = true
-        label.isAccessibilityElement = false
-        label.translatesAutoresizingMaskIntoConstraints = false
-        window.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: window.centerXAnchor),
-            label.topAnchor.constraint(equalTo: window.safeAreaLayoutGuide.topAnchor, constant: 8),
-            label.heightAnchor.constraint(greaterThanOrEqualToConstant: 34),
-        ])
-        label.alpha = 0
-        toast = label
-        UIView.animate(withDuration: 0.2) { label.alpha = 1 } completion: { _ in
-            UIView.animate(withDuration: 0.3, delay: 1.2) { label.alpha = 0 } completion: { _ in label.removeFromSuperview() }
+    /// Makes the app about `newSite`, starting at `place` (its first feed by default). The new
+    /// site floods out over the old in a circle growing from `point` (window coordinates).
+    func switchSite(to newSite: Site, from point: CGPoint, place: ((AppCoordinator) -> Void)? = nil) {
+        guard newSite != site else { return }
+        let cover = window.snapshotView(afterScreenUpdates: false)
+        if let cover { window.addSubview(cover) }
+
+        site = newSite
+        settings.site = newSite
+        let root = feed(nil, on: newSite)
+        navigationController.setViewControllers([root], animated: false)
+        navigationController.updateCornerButton(for: root, animated: false)
+        place?(self)
+        UIAccessibility.post(notification: .screenChanged, argument: newSite.name)
+
+        guard let cover else { return }
+        guard !UIAccessibility.isReduceMotionEnabled else {
+            UIView.animate(withDuration: 0.3) { cover.alpha = 0 } completion: { _ in cover.removeFromSuperview() }
+            return
         }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let bounds = cover.bounds
+        let radius = [CGPoint(x: bounds.minX, y: bounds.minY), CGPoint(x: bounds.maxX, y: bounds.minY),
+                      CGPoint(x: bounds.minX, y: bounds.maxY), CGPoint(x: bounds.maxX, y: bounds.maxY)]
+            .map { hypot($0.x - point.x, $0.y - point.y) }.max() ?? bounds.height
+        func hole(_ r: CGFloat) -> CGPath {
+            let path = UIBezierPath(rect: bounds)
+            path.append(UIBezierPath(arcCenter: point, radius: r, startAngle: 0, endAngle: 2 * .pi, clockwise: true))
+            return path.cgPath
+        }
+        let mask = CAShapeLayer()
+        mask.fillRule = .evenOdd
+        mask.path = hole(radius + 1)
+        cover.layer.mask = mask
+
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { cover.removeFromSuperview() }
+        let grow = CABasicAnimation(keyPath: "path")
+        grow.fromValue = hole(1)
+        grow.toValue = hole(radius + 1)
+        grow.duration = 0.45
+        grow.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.2, 1)
+        mask.add(grow, forKey: "flood")
+        CATransaction.commit()
     }
 
     /// Story search, on top of a feed or the saved list (in the list column when the window is wide).
@@ -388,8 +474,13 @@ final class AppCoordinator {
         navigationController.pushViewController(search, animated: true)
     }
 
-    /// Story search for `query`, from wherever the app was.
+    /// Story search for `query`, from wherever the app was. Search is HN's, so it's about HN after.
     func showSearch(query: String) {
+        if site != .hackerNews {
+            site = .hackerNews
+            settings.site = .hackerNews
+            navigationController.setViewControllers([frontPage], animated: false)
+        }
         search.loadViewIfNeeded()
         search.search(for: query)
         if navigationController.topViewController !== search {

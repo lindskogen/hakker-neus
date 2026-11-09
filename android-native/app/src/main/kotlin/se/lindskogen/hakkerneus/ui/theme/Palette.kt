@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -62,6 +63,12 @@ object Palette {
 
     /** The lobste.rs comments header: its first row's colour. */
     val lobstersAccent: Color get() = interpolate(lobsters, 0.65).color
+
+    /** Behind the corner button's reel in Hacker News mode: the theme's darkest shade, almost black (warm with orange). */
+    val hnReelTint: Color get() = lerp(Color.Black, themeRgb(1.0).color, 0.22f)
+
+    /** Behind the reel in lobster mode: lobste.rs's darkest red, dimmed to a dark crimson. */
+    val lobstersReelTint: Color get() = lerp(Color.Black, interpolate(lobsters, 1.0).color, 0.75f)
 
     /** Reds darkening through lobste.rs's #AC130D, for the lobste.rs list. */
     private val lobsters = stops(0xFFF0EE, 0xF8CFCB, 0xEC9C95, 0xDB6A61, 0xC63B31, 0xAC130D, 0x8E0F0A, 0x6C0B07, 0x480604)

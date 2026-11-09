@@ -20,6 +20,9 @@ struct RestorationState: Codable, Equatable {
     }
 
     var showsFrontPage = true
+    /// The feed at the root of the stack (Top, New, Hottest or Newest), when it belongs to the
+    /// site the app opens to; nil for that site's first.
+    var rootFeed: TopStoriesFeed.Source?
     /// The front page as it was loaded, so it comes back unchanged rather than re-ranked.
     var frontPageFeed: TopStoriesFeed.Snapshot?
     var frontPageAnchor: ScrollAnchor?
@@ -39,12 +42,14 @@ struct RestorationState: Codable, Equatable {
 
     init(
         showsFrontPage: Bool = true,
+        rootFeed: TopStoriesFeed.Source? = nil,
         frontPageFeed: TopStoriesFeed.Snapshot? = nil,
         frontPageAnchor: ScrollAnchor? = nil,
         savedListAnchor: ScrollAnchor? = nil,
         comments: [CommentsScreen] = []
     ) {
         self.showsFrontPage = showsFrontPage
+        self.rootFeed = rootFeed
         self.frontPageFeed = frontPageFeed
         self.frontPageAnchor = frontPageAnchor
         self.savedListAnchor = savedListAnchor
