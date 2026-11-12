@@ -104,6 +104,7 @@ fun FrontPageScreen(
     openComments: (Story) -> Unit, openItem: (Long) -> Unit, signIn: () -> Unit,
     source: TopStoriesFeed.Source = TopStoriesFeed.Source.Top,
     menu: HideReadHooks? = null,
+    scrollToTop: se.lindskogen.hakkerneus.ui.ScrollToTop? = null,
 ) {
     val isNew = source == TopStoriesFeed.Source.New
     val rowBackground: (Int) -> Color = Palette::storyBackground
@@ -122,6 +123,7 @@ fun FrontPageScreen(
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
+    se.lindskogen.hakkerneus.ui.BindScrollToTop(scrollToTop, listState)
     // Switching feeds leaves this one; come back to the same place.
     DisposableEffect(listState) {
         onDispose { model.remember(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }

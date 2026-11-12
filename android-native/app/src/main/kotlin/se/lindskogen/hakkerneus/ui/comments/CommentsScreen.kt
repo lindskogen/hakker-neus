@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -96,7 +95,7 @@ fun CommentsScreen(
     val model: CommentsViewModel = viewModel(key = "comments-$id") { CommentsViewModel(id) }
     val state by model.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val listState = rememberLazyListState()
+    val listState = model.listState
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val openUserPage = LocalOpenUser.current

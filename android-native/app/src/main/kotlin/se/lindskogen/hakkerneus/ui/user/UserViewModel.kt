@@ -1,5 +1,6 @@
 package se.lindskogen.hakkerneus.ui.user
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -38,6 +39,8 @@ data class UserState(
 
 /** An HN user's page, as on iOS: profile, then their stories or comments, paged as you scroll. */
 class UserViewModel(private val name: String) : ViewModel() {
+    /** Kept here rather than in the screen, so going forward to it again (see Forward.kt) comes back to the same place. */
+    val listState = LazyListState()
     private val _state = MutableStateFlow(UserState())
     val state: StateFlow<UserState> = _state
     private var loadJob: Job? = null

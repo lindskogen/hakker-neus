@@ -2,7 +2,7 @@ import UIKit
 
 /// Settings › Links › X Links: whether x.com links open through Nitter, and which instances
 /// back up xcancel.com (the suggested ones and any the user adds).
-final class NitterSettingsViewController: UITableViewController {
+final class NitterSettingsViewController: UITableViewController, ShowsNavigationBar {
     private enum Row {
         case enabled
         case primary
@@ -48,6 +48,7 @@ final class NitterSettingsViewController: UITableViewController {
         self.coordinator = coordinator
         super.init(style: .insetGrouped)
         title = "X Links"
+        overrideUserInterfaceStyle = .dark
     }
 
     @available(*, unavailable)

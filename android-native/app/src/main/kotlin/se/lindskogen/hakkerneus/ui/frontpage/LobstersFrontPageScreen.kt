@@ -60,6 +60,7 @@ fun LobstersFrontPageScreen(
     openComments: (Story) -> Unit, openItem: (Long) -> Unit,
     source: TopStoriesFeed.Source = TopStoriesFeed.Source.LobstersHottest,
     menu: HideReadHooks? = null,
+    scrollToTop: se.lindskogen.hakkerneus.ui.ScrollToTop? = null,
 ) {
     val rowBackground: (Int) -> Color = Palette::lobstersBackground
     val model: FrontPageViewModel = viewModel(key = source.name) { FrontPageViewModel(source) }
@@ -75,6 +76,7 @@ fun LobstersFrontPageScreen(
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = model.restoredIndex, initialFirstVisibleItemScrollOffset = model.restoredOffset)
+    se.lindskogen.hakkerneus.ui.BindScrollToTop(scrollToTop, listState)
     // Switching feeds leaves this one; come back to the same place.
     DisposableEffect(listState) {
         onDispose { model.remember(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }

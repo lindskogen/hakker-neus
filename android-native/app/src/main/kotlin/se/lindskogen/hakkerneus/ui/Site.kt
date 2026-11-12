@@ -10,17 +10,24 @@ enum class Site(val title: String) {
     val other: Site get() = if (this == HackerNews) Lobsters else HackerNews
 }
 
-/** Somewhere the reel on the corner button goes. Feeds switch in place; the rest open on top. */
-enum class Place(val title: String, val feed: TopStoriesFeed.Source? = null) {
-    Top("Top", TopStoriesFeed.Source.Top),
-    New("New", TopStoriesFeed.Source.New),
-    Hottest("Hottest", TopStoriesFeed.Source.LobstersHottest),
-    Newest("Newest", TopStoriesFeed.Source.LobstersNewest),
+/**
+ * A top-level place, picked in the sidebar. Each replaces the one showing and keeps its own
+ * state. Going to one of [site]'s makes the app about that site; Saved has both sites' stories.
+ */
+enum class Place(val title: String, val site: Site?, val feed: TopStoriesFeed.Source? = null) {
+    Top("Top", Site.HackerNews, TopStoriesFeed.Source.Top),
+    New("New", Site.HackerNews, TopStoriesFeed.Source.New),
+    /** Search is HN's (Algolia). */
+    Search("Search", Site.HackerNews),
+    Hottest("Hottest", Site.Lobsters, TopStoriesFeed.Source.LobstersHottest),
+    Newest("Newest", Site.Lobsters, TopStoriesFeed.Source.LobstersNewest),
+    /** Your own HN page (your stories and comments), or a way to sign in. */
+    Profile("Profile", null),
     /** The one saved list, with both sites' stories and comments. */
-    Saved("Saved"),
-    Search("Search");
+    Saved("Saved", null);
 
     companion object {
-        fun of(feed: TopStoriesFeed.Source) = entries.first { it.feed == feed }
+        /** Where the app starts for [site], and where back goes from the other places. */
+        fun home(site: Site) = if (site == Site.HackerNews) Top else Hottest
     }
 }

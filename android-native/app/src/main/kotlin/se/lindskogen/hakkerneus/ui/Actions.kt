@@ -18,6 +18,7 @@ fun Context.openInBrowser(url: String) {
 }
 
 private fun Context.openInCustomTab(url: String) {
+    browserOpened.tryEmit(url)
     val colors = CustomTabColorSchemeParams.Builder().setToolbarColor(HN.backgroundDark.toArgb()).build()
     CustomTabsIntent.Builder()
         .setDefaultColorSchemeParams(colors)

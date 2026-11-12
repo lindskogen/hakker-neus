@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -94,15 +93,17 @@ fun UserScreen(
     openItem: (Long) -> Unit,
     openLink: (String) -> Unit,
     signIn: () -> Unit,
+    scrollToTop: se.lindskogen.hakkerneus.ui.ScrollToTop? = null,
 ) {
     val model: UserViewModel = viewModel(key = "user-$name") { UserViewModel(name) }
+    se.lindskogen.hakkerneus.ui.BindScrollToTop(scrollToTop, model.listState)
     val state by model.state.collectAsStateWithLifecycle()
     val saved by AppContainer.saved.entries.collectAsState()
     val visits by AppContainer.visited.visits.collectAsState()
     val upvoted by AppContainer.session.upvoted.collectAsState()
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
-    val listState = rememberLazyListState()
+    val listState = model.listState
     val actions = remember {
         StoryRowActions(
             open = { story ->

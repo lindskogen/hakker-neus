@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -26,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,21 +52,20 @@ import se.lindskogen.hakkerneus.ui.frontpage.StoryRowActions
 import se.lindskogen.hakkerneus.ui.openInBrowser
 import se.lindskogen.hakkerneus.ui.share
 import se.lindskogen.hakkerneus.ui.theme.HN
-import se.lindskogen.hakkerneus.ui.theme.Palette
 
 /**
- * The profile page: who's signed in and the saved stories, newest first, in red. Reached from
- * the front page's corner button; rows work like on the front page.
+ * The profile page: who's signed in and the saved stories, newest first, in red. One of the
+ * sidebar's places; rows work like on the front page.
  */
 @Composable
 fun SavedScreen(
-    username: String?,
     openComments: (Story) -> Unit,
     openItem: (Long) -> Unit,
-    openSettings: () -> Unit,
-    openSearch: () -> Unit,
     signIn: () -> Unit,
+    listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    scrollToTop: se.lindskogen.hakkerneus.ui.ScrollToTop? = null,
 ) {
+    se.lindskogen.hakkerneus.ui.BindScrollToTop(scrollToTop, listState)
     val upvoted by AppContainer.session.upvoted.collectAsState()
     val entries by AppContainer.saved.entries.collectAsState()
     val visits by AppContainer.visited.visits.collectAsState()
@@ -101,23 +98,14 @@ fun SavedScreen(
     }
 
     Box(Modifier.fillMaxSize().background(HN.backgroundDark)) {
-        LazyColumn(contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, contentPadding = PaddingValues(bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
             item(key = "profile") {
                 Row(
                     Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        // Signed out, the name's place is an obvious way to sign in.
-                        Text(
-                            username ?: "Sign in",
-                            style = HN.titleStyle().copy(color = if (username == null) HN.accent else Color.White),
-                            modifier = Modifier
-                                .semantics { heading() }
-                                .clickable(onClickLabel = if (username == null) "Sign in" else "Your Hacker News page") {
-                                    if (username == null) signIn() else openUser(username)
-                                },
-                        )
+                        Text("Saved", style = HN.titleStyle(), modifier = Modifier.semantics { heading() })
                         val stories = if (entries.size == 1) "1 saved story" else "${entries.size} saved stories"
                         val comments = if (savedComments.size == 1) "1 comment" else "${savedComments.size} comments"
                         Text(
@@ -125,9 +113,6 @@ fun SavedScreen(
                             style = HN.body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)),
                         )
                     }
-                    IconButton(onClick = openSearch, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.search, contentDescription = "Search", tint = Color.White) }
-                    // 48dp to tap, with the gear at its right edge so the margins match the name's.
-                    IconButton(onClick = openSettings, modifier = Modifier.offset(x = 12.dp)) { Icon(HnIcons.gear, contentDescription = "Settings", tint = Color.White) }
                 }
             }
             item(key = "tabs") {
@@ -149,16 +134,19 @@ fun SavedScreen(
                     onUnsave = { AppContainer.savedComments.remove(comment.id) },
                 )
             }
-            if (!showsComments) itemsIndexed(entries, key = { _, entry -> entry.story.id }) { index, entry ->
+            if (!showsComments) itemsIndexed(entries, key = { _, entry -> entry.story.id }) { _, entry ->
                 visits.size // re-read when visits change
+                // Quiet rows, like on the profile.
                 if (entry.story.isLobsters) LobstersStoryRow(
-                    entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
+                    entry.story, HN.backgroundDark, isSaved = true, actions = actions,
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,
+                    compact = true,
                 ) else StoryRow(
-                    entry.story, Palette.savedStoryBackground(index), isSaved = true, actions = actions,
+                    entry.story, HN.backgroundDark, isSaved = true, actions = actions,
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,
+                    compact = true,
                     isUpvoted = entry.story.id in upvoted,
                     score = AppContainer.session.displayedScore(entry.story.id, entry.story.score),
                 )

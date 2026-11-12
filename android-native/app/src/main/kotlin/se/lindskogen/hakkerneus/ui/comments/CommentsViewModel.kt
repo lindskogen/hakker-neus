@@ -1,5 +1,6 @@
 package se.lindskogen.hakkerneus.ui.comments
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -34,6 +35,8 @@ data class CommentsState(
 )
 
 class CommentsViewModel(private var id: Long) : ViewModel() {
+    /** Kept here rather than in the screen, so going forward to it again (see Forward.kt) comes back to the same place. */
+    val listState = LazyListState()
     private val _state = MutableStateFlow(CommentsState(story = AppContainer.knownStories[id]))
     val state: StateFlow<CommentsState> = _state
 

@@ -2,7 +2,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Settings, shown as a sheet from the saved list.
-final class SettingsViewController: UITableViewController, UIDocumentPickerDelegate {
+final class SettingsViewController: UITableViewController, UIDocumentPickerDelegate, ShowsNavigationBar {
     private enum Row {
         case account
         case signIn
@@ -43,8 +43,8 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
                 footer: "\(count) saved. Uses the same CSV format as hacker-feed's bookmarks export.",
                 rows: [.importCSV, .exportCSV]
             ),
-            Section(title: "Appearance", footer: "The colours of the front page and the saved stories.", rows: ColorTheme.allCases.map(Row.theme)),
-            Section(title: "Front Page Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
+            Section(title: "Appearance", footer: "The colours of the front page.", rows: ColorTheme.allCases.map(Row.theme)),
+            Section(title: "Corner Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
             Section(title: "New Stories", footer: "Hides stories in the New list with fewer points than this.", rows: [.newMinimumScore]),
             Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
             coordinator.settings.opensLinksInSafari
@@ -76,6 +76,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         self.coordinator = coordinator
         super.init(style: .insetGrouped)
         title = "Settings"
+        overrideUserInterfaceStyle = .dark
     }
 
     @available(*, unavailable)
@@ -83,9 +84,6 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .done, primaryAction: UIAction { [weak self] _ in
-            self?.dismiss(animated: true)
-        })
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         NotificationCenter.default.addObserver(self, selector: #selector(sessionChanged), name: HNSession.didChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(refreshAdBlockingState), name: UIApplication.didBecomeActiveNotification, object: nil)

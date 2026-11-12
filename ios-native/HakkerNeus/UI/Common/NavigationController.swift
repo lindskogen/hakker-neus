@@ -1,18 +1,32 @@
 import UIKit
 
+/// Screens that show the navigation bar (with its back button), which is hidden for the rest.
+@MainActor
+protocol ShowsNavigationBar {}
+
 /// Screens where swiping right in the content area does something else (like saving a story row),
 /// so only the edge swipe goes back.
 @MainActor
 protocol EdgeOnlySwipeBack {}
 
-/// Screens with a screen to their right, reached by swiping in from the right edge.
+/// The places the sidebar switches between. They're alone in the stack, the sidebar opens over
+/// them with a swipe from the left edge, and the corner button scrolls them to the top.
 @MainActor
-protocol ForwardNavigating {
-    var forwardViewController: UIViewController? { get }
+protocol TopLevelScreen {
+    /// The list, whose scrolling shows the corner button; nil before it's loaded.
+    var scrollView: UIScrollView? { get }
+}
+
+extension TopLevelScreen {
+    func scrollToTop() {
+        guard let scrollView else { return }
+        scrollView.setContentOffset(CGPoint(x: 0, y: -scrollView.adjustedContentInset.top), animated: true)
+    }
 }
 
 /// Navigation controller with a hidden bar that keeps the interactive swipe-back gestures,
-/// and adds an interactive swipe-forward from the right edge.
+/// and adds the sidebar from the left edge on top-level places, and a swipe forward from the
+/// right edge that, like a browser's forward button, brings back what was last left with back.
 ///
 /// UIKit disables both pop gestures while the bar is hidden. Taking over their delegates
 /// re-enables them: the edge swipe everywhere, and on iOS 26 also the swipe from anywhere in
@@ -21,25 +35,42 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     private let forwardSwipe = UIScreenEdgePanGestureRecognizer()
     private var interactivePush: UIPercentDrivenInteractiveTransition?
 
+    /// Screens left with back, the next one to bring back last. The same screens come back, so
+    /// they're as they were left, scrolled where they were.
+    private var forwardStack: [UIViewController] = []
+    /// The screen being brought back by the swipe forward, until it's in place.
+    private var forwardPushing: UIViewController?
+    /// The browser last presented (Safari), brought back by the swipe forward once there's
+    /// nothing else to go forward to.
+    private var forwardBrowser: UIViewController?
+    /// The stack as it was last shown, to tell going back from opening something.
+    private var shownStack: [UIViewController] = []
+
     /// The lower-right button (lower-left if set for left hands), above every screen so it stays
-    /// put while they change underneath: on a feed, a person (to the profile) that opens the reel
-    /// of places when dragged up or held; on the profile, a back button.
+    /// put while they change underneath: on a top-level place scrolled down more than half a
+    /// screen, scrolls it back to the top.
     private let cornerButton = UIButton(type: .system)
     private var cornerButtonLeading: NSLayoutConstraint!
     private var cornerButtonTrailing: NSLayoutConstraint!
+    private var cornerButtonShown = false
+    private var scrollObservation: NSKeyValueObservation?
+    private weak var observedScrollView: UIScrollView?
+    /// The stacked button above the corner button, or in its place while it's hidden.
+    private var stackedAboveCorner: NSLayoutConstraint!
+    private var stackedInCorner: NSLayoutConstraint!
 
     /// Puts the corner button in the lower-left corner instead of the lower-right.
     var cornerButtonOnLeft = false {
         didSet { placeCornerButton() }
     }
-    /// Called when the corner button is tapped, with the screen it was tapped on.
-    var onCornerButton: ((UIViewController) -> Void)?
-    /// Screens that show the corner button, and how.
-    var cornerButtonMode: (UIViewController) -> CornerButtonMode = { _ in .hidden }
-    /// The places the corner button's reel offers on a screen, the current site's first; built
-    /// as it opens. Empty for no reel.
-    var reelColumns: ((UIViewController) -> [ReelColumn])?
-    private var reel: ReelView?
+
+    /// The sidebar's places, built as it opens. Nil for no sidebar.
+    var sidebarSections: (() -> [SidebarSection])?
+    /// The colour of the line down the sidebar's edge.
+    var sidebarAccent: (() -> UIColor)?
+    private var sidebar: SidebarView?
+    private let sidebarEdgeSwipe = UIScreenEdgePanGestureRecognizer()
+    private let sidebarCloseSwipe = UIPanGestureRecognizer()
 
     /// A smaller button stacked above the corner button, for something to do to the screen
     /// showing (on a feed, hiding read stories); nil for none.
@@ -53,17 +84,11 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         let action: () -> Void
     }
 
-    enum CornerButtonMode: Equatable {
-        /// On a feed: opens the profile; dragged up or held, the reel.
-        case profile
-        /// On the profile: back to the feed.
-        case back
-        case hidden
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         setNavigationBarHidden(true, animated: false)
+        navigationBar.overrideUserInterfaceStyle = .dark
+        navigationBar.tintColor = .white
         view.backgroundColor = Theme.Color.backgroundDark
         delegate = self
 
@@ -76,6 +101,14 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
         configureCornerButton()
 
+        sidebarEdgeSwipe.edges = .left
+        sidebarEdgeSwipe.delegate = self
+        sidebarEdgeSwipe.addTarget(self, action: #selector(handleSidebarSwipe(_:)))
+        view.addGestureRecognizer(sidebarEdgeSwipe)
+        sidebarCloseSwipe.delegate = self
+        sidebarCloseSwipe.addTarget(self, action: #selector(handleSidebarSwipe(_:)))
+        view.addGestureRecognizer(sidebarCloseSwipe)
+
         forwardSwipe.edges = .right
         forwardSwipe.delegate = self
         forwardSwipe.addTarget(self, action: #selector(handleForwardSwipe(_:)))
@@ -86,7 +119,7 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
     // MARK: Corner button
 
-    /// Glass on iOS 26, a dark disc before; icons change with a morph (cross-fades before iOS 26).
+    /// Glass on iOS 26, a dark disc before.
     private static func floatingButtonConfiguration(pointSize: CGFloat) -> UIButton.Configuration {
         var config: UIButton.Configuration
         if #available(iOS 26, *) {
@@ -98,30 +131,24 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         config.preferredSymbolConfigurationForImage = .init(pointSize: pointSize, weight: .semibold)
         config.baseForegroundColor = .white
         config.cornerStyle = .capsule
-        if #available(iOS 26, *) {
-            config.symbolContentTransition = UISymbolContentTransition(.replace.downUp)
-        }
         return config
     }
 
     private func configureCornerButton() {
         cornerButton.configuration = Self.floatingButtonConfiguration(pointSize: 18)
+        cornerButton.configuration?.image = UIImage(systemName: "arrow.up")
         cornerButton.accessibilityIdentifier = "cornerButton"
+        cornerButton.accessibilityLabel = "Scroll to Top"
+        cornerButton.accessibilityCustomActions = [
+            UIAccessibilityCustomAction(name: "Open Sidebar") { [unowned self] _ in
+                openSidebar(animated: true)
+                return sidebar != nil
+            },
+        ]
         cornerButton.alpha = 0
         cornerButton.addAction(UIAction { [unowned self] _ in
-            if let top = topViewController { onCornerButton?(top) }
+            (topViewController as? TopLevelScreen)?.scrollToTop()
         }, for: .touchUpInside)
-
-        // The reel opens as soon as the finger moves, or after a short hold without moving.
-        // Either one cancels the tap.
-        let drag = UIPanGestureRecognizer(target: self, action: #selector(handleReel(_:)))
-        let hold = UILongPressGestureRecognizer(target: self, action: #selector(handleReel(_:)))
-        hold.minimumPressDuration = 0.3
-        for gesture in [drag, hold] {
-            gesture.delegate = self
-            cornerButton.addGestureRecognizer(gesture)
-        }
-        reelGestures = [drag, hold]
 
         cornerButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cornerButton)
@@ -146,8 +173,14 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
             stackedButtonView.widthAnchor.constraint(equalToConstant: 42),
             stackedButtonView.heightAnchor.constraint(equalToConstant: 42),
             stackedButtonView.centerXAnchor.constraint(equalTo: cornerButton.centerXAnchor),
-            stackedButtonView.bottomAnchor.constraint(equalTo: cornerButton.topAnchor, constant: -Theme.padding * 1.5),
         ])
+        stackedAboveCorner = stackedButtonView.bottomAnchor.constraint(equalTo: cornerButton.topAnchor, constant: -Theme.padding * 1.5)
+        stackedInCorner = stackedButtonView.centerYAnchor.constraint(equalTo: cornerButton.centerYAnchor)
+        stackedInCorner.isActive = true
+
+        NotificationCenter.default.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateCornerButton(for: self?.topViewController, animated: true) }
+        }
     }
 
     private func placeCornerButton() {
@@ -156,34 +189,60 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         cornerButtonTrailing.isActive = !cornerButtonOnLeft
     }
 
-    /// Shows the corner button as it should be for `viewController`.
+    /// Shows the corner button as it should be for `viewController`, and follows its scrolling.
     func updateCornerButton(for viewController: UIViewController?, animated: Bool) {
-        let mode = viewController.map(cornerButtonMode) ?? .hidden
-        if mode != .hidden {
-            let setIcon: () -> Void = {
-                self.cornerButton.configuration?.image = UIImage(systemName: mode == .back ? "chevron.backward" : "person")
-            }
-            if #available(iOS 26, *) {
-                setIcon()
-            } else if animated {
-                UIView.transition(with: cornerButton, duration: 0.25, options: .transitionCrossDissolve, animations: setIcon)
-            } else {
-                setIcon()
-            }
-            cornerButton.accessibilityLabel = mode == .back ? "Back" : "Profile and Saved Stories"
-            cornerButton.accessibilityHint = mode == .profile ? "Drag up for places" : nil
-            cornerButton.accessibilityCustomActions = mode == .profile ? viewController.map(reelAccessibilityActions) : nil
-        }
+        observeScrolling(of: (viewController as? TopLevelScreen)?.scrollView)
         view.bringSubviewToFront(cornerButton)
-        let change = { self.cornerButton.alpha = mode == .hidden ? 0 : 1 }
-        animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
+        setCornerButtonShown(showsCornerButton(on: viewController), animated: animated)
         updateStackedButton(for: viewController, animated: animated)
+        keepSidebarBehind()
+    }
+
+    /// On a top-level place scrolled down more than half a screen, or always with VoiceOver,
+    /// whose way to the sidebar is on the button.
+    private func showsCornerButton(on viewController: UIViewController?) -> Bool {
+        guard let screen = viewController as? TopLevelScreen else { return false }
+        if UIAccessibility.isVoiceOverRunning { return true }
+        guard let scrollView = screen.scrollView else { return false }
+        return scrollView.contentOffset.y + scrollView.adjustedContentInset.top > scrollView.bounds.height / 2
+    }
+
+    private func observeScrolling(of scrollView: UIScrollView?) {
+        guard scrollView !== observedScrollView || (scrollView != nil && scrollObservation == nil) else { return }
+        observedScrollView = scrollView
+        scrollObservation = scrollView?.observe(\.contentOffset) { [weak self] _, _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let shows = self.showsCornerButton(on: self.topViewController)
+                if shows != self.cornerButtonShown { self.setCornerButtonShown(shows, animated: true) }
+            }
+        }
+    }
+
+    /// Fades the corner button in or out; the stacked button moves into its place while it's out.
+    private func setCornerButtonShown(_ shown: Bool, animated: Bool) {
+        cornerButtonShown = shown
+        stackedInCorner.isActive = false
+        stackedAboveCorner.isActive = shown
+        stackedInCorner.isActive = !shown
+        // Aside with the screen, if the sidebar is open.
+        let shift = CGAffineTransform(translationX: sidebarWidth * sidebarProgress, y: 0)
+        let change = {
+            self.cornerButton.alpha = shown ? 1 : 0
+            self.cornerButton.transform = shown ? shift : CGAffineTransform(scaleX: 0.6, y: 0.6).concatenating(shift)
+            self.view.layoutIfNeeded()
+        }
+        if animated, !UIAccessibility.isReduceMotionEnabled {
+            UIView.animate(withDuration: 0.3, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: [.allowUserInteraction, .beginFromCurrentState], animations: change)
+        } else {
+            change()
+        }
     }
 
     /// Shows the button above the corner button as it should be for `viewController`; call
     /// when what it offers changes.
     func updateStackedButton(for viewController: UIViewController?, animated: Bool) {
-        let button = reel == nil ? viewController.flatMap { stackedButton?($0) } : nil
+        let button = viewController.flatMap { stackedButton?($0) }
         stackedButtonAction = button?.action
         if let button {
             stackedButtonView.configuration?.image = UIImage(systemName: button.systemImage)
@@ -192,74 +251,183 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         view.bringSubviewToFront(stackedButtonView)
         let change = { self.stackedButtonView.alpha = button == nil ? 0 : 1 }
         animated ? UIView.animate(withDuration: 0.25, animations: change) : change()
+        keepSidebarBehind()
     }
 
-    /// Draws the eye to the corner button: a bounce, for the first saved story.
-    func nudgeCornerButton() {
-        guard cornerButton.alpha > 0, !UIAccessibility.isReduceMotionEnabled else { return }
-        UIView.animate(withDuration: 0.18, delay: 0, options: .curveEaseOut) {
-            self.cornerButton.transform = CGAffineTransform(scaleX: 1.25, y: 1.25)
-        } completion: { _ in
-            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.45, initialSpringVelocity: 0) {
-                self.cornerButton.transform = .identity
-            }
+    // MARK: Sidebar
+
+    /// Whether the sidebar can open over what's showing: a top-level place, alone in the stack.
+    private var canOpenSidebar: Bool {
+        sidebar == nil && sidebarSections != nil && viewControllers.count == 1 && topViewController is TopLevelScreen
+            && presentedViewController == nil
+    }
+
+    var isSidebarOpen: Bool { sidebar != nil }
+
+    func openSidebar(animated: Bool) {
+        guard canOpenSidebar, makeSidebar() != nil else { return }
+        settleSidebar(open: true, animated: animated)
+    }
+
+    /// Closes the sidebar, if it's open.
+    func closeSidebar(animated: Bool) {
+        guard sidebar != nil else { return }
+        settleSidebar(open: false, animated: animated)
+    }
+
+    /// Pushes `viewController`, from the sidebar if it's open: the new screen slides in over the
+    /// screen and sidebar as they are, in one movement, and the sidebar is put away behind it.
+    func pushClosingSidebar(_ viewController: UIViewController) {
+        guard sidebar != nil, let from = topViewController,
+              !UIAccessibility.isReduceMotionEnabled,
+              let snapshot = view.snapshotView(afterScreenUpdates: false)
+        else {
+            closeSidebar(animated: false)
+            return pushViewController(viewController, animated: true)
+        }
+        closeSidebar(animated: false)
+        // The screen being left looks as it did with the sidebar open, until it's covered.
+        snapshot.frame = from.view.bounds
+        from.view.addSubview(snapshot)
+        updateCornerButton(for: viewController, animated: false)
+        pushViewController(viewController, animated: true)
+        if let transition = transitionCoordinator {
+            transition.animate(alongsideTransition: nil) { _ in snapshot.removeFromSuperview() }
+        } else {
+            snapshot.removeFromSuperview()
         }
     }
 
-    // MARK: Reel
+    /// Over the screen while the sidebar is open, moving with it: a tap on it closes the
+    /// sidebar, and it casts a shadow onto the sidebar.
+    private var sidebarCover: UIView?
+    /// How far the screen has slid aside for the sidebar: 0 closed, 1 open.
+    private var sidebarProgress: CGFloat = 0
+    /// Where the sidebar was when the swipe moving it began.
+    private var sidebarSwipeStart: CGFloat = 0
+    private var sidebarWidth: CGFloat { SidebarView.width(in: view.bounds.width) }
 
-    private var reelGestures: [UIGestureRecognizer] = []
+    /// Puts the sidebar under the screen (and corner buttons), and the cover over them.
+    private func keepSidebarBehind() {
+        if let sidebar { view.sendSubviewToBack(sidebar) }
+        if let sidebarCover { view.bringSubviewToFront(sidebarCover) }
+    }
 
-    @objc private func handleReel(_ gesture: UIGestureRecognizer) {
-        let point = gesture.location(in: view)
+    private func makeSidebar() -> SidebarView? {
+        guard let sections = sidebarSections?() else { return nil }
+        view.endEditing(true)
+        let sidebar = SidebarView(
+            frame: CGRect(x: 0, y: 0, width: sidebarWidth, height: view.bounds.height),
+            sections: sections, accent: sidebarAccent?() ?? Theme.Color.accent
+        )
+        sidebar.onSelect = { [unowned self] item in
+            item.action()
+            closeSidebar(animated: true)
+        }
+        sidebar.onDismiss = { [unowned self] in closeSidebar(animated: true) }
+        view.insertSubview(sidebar, at: 0)
+
+        let cover = UIView(frame: view.bounds)
+        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        cover.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(sidebarCoverTapped)))
+        let shadow = CAGradientLayer()
+        shadow.colors = [UIColor.black.withAlphaComponent(0).cgColor, UIColor.black.withAlphaComponent(0.35).cgColor]
+        shadow.startPoint = CGPoint(x: 0, y: 0.5)
+        shadow.endPoint = CGPoint(x: 1, y: 0.5)
+        shadow.frame = CGRect(x: -16, y: 0, width: 16, height: max(view.bounds.height, view.bounds.width))
+        cover.layer.addSublayer(shadow)
+        view.addSubview(cover)
+        // In a wide window, the screen mustn't slide over the column beside it.
+        view.clipsToBounds = true
+
+        self.sidebar = sidebar
+        sidebarCover = cover
+        setSidebarProgress(0)
+        return sidebar
+    }
+
+    @objc private func sidebarCoverTapped() {
+        closeSidebar(animated: true)
+    }
+
+    /// Slides the screen, its corner buttons and the cover aside, uncovering the sidebar. Animatable.
+    private func setSidebarProgress(_ progress: CGFloat) {
+        sidebarProgress = progress
+        let shift = CGAffineTransform(translationX: sidebarWidth * progress, y: 0)
+        for subview in view.subviews where subview !== sidebar {
+            subview.transform = shift
+        }
+        sidebar?.progress = progress
+    }
+
+    /// Stops the sidebar mid-animation, where it is on screen, for a swipe to take over.
+    private func stopSidebarAnimations() {
+        guard let sidebar else { return }
+        let shown = sidebarCover?.layer.presentation()?.affineTransform().tx ?? sidebarWidth * sidebarProgress
+        for subview in view.subviews {
+            subview.layer.removeAllAnimations()
+        }
+        let progress = min(max(shown / max(sidebarWidth, 1), 0), 1)
+        sidebar.stopAnimations(at: progress)
+        setSidebarProgress(progress)
+    }
+
+    private func settleSidebar(open: Bool, animated: Bool, velocity: CGFloat = 0) {
+        guard let sidebar else { return }
+        let target: CGFloat = open ? 1 : 0
+        let finish = {
+            if open {
+                UIAccessibility.post(notification: .screenChanged, argument: sidebar)
+            } else {
+                sidebar.removeFromSuperview()
+                self.sidebarCover?.removeFromSuperview()
+                if self.sidebar === sidebar {
+                    self.sidebar = nil
+                    self.sidebarCover = nil
+                }
+                self.setSidebarProgress(0)
+                self.view.clipsToBounds = false
+                UIAccessibility.post(notification: .screenChanged, argument: nil)
+            }
+        }
+        guard animated, !UIAccessibility.isReduceMotionEnabled else {
+            setSidebarProgress(target)
+            return finish()
+        }
+        let distance = abs(target - sidebarProgress) * sidebarWidth
+        let springVelocity = distance > 0 ? abs(velocity) / distance : 0
+        UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: springVelocity, options: [.allowUserInteraction, .beginFromCurrentState]) {
+            self.setSidebarProgress(target)
+        } completion: { _ in
+            // A swipe may have started on it again meanwhile.
+            guard self.sidebar === sidebar, self.sidebarProgress == target else { return }
+            finish()
+        }
+    }
+
+    /// Opening from the left edge, or closing by dragging the screen back.
+    @objc private func handleSidebarSwipe(_ gesture: UIPanGestureRecognizer) {
+        let opening = gesture === sidebarEdgeSwipe
         switch gesture.state {
         case .began:
-            guard reel == nil, let top = topViewController, cornerButtonMode(top) == .profile,
-                  let columns = reelColumns?(top), !columns.isEmpty
-            else { return }
-            let reel = ReelView(frame: view.bounds, columns: columns, anchor: cornerButton.frame, onLeft: cornerButtonOnLeft, start: point)
-            view.insertSubview(reel, belowSubview: cornerButton)
-            self.reel = reel
-            // Out of the thumb's way while the reel is up.
-            updateStackedButton(for: top, animated: true)
-            reel.show()
-            reel.track(point)
-        case .changed:
-            reel?.track(point)
-        case .ended:
-            guard let reel else { return }
-            self.reel = nil
-            // Acts while the reel is still up, so a site switch can flood out from under it.
-            reel.selectedItem?.action(view.convert(point, to: nil))
-            reel.dismiss(animated: true)
-            updateStackedButton(for: topViewController, animated: true)
-        default:
-            reel?.dismiss(animated: true)
-            reel = nil
-            updateStackedButton(for: topViewController, animated: true)
-        }
-    }
-
-    /// The reel's places as actions on the button, for VoiceOver: this site's, then switching site.
-    private func reelAccessibilityActions(for screen: UIViewController) -> [UIAccessibilityCustomAction] {
-        let columns = reelColumns?(screen) ?? []
-        let center = { [weak self] () -> CGPoint in
-            guard let self else { return .zero }
-            return cornerButton.convert(CGPoint(x: cornerButton.bounds.midX, y: cornerButton.bounds.midY), to: nil)
-        }
-        var actions = (columns.first?.items ?? []).filter { !$0.isCurrent }.map { item in
-            UIAccessibilityCustomAction(name: item.title) { _ in
-                item.action(center())
-                return true
+            if opening {
+                guard makeSidebar() != nil else { return }
+            } else {
+                stopSidebarAnimations()
             }
+            sidebarSwipeStart = sidebarProgress
+        case .changed:
+            guard sidebar != nil else { return }
+            let x = gesture.translation(in: view).x / max(sidebarWidth, 1)
+            setSidebarProgress(min(max(sidebarSwipeStart + x, 0), 1))
+        case .ended:
+            guard sidebar != nil else { return }
+            let velocity = gesture.velocity(in: view).x
+            let open = velocity > 500 || (velocity > -500 && sidebarProgress > 0.5)
+            settleSidebar(open: open, animated: true, velocity: velocity)
+        default:
+            settleSidebar(open: !opening, animated: true)
         }
-        if columns.count > 1, let first = columns[1].items.first {
-            actions.append(UIAccessibilityCustomAction(name: "Switch to \(columns[1].title)") { _ in
-                first.action(center())
-                return true
-            })
-        }
-        return actions
     }
 
     // MARK: Gesture delegate
@@ -270,11 +438,16 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     }
 
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        if reelGestures.contains(gestureRecognizer) {
-            return topViewController.map(cornerButtonMode) == .profile
+        if gestureRecognizer === sidebarEdgeSwipe {
+            return canOpenSidebar
+        }
+        if gestureRecognizer === sidebarCloseSwipe {
+            // Sideways only, so the sidebar still scrolls.
+            let velocity = sidebarCloseSwipe.velocity(in: view)
+            return sidebar != nil && velocity.x < 0 && abs(velocity.x) > abs(velocity.y)
         }
         if gestureRecognizer === forwardSwipe {
-            return interactivePush == nil && (topViewController as? ForwardNavigating)?.forwardViewController != nil
+            return interactivePush == nil && sidebar == nil && presentedViewController == nil && forwardTarget != nil
         }
         if isContentPop(gestureRecognizer), topViewController is EdgeOnlySwipeBack {
             return false
@@ -300,15 +473,64 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
 
     // MARK: Swipe forward
 
+    private enum ForwardTarget {
+        case screen(UIViewController)
+        case browser(UIViewController)
+    }
+
+    /// What the swipe forward brings back: the screen last left with back, or else the browser
+    /// last closed.
+    private var forwardTarget: ForwardTarget? {
+        // Screens that have since gone elsewhere (into the side column when the window widened) can't come back.
+        forwardStack.removeAll { $0.parent != nil }
+        if let screen = forwardStack.last { return .screen(screen) }
+        if let browser = forwardBrowser, browser.presentingViewController == nil { return .browser(browser) }
+        return nil
+    }
+
+    /// Presents a browser (Safari) that the swipe forward can bring back once it's closed.
+    /// Opening it is opening something new, so what was ahead is forgotten.
+    func presentBrowser(_ browser: UIViewController) {
+        forwardStack.removeAll()
+        forwardBrowser = browser
+        present(browser, animated: true)
+    }
+
+    /// Takes note of how the stack changed: going back keeps what was left to go forward to,
+    /// opening something else forgets it. Switching the root keeps it.
+    private func stackDidChange(to stack: [UIViewController]) {
+        defer { shownStack = stack }
+        let old = shownStack
+        if stack.count < old.count, zip(stack, old).allSatisfy({ $0 === $1 }) {
+            forwardStack.append(contentsOf: old[stack.count...].reversed())
+            forwardStack = Array(forwardStack.suffix(10))
+        } else if stack.count > old.count, zip(stack, old).allSatisfy({ $0 === $1 }) {
+            if let pushing = forwardPushing, stack.last === pushing {
+                forwardPushing = nil
+            } else {
+                forwardStack.removeAll()
+                forwardBrowser = nil
+            }
+        }
+    }
+
     @objc private func handleForwardSwipe(_ gesture: UIScreenEdgePanGestureRecognizer) {
         let width = max(view.bounds.width, 1)
         let progress = min(max(-gesture.translation(in: view).x / width, 0), 1)
 
         switch gesture.state {
         case .began:
-            guard let next = (topViewController as? ForwardNavigating)?.forwardViewController else { return }
-            interactivePush = UIPercentDrivenInteractiveTransition()
-            pushViewController(next, animated: true)
+            switch forwardTarget {
+            case .screen(let next):
+                forwardStack.removeLast()
+                forwardPushing = next
+                interactivePush = UIPercentDrivenInteractiveTransition()
+                pushViewController(next, animated: true)
+            case .browser(let browser):
+                present(browser, animated: true)
+            case nil:
+                break
+            }
         case .changed:
             interactivePush?.update(progress)
         case .ended:
@@ -316,12 +538,21 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
             if progress > 0.4 || velocity < -500 {
                 interactivePush?.finish()
             } else {
-                interactivePush?.cancel()
+                cancelForwardPush()
             }
             interactivePush = nil
         default:
-            interactivePush?.cancel()
+            cancelForwardPush()
             interactivePush = nil
+        }
+    }
+
+    private func cancelForwardPush() {
+        guard let interactivePush else { return }
+        interactivePush.cancel()
+        if let pushing = forwardPushing {
+            forwardStack.append(pushing)
+            forwardPushing = nil
         }
     }
 
@@ -331,14 +562,20 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
     var onDidShow: ((UIViewController) -> Void)?
 
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
+        stackDidChange(to: viewControllers)
+        // Its list is surely loaded by now, to follow.
+        if viewController is TopLevelScreen { updateCornerButton(for: viewController, animated: true) }
         onDidShow?(viewController)
     }
 
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
         updateCornerButton(for: viewController, animated: animated)
+        setNavigationBarHidden(!(viewController is ShowsNavigationBar), animated: animated)
         // An interactive swipe that's abandoned leaves the previous screen showing.
         transitionCoordinator?.notifyWhenInteractionChanges { [weak self] context in
-            if context.isCancelled { self?.updateCornerButton(for: self?.topViewController, animated: true) }
+            guard context.isCancelled, let self else { return }
+            updateCornerButton(for: topViewController, animated: true)
+            setNavigationBarHidden(!(topViewController is ShowsNavigationBar), animated: true)
         }
     }
 

@@ -356,3 +356,9 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
         coordinator.commitContextMenuPreview(animator)
     }
 }
+
+// MARK: Scrolling to the top
+
+extension StoryListViewController: TopLevelScreen {
+    var scrollView: UIScrollView? { isViewLoaded ? collectionView : nil }
+}

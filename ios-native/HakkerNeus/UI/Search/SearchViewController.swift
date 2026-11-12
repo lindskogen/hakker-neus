@@ -1,8 +1,8 @@
 import UIKit
 
 /// Story search through HN Search by Algolia: a search field, Relevant / Newest tabs, and the
-/// results as quiet rows like on user pages. Kept alive by the coordinator, so going back and
-/// returning keeps the query and results.
+/// results as quiet rows like on user pages. A top-level place, kept alive by the coordinator,
+/// so leaving and coming back keeps the query and results.
 final class SearchViewController: UIViewController, UICollectionViewDelegate, UISearchTextFieldDelegate {
     enum Order: Int, TextTab {
         case relevance, date
@@ -18,7 +18,6 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
     private unowned let coordinator: AppCoordinator
     private let api: UserAPI
 
-    private let backButton = UIButton(type: .system)
     private let searchField = UISearchTextField()
     private let tabs = TextTabsView<Order>()
     private var collectionView: UICollectionView!
@@ -73,32 +72,19 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
         searchField.accessibilityIdentifier = "search.field"
         searchField.addAction(UIAction { [unowned self] _ in queryChanged(debounce: true) }, for: .editingChanged)
 
-        backButton.setImage(UIImage(systemName: "chevron.backward", withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)), for: .normal)
-        backButton.tintColor = .white
-        backButton.accessibilityLabel = "Back"
-        backButton.accessibilityIdentifier = "search.back"
-        backButton.addAction(UIAction { [unowned self] _ in
-            searchField.resignFirstResponder()
-            navigationController?.popViewController(animated: true)
-        }, for: .touchUpInside)
-
         tabs.onSelect = { [unowned self] order in
             self.order = order
             queryChanged(debounce: false)
         }
 
-        for view in [backButton, searchField, tabs] {
+        for view in [searchField, tabs] {
             view.translatesAutoresizingMaskIntoConstraints = false
             self.view.addSubview(view)
         }
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            backButton.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: Theme.padding / 2),
-            backButton.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
-            backButton.widthAnchor.constraint(equalToConstant: 44),
-            backButton.heightAnchor.constraint(equalToConstant: 44),
             searchField.topAnchor.constraint(equalTo: guide.topAnchor, constant: Theme.padding),
-            searchField.leadingAnchor.constraint(equalTo: backButton.trailingAnchor),
+            searchField.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: Theme.padding),
             searchField.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -Theme.padding),
             searchField.heightAnchor.constraint(greaterThanOrEqualToConstant: 40),
             tabs.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: Theme.padding / 2),
@@ -121,6 +107,8 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "search.list"
         collectionView.backgroundView = stateView
+        // Room to scroll the last row out from under the corner button.
+        collectionView.contentInset.bottom = 64
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(collectionView)
         NSLayoutConstraint.activate([
@@ -178,6 +166,8 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
         if stories.isEmpty {
             stateView.state = .loading
             collectionView.backgroundView = stateView
+        // Room to scroll the last row out from under the corner button.
+        collectionView.contentInset.bottom = 64
         }
         let order = order
         searchTask = Task {
@@ -194,6 +184,8 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
                 if page.items.isEmpty {
                     stateView.state = .message(systemImage: "magnifyingglass", text: "No stories match “\(text)”.")
                     collectionView.backgroundView = stateView
+        // Room to scroll the last row out from under the corner button.
+        collectionView.contentInset.bottom = 64
                 }
             } catch {
                 guard !Task.isCancelled else { return }
@@ -201,6 +193,8 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
                 show([], hasMore: false, replacing: true)
                 stateView.state = .error(error)
                 collectionView.backgroundView = stateView
+        // Room to scroll the last row out from under the corner button.
+        collectionView.contentInset.bottom = 64
             }
         }
     }
@@ -242,6 +236,8 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
     private func showHint() {
         stateView.state = .message(systemImage: "magnifyingglass", text: "Search stories on Hacker News.")
         collectionView.backgroundView = stateView
+        // Room to scroll the last row out from under the corner button.
+        collectionView.contentInset.bottom = 64
     }
 
     @objc private func storyStateChanged(_ notification: Notification) {
@@ -290,4 +286,10 @@ final class SearchViewController: UIViewController, UICollectionViewDelegate, UI
     ) {
         coordinator.commitContextMenuPreview(animator)
     }
+}
+
+// MARK: Scrolling to the top
+
+extension SearchViewController: TopLevelScreen {
+    var scrollView: UIScrollView? { isViewLoaded ? collectionView : nil }
 }

@@ -2,48 +2,17 @@ package se.lindskogen.hakkerneus.ui
 
 import se.lindskogen.hakkerneus.data.Lobsters
 import se.lindskogen.hakkerneus.data.TopStoriesFeed
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.lazy.LazyListState
 import se.lindskogen.hakkerneus.ui.frontpage.HideReadHooks
 import se.lindskogen.hakkerneus.ui.frontpage.LobstersFrontPageScreen
-import se.lindskogen.hakkerneus.ui.reel.ReelOverlay
-import se.lindskogen.hakkerneus.ui.reel.ReelSite
-import se.lindskogen.hakkerneus.ui.reel.ReelState
-import se.lindskogen.hakkerneus.ui.reel.hnReel
-import se.lindskogen.hakkerneus.ui.reel.lobstersReel
-import se.lindskogen.hakkerneus.ui.reel.reelGesture
-import android.animation.ValueAnimator
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.ClipOp
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.unit.sp
 import se.lindskogen.hakkerneus.ui.comments.LobstersCommentsScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
@@ -55,28 +24,25 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.draw.rotate
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,8 +67,11 @@ import se.lindskogen.hakkerneus.ui.frontpage.FrontPageScreen
 import se.lindskogen.hakkerneus.ui.settings.AccountSection
 import se.lindskogen.hakkerneus.ui.saved.SavedScreen
 import se.lindskogen.hakkerneus.ui.settings.SettingsScreen
+import se.lindskogen.hakkerneus.ui.user.ProfileScreen
 import se.lindskogen.hakkerneus.ui.user.UserScreen
 import se.lindskogen.hakkerneus.ui.theme.HN
+import se.lindskogen.hakkerneus.ui.theme.Palette
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Serializable object FrontPage
 @Serializable object Saved
@@ -112,8 +81,6 @@ import se.lindskogen.hakkerneus.ui.theme.HN
 @Serializable data class Compose(val parent: Long, val story: Long, val context: String)
 @Serializable data class Comments(val id: Long)
 @Serializable data class User(val name: String)
-
-private enum class CornerMode { Profile, Back, Hidden }
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -168,89 +135,70 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
         }
     }
     val entry by nav.currentBackStackEntryAsState()
-    val mode = when {
-        entry?.destination?.hasRoute<FrontPage>() == true -> CornerMode.Profile
-        entry?.destination?.hasRoute<Saved>() == true -> CornerMode.Back
-        else -> CornerMode.Hidden
-    }
-    // The site the app is about, and the feed showing at the root for each, switched from the reel.
-    val site = AppContainer.site
-    var hnFeed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.Top) }
-    var lobstersFeed by rememberSaveable { mutableStateOf(TopStoriesFeed.Source.LobstersHottest) }
-    fun feedOf(site: Site) = if (site == Site.HackerNews) hnFeed else lobstersFeed
+    // On a top-level place (a feed, Saved or Search), not on something opened from one.
+    val atTop = entry?.destination?.hasRoute<FrontPage>() == true
+    // The place showing, picked in the sidebar. The app starts at its site's first feed.
+    var place by rememberSaveable { mutableStateOf(Place.home(AppContainer.site)) }
     // Each feed's read stories, for the hide-read button above the corner button.
     val hideRead = remember { TopStoriesFeed.Source.entries.associateWith { HideReadHooks() } }
-    val reel = remember { ReelState() }
+    val scrollToTop = remember { Place.entries.associateWith { ScrollToTop() } }
+    val savedList = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val sidebar = remember { SidebarState() }
+    // Screens left with back, and the browser, for the forward swipe from the right edge.
+    val forward: ForwardHistory = viewModel()
+    LaunchedEffect(nav) { nav.currentBackStack.collect(forward::backStackChanged) }
+    LaunchedEffect(Unit) { browserOpened.collect(forward::browserOpened) }
+    // Forward goes on from a top-level place or what was opened from one, not from Settings and the like.
+    val canGoForward = forward.next != null && !sidebar.isOpen && entry?.destination?.let {
+        it.hasRoute<FrontPage>() || it.hasRoute<Comments>() || it.hasRoute<User>()
+    } == true
+    fun goForward() = forward.goForward(nav) { context.openInBrowser(it) }
 
-    // Switching site floods the new site's screen out from the finger: a snapshot of the old one
-    // is drawn on top with a growing hole in it. With animations off, it fades instead.
-    val screens = rememberGraphicsLayer()
-    var flood by remember { mutableStateOf<Flood?>(null) }
-    val floodProgress = remember { Animatable(0f) }
-    fun switchSite(to: Site, from: Offset, then: () -> Unit) {
-        navScope.launch {
-            val snapshot = runCatching { screens.toImageBitmap() }.getOrNull()
-            flood = snapshot?.let { Flood(it, from, circle = ValueAnimator.areAnimatorsEnabled()) }
-            AppContainer.switchSite(to)
-            then()
-            if (snapshot != null) {
-                floodProgress.snapTo(0f)
-                floodProgress.animateTo(1f, tween(450, easing = FastOutSlowInEasing))
-            }
-            flood = null
-        }
+    /** Goes to [to], making the app about its site if it's the other one. */
+    fun go(to: Place) {
+        to.site?.takeIf { it != AppContainer.site }?.let(AppContainer::switchSite)
+        place = to
+        navScope.launch { sidebar.close() }
     }
-    /** Goes to [place] on [target], switching site first if it's the other one. */
-    fun go(target: Site, place: Place, from: Offset) {
-        val arrive = {
-            when (place) {
-                Place.Top, Place.New -> hnFeed = place.feed!!
-                Place.Hottest, Place.Newest -> lobstersFeed = place.feed!!
-                Place.Saved -> nav.navigate(Saved)
-                Place.Search -> nav.navigate(Search)
-            }
-        }
-        if (target == AppContainer.site) arrive() else switchSite(target, from, arrive)
-    }
-    /** The current site's reel, and the other site's, as they are now. */
-    fun reelSites(): Pair<ReelSite, ReelSite> = when (AppContainer.site) {
-        Site.HackerNews -> hnReel(Place.of(hnFeed)) to lobstersReel(here = null)
-        Site.Lobsters -> lobstersReel(Place.of(lobstersFeed)) to hnReel(here = null)
-    }
+    // Back from another place goes to the site's first feed, then out of the app.
+    BackHandler(enabled = atTop && place != Place.home(AppContainer.site)) { go(Place.home(AppContainer.site)) }
 
-    Box(Modifier.fillMaxSize().onGloballyPositioned { reel.origin = it.positionInRoot() }) {
-    Box(Modifier.fillMaxSize().drawWithContent {
-        screens.record { this@drawWithContent.drawContent() }
-        drawLayer(screens)
-    }) {
+    SidebarLayout(
+        sidebar,
+        enabled = atTop,
+        accent = if (AppContainer.site == Site.HackerNews) HN.accent else Palette.lobstersAccent,
+        sidebar = {
+            val username by AppContainer.session.username.collectAsState()
+            SidebarPlaces(here = place, username = username, go = ::go, openSettings = {
+                navScope.launch { sidebar.close() }
+                nav.navigate(Settings)
+            })
+        },
+    ) {
+    ForwardSwipeLayout(enabled = canGoForward, onForward = ::goForward) {
+    Box(Modifier.fillMaxSize()) {
     CompositionLocalProvider(LocalOpenUser provides { name -> openUser(name) }) {
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(nav, startDestination = FrontPage, modifier = Modifier.background(HN.backgroundDark)) {
         composable<FrontPage> {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-                when (site) {
-                    Site.HackerNews -> Crossfade(hnFeed, label = "feed") { source ->
-                        FrontPageScreen(
-                            openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                            openItem = { openComments(it) },
-                            signIn = { nav.navigate(SignIn) },
-                            source = source,
-                            menu = hideRead.getValue(source),
-                        )
-                    }
-                    Site.Lobsters -> Crossfade(lobstersFeed, label = "lobste.rs feed") { source ->
-                        LobstersFrontPageScreen(
-                            openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                            openItem = { openComments(it) },
-                            source = source,
-                            menu = hideRead.getValue(source),
-                        )
-                    }
+                Crossfade(place, label = "place") { here ->
+                    PlaceScreen(
+                        here,
+                        openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
+                        openItem = { openComments(it) },
+                        openUser = { openUser(it) },
+                        signIn = { nav.navigate(SignIn) },
+                        hideRead = hideRead,
+                        savedList = savedList,
+                        scrollToTop = scrollToTop.getValue(here),
+                    )
                 }
             }
         }
         composable<Comments> { entry ->
+            KeptViewModels(forward, entry) {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                 val id = entry.toRoute<Comments>().id
                 if (Lobsters.isLobsters(id)) LobstersCommentsScreen(id, openItem = { openComments(it) }) else CommentsScreen(
@@ -263,36 +211,10 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                     signIn = { nav.navigate(SignIn) },
                 )
             }
-        }
-        composable<Saved> {
-            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-                val username by AppContainer.session.username.collectAsState()
-                SavedScreen(
-                    username = username,
-                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                    openItem = { openComments(it) },
-                    openSettings = { nav.navigate(Settings) },
-                    openSearch = { nav.navigate(Search) },
-                    signIn = { nav.navigate(SignIn) },
-                )
-            }
-        }
-        composable<Search> {
-            CompositionLocalProvider(LocalNavAnimatedScope provides this) {
-                se.lindskogen.hakkerneus.ui.search.SearchScreen(
-                    openComments = { AppContainer.visited.markCommentsSeen(it); openComments(it.id) },
-                    openLink = { url ->
-                        when (val link = HackerNewsLink.parse(url)) {
-                            is HackerNewsLink.Item -> openComments(link.id)
-                            is HackerNewsLink.User -> openUser(link.name)
-                            else -> context.openInBrowser(url)
-                        }
-                    },
-                    signIn = { nav.navigate(SignIn) },
-                )
             }
         }
         composable<User> { entry ->
+            KeptViewModels(forward, entry) {
             CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                 UserScreen(
                     entry.toRoute<User>().name,
@@ -307,6 +229,7 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
                     },
                     signIn = { nav.navigate(SignIn) },
                 )
+            }
             }
         }
         composable<Settings> {
@@ -323,34 +246,18 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
     }
     }
     }
-    }
 
-        // The old site's screen, with the new one showing through a growing hole.
-        flood?.let { current ->
-            Canvas(Modifier.fillMaxSize()) {
-                if (current.circle) {
-                    val radius = floodProgress.value * maxOf(
-                        (current.center - Offset.Zero).getDistance(), (current.center - Offset(size.width, 0f)).getDistance(),
-                        (current.center - Offset(0f, size.height)).getDistance(), (current.center - Offset(size.width, size.height)).getDistance(),
-                    )
-                    val hole = Path().apply { addOval(Rect(current.center, radius)) }
-                    clipPath(hole, ClipOp.Difference) { drawImage(current.image) }
-                    drawCircle(Color.White.copy(alpha = 0.12f * (1f - floodProgress.value)), radius, current.center, style = Stroke(6.dp.toPx()))
-                } else {
-                    drawImage(current.image, alpha = 1f - floodProgress.value)
-                }
-            }
-        }
-
-        ReelOverlay(reel)
+        // The corner button shows once the place is scrolled down more than half a screen (always
+        // with TalkBack, where it also holds the actions for the sidebar and going forward).
+        val touchExploration = rememberTouchExploration()
+        val showsCorner = atTop && (touchExploration || scrollToTop.getValue(place).isScrolledDown)
 
         // Above the corner button on a feed: hide the read stories (an eye with a slash) or, after
         // hiding, show them again (an eye). Hiding wins: reading another story brings the slash
-        // back. Out of the way while the reel is open.
-        val onFeed = mode == CornerMode.Profile
-        val feedHooks = hideRead.getValue(feedOf(site))
+        // back.
+        val feedHooks = place.feed?.let(hideRead::getValue) ?: HideReadHooks()
         val hides = feedHooks.hasRead
-        val offersHide = onFeed && !reel.isOpen && (hides || feedHooks.canUndo)
+        val offersHide = atTop && place.feed != null && (hides || feedHooks.canUndo)
         // Keeps its icon while fading out.
         var showsHide by remember { mutableStateOf(true) }
         if (offersHide) showsHide = hides
@@ -361,12 +268,16 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             modifier = Modifier.align(if (AppContainer.cornerButtonOnLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
             val onLeft = AppContainer.cornerButtonOnLeft
-            // Centred over the 52dp corner button, 12dp above it.
+            // Centred over the 52dp corner button, 12dp above it; in its place while it's hidden.
             val inset = 20.dp + (52.dp - 42.dp) / 2
+            val bottom by animateDpAsState(
+                if (showsCorner) HN.padding + 52.dp + 12.dp else HN.padding + (52.dp - 42.dp) / 2,
+                label = "hide-read position",
+            )
             Box(
                 Modifier
                     .navigationBarsPadding()
-                    .padding(start = if (onLeft) inset else 0.dp, end = if (onLeft) 0.dp else inset, bottom = HN.padding + 52.dp + 12.dp),
+                    .padding(start = if (onLeft) inset else 0.dp, end = if (onLeft) 0.dp else inset, bottom = bottom),
             ) {
                 val label = if (showsHide) "Hide read stories" else "Show hidden stories"
                 Surface(
@@ -386,71 +297,108 @@ fun AppNavigation(pendingLink: MutableStateFlow<Uri?> = MutableStateFlow(null)) 
             }
         }
 
-        // One lower-right button (lower-left for left hands) above every screen, so it stays put
-        // while they change underneath: on the feed a person, opening the profile, and dragged up
-        // or held, the reel; on the profile, back.
+        // One lower-right button (lower-left for left hands) on the top-level places, scrolling
+        // the one showing to the top.
         val onLeft = AppContainer.cornerButtonOnLeft
-        reel.onLeft = onLeft
         AnimatedVisibility(
-            visible = mode != CornerMode.Hidden,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            visible = showsCorner,
+            enter = fadeIn() + scaleIn(initialScale = 0.6f),
+            exit = fadeOut() + scaleOut(targetScale = 0.6f),
             modifier = Modifier.align(if (onLeft) Alignment.BottomStart else Alignment.BottomEnd),
         ) {
-            val haptics = LocalHapticFeedback.current
-            var pressed by remember { mutableStateOf(false) }
-            val currentMode by rememberUpdatedState(mode)
             Box(
                 Modifier
                     .navigationBarsPadding()
                     .padding(start = if (onLeft) 20.dp else 0.dp, end = if (onLeft) 0.dp else 20.dp, bottom = HN.padding),
             ) {
                 Surface(
+                    onClick = { navScope.launch { scrollToTop.getValue(place).scroll() } },
                     shape = CircleShape,
-                    color = if (pressed) Color(0xF0585858) else Color(0xE6404040),
+                    color = Color(0xE6404040),
                     contentColor = Color.White,
                     shadowElevation = 6.dp,
                     modifier = Modifier
                         .size(52.dp)
-                        .onGloballyPositioned { reel.button = it.boundsInRoot() }
-                        .pointerInput(Unit) {
-                            reelGesture(
-                                reel, haptics,
-                                sites = ::reelSites,
-                                pressed = { pressed = it },
-                                onTap = { if (currentMode == CornerMode.Back) nav.popBackStack() else if (currentMode == CornerMode.Profile) nav.navigate(Saved) },
-                                onChoose = { chosen, place, finger -> go(chosen.site, place, finger) },
-                                enabled = { currentMode == CornerMode.Profile },
-                            )
-                        }
                         .semantics {
-                            role = Role.Button
-                            contentDescription = if (mode == CornerMode.Back) "Back" else "Profile and saved stories"
-                            onClick(label = if (mode == CornerMode.Back) "Back" else "Profile and saved stories") {
-                                if (mode == CornerMode.Back) nav.popBackStack() else nav.navigate(Saved)
-                                true
-                            }
-                            if (mode == CornerMode.Profile) {
-                                val (home, other) = reelSites()
-                                val center = reel.button.center - reel.origin
-                                customActions = home.places.map { place ->
-                                    CustomAccessibilityAction(place.title) { go(home.site, place, center); true }
-                                } + CustomAccessibilityAction("Switch to ${other.site.title}") {
-                                    go(other.site, Place.of(feedOf(other.site)), center); true
-                                }
-                            }
+                            contentDescription = "Scroll to top"
+                            // The sidebar opens with a swipe from the edge; here it's an action too.
+                            customActions = listOfNotNull(
+                                CustomAccessibilityAction("Open menu") { navScope.launch { sidebar.open() }; true },
+                                // Forward is a swipe from the other edge.
+                                forward.next?.let { CustomAccessibilityAction("Go forward") { goForward(); true } },
+                            )
                         },
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Crossfade(mode == CornerMode.Back, label = "corner icon") { back ->
-                            Icon(if (back) HnIcons.back else HnIcons.person, contentDescription = null, modifier = Modifier.size(24.dp))
-                        }
+                        Icon(HnIcons.arrowUp, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 }
             }
         }
     }
+    }
+    }
 }
 
-/** A site switch under way: the old screen, and where the new one floods out from. */
-private class Flood(val image: ImageBitmap, val center: Offset, val circle: Boolean)
+/** A top-level place's screen. */
+@Composable
+private fun PlaceScreen(
+    place: Place,
+    openComments: (se.lindskogen.hakkerneus.data.Story) -> Unit,
+    openItem: (Long) -> Unit,
+    openUser: (String) -> Unit,
+    signIn: () -> Unit,
+    hideRead: Map<TopStoriesFeed.Source, HideReadHooks>,
+    savedList: LazyListState,
+    scrollToTop: ScrollToTop,
+) {
+    val context = LocalContext.current
+    when (place) {
+        Place.Top, Place.New -> FrontPageScreen(
+            openComments = openComments, openItem = openItem, signIn = signIn,
+            source = place.feed!!, menu = hideRead.getValue(place.feed), scrollToTop = scrollToTop,
+        )
+        Place.Hottest, Place.Newest -> LobstersFrontPageScreen(
+            openComments = openComments, openItem = openItem,
+            source = place.feed!!, menu = hideRead.getValue(place.feed), scrollToTop = scrollToTop,
+        )
+        Place.Profile -> {
+            val username by AppContainer.session.username.collectAsState()
+            ProfileScreen(
+                username = username,
+                openComments = openComments,
+                openItem = openItem,
+                openLink = { url ->
+                    when (val link = HackerNewsLink.parse(url)) {
+                        is HackerNewsLink.Item -> openItem(link.id)
+                        is HackerNewsLink.User -> openUser(link.name)
+                        else -> context.openInBrowser(url)
+                    }
+                },
+                signIn = signIn,
+                scrollToTop = scrollToTop,
+            )
+        }
+        Place.Saved -> {
+            SavedScreen(
+                openComments = openComments,
+                openItem = openItem,
+                signIn = signIn,
+                listState = savedList,
+                scrollToTop = scrollToTop,
+            )
+        }
+        Place.Search -> se.lindskogen.hakkerneus.ui.search.SearchScreen(
+            openComments = openComments,
+            openLink = { url ->
+                when (val link = HackerNewsLink.parse(url)) {
+                    is HackerNewsLink.Item -> openItem(link.id)
+                    is HackerNewsLink.User -> openUser(link.name)
+                    else -> context.openInBrowser(url)
+                }
+            },
+            signIn = signIn,
+            scrollToTop = scrollToTop,
+        )
+    }
+}

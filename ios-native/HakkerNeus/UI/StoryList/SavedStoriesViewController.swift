@@ -1,9 +1,7 @@
 import UIKit
 
-/// The profile page: who's signed in and the saved stories or comments, newest first. It sits
-/// behind the front page: swipe in from the left edge of the front page to get here, and in
-/// from the right edge to go back. Story rows work like on the front page, in red instead of
-/// orange; comments are listed like on user pages.
+/// The saved stories or comments, newest first: one of the sidebar's places. Story rows work
+/// like on the front page, in red instead of orange; comments are listed like on user pages.
 final class SavedStoriesViewController: UIViewController, UICollectionViewDelegate, EdgeOnlySwipeBack, StoryTransitionSource {
     private enum Section { case main }
 
@@ -32,7 +30,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     private var selectedTab = Tab.stories
     private let emptyView = FullPageStateView()
     private let topFill = TopFillView()
-    private weak var profileHeader: ProfileHeaderView?
+    private weak var savedHeader: SavedHeaderView?
     private var pendingReload: DispatchWorkItem?
 
     init(coordinator: AppCoordinator) {
@@ -72,7 +70,7 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         topFill.install(in: collectionView)
         // Room to scroll the last row out from under the corner button.
         collectionView.contentInset.bottom = 64
-        // The dark profile header is first, so it's what reaches up under the clock.
+        // The dark header is first, so it's what reaches up under the clock.
         topFill.color = Theme.Color.backgroundDark
 
         emptyView.isAccessibilityElement = true
@@ -85,7 +83,8 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
 
         let cell = UICollectionView.CellRegistration<StoryCell, Item> { [unowned self] cell, indexPath, item in
             guard case .story(let id) = item, let story = stories[id] else { return }
-            coordinator.configure(cell, with: story, backgroundColor: Palette.savedStoryBackground(at: indexPath.item), inSavedList: true)
+            // Quiet rows, like on the profile.
+            coordinator.configure(cell, with: story, backgroundColor: Theme.Color.backgroundDark, inSavedList: true, compact: true, openedFrom: .list)
         }
         let commentCell = UICollectionView.CellRegistration<UserCommentCell, Item> { [unowned self] cell, _, item in
             guard case .comment(let id) = item, let comment = comments[id] else { return }
@@ -101,16 +100,12 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
             case .comment: collectionView.dequeueConfiguredReusableCell(using: commentCell, for: indexPath, item: item)
             }
         }
-        let header = UICollectionView.SupplementaryRegistration<ProfileHeaderView>(
+        let header = UICollectionView.SupplementaryRegistration<SavedHeaderView>(
             elementKind: UICollectionView.elementKindSectionHeader
         ) { [unowned self] view, _, _ in
-            profileHeader = view
+            savedHeader = view
             view.horizontalMargin = systemMinimumLayoutMargins.leading
-            configureProfileHeader()
-            view.onSettings = { [unowned self] in coordinator.showSettings() }
-            view.onSearch = { [unowned self] in coordinator.showSearch() }
-            view.onSignIn = { [unowned self] in coordinator.showSignIn() }
-            view.onShowUser = { [unowned self] in coordinator.showUser($0, from: .list) }
+            configureSavedHeader()
             view.onTab = { [unowned self] tab in
                 selectedTab = tab
                 reload(animated: false)
@@ -126,13 +121,6 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         for name in [VisitedStoriesStore.didChange, HNSession.votesChanged, SplitViewController.activeStoryDidChange] {
             NotificationCenter.default.addObserver(self, selector: #selector(visitedStoryChanged(_:)), name: name, object: nil)
         }
-        // The rows' colours go with the theme, which can change from Settings opened here.
-        NotificationCenter.default.addObserver(self, selector: #selector(colorThemeChanged), name: AppSettings.colorThemeDidChange, object: nil)
-        NotificationCenter.default.addObserver(
-            forName: HNSession.didChange, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.configureProfileHeader() }
-        }
         reload(animated: false)
     }
 
@@ -142,10 +130,6 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         let work = DispatchWorkItem { [weak self] in self?.reload(animated: true) }
         pendingReload = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: work)
-    }
-
-    @objc private func colorThemeChanged() {
-        reload(animated: false)
     }
 
     @objc private func visitedStoryChanged(_ notification: Notification) {
@@ -174,11 +158,11 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
         emptyView.state = .message(systemImage: selectedTab == .stories ? "heart" : "text.bubble", text: empty)
         emptyView.accessibilityLabel = empty
         collectionView.backgroundView = items.isEmpty ? emptyView : nil
-        configureProfileHeader()
+        configureSavedHeader()
     }
 
-    private func configureProfileHeader() {
-        profileHeader?.configure(username: coordinator.session.username, savedCount: stories.count, savedCommentCount: comments.count, tab: selectedTab)
+    private func configureSavedHeader() {
+        savedHeader?.configure(savedCount: stories.count, savedCommentCount: comments.count, tab: selectedTab)
     }
 
     private func story(at indexPath: IndexPath) -> Story? {
@@ -280,4 +264,10 @@ final class SavedStoriesViewController: UIViewController, UICollectionViewDelega
     ) {
         coordinator.commitContextMenuPreview(animator)
     }
+}
+
+// MARK: Scrolling to the top
+
+extension SavedStoriesViewController: TopLevelScreen {
+    var scrollView: UIScrollView? { isViewLoaded ? collectionView : nil }
 }

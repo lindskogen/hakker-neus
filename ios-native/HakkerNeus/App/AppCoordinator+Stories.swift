@@ -72,32 +72,6 @@ extension AppCoordinator {
     }
 }
 
-/// One-time hint that the saved list lives behind the front page.
-extension AppCoordinator {
-    private static let savedHintKey = "didShowSavedStoriesHint"
-
-    func savedStoryChanged(_ id: Int?) {
-        guard let id, savedStories.isSaved(id),
-              !defaults.bool(forKey: Self.savedHintKey),
-              let top = navigationController.topViewController, isFeed(top)
-        else { return }
-        defaults.set(true, forKey: Self.savedHintKey)
-
-        // Wait for the swiped row to settle first.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
-            self?.playSavedHint()
-        }
-    }
-
-    /// Bounces the corner button, which leads to the saved list.
-    private func playSavedHint() {
-        guard let top = navigationController.topViewController, isFeed(top),
-              navigationController.presentedViewController == nil
-        else { return }
-        navigationController.nudgeCornerButton()
-    }
-}
-
 // MARK: Prefetching
 
 extension AppCoordinator {

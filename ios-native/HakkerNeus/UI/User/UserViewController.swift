@@ -86,6 +86,8 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
         collectionView.indicatorStyle = .white
         collectionView.delegate = self
         collectionView.accessibilityIdentifier = "user.list"
+        // Room to scroll the last row out from under the corner button, on the profile.
+        collectionView.contentInset.bottom = 64
         view.addSubview(collectionView)
         topFill.install(in: collectionView)
         topFill.color = Theme.Color.backgroundDark
@@ -257,6 +259,8 @@ final class UserViewController: UIViewController, UICollectionViewDelegate, Stor
     }
 
     // MARK: Transition into comments
+
+    var scrollView: UIScrollView? { isViewLoaded ? collectionView : nil }
 
     func transitionViews(forStory id: Int) -> (card: UIView, title: UIView)? {
         guard let indexPath = dataSource.indexPath(for: .story(id)) else { return nil }

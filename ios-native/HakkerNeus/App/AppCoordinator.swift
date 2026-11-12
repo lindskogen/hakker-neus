@@ -4,8 +4,8 @@ import os
 
 /// Owns app-wide dependencies, the root navigation stack, and navigation between screens.
 ///
-/// The stack starts as [Saved, Front page]: the saved list sits "behind" the front page,
-/// so the edge swipe back from the front page reveals it.
+/// At the bottom of the stack is a top-level place (a feed, the saved list or search), picked in
+/// the sidebar; comments, articles and user pages go on top.
 @MainActor
 final class AppCoordinator {
     let window: UIWindow
@@ -41,6 +41,8 @@ final class AppCoordinator {
     /// Kept alive while the saved list is showing, so its scroll position and pages survive.
     private(set) lazy var frontPage = StoryListViewController(feed: TopStoriesFeed(client: client), coordinator: self)
     private(set) lazy var savedList = SavedStoriesViewController(coordinator: self)
+    /// Your HN page, or a way to sign in.
+    private(set) lazy var profile = ProfileViewController(coordinator: self)
     /// Story search, kept alive so the query and results survive going back.
     private(set) lazy var search = SearchViewController(coordinator: self, api: userCache.api)
     /// HN's New list, kept alive like the front page so its place survives switching feeds.
@@ -54,8 +56,10 @@ final class AppCoordinator {
         feed: TopStoriesFeed(client: client, source: .lobstersNewest), coordinator: self, rowBackground: { Palette.lobstersBackground(at: $0) }
     )
 
-    /// The site the app is about, whose feeds are at the root and in the reel.
+    /// The site the app is about, whose feeds are at the root and first in the sidebar.
     private(set) var site = Site.hackerNews
+    /// The site's feed last at the root, for going back to from the saved list.
+    private var lastFeed: StoryListViewController?
 
     init(
         window: UIWindow,
@@ -121,10 +125,8 @@ final class AppCoordinator {
         importSeedBookmarks()
         #endif
         site = settings.site
-        var stack: [UIViewController] = [feed(state?.rootFeed, on: site)]
-        if state?.showsFrontPage == false {
-            stack.append(savedList)
-        }
+        lastFeed = feed(state?.rootFeed, on: site)
+        var stack: [UIViewController] = [state?.showsFrontPage == false ? savedList : currentFeed]
         savedList.pendingAnchor = state?.savedListAnchor
         if let feed = state?.frontPageFeed {
             frontPage.restoreFeed(feed)
@@ -134,14 +136,11 @@ final class AppCoordinator {
             itemCache.prefetch(id: screen.itemID)
             stack.append(CommentsViewController(id: screen.itemID, story: screen.story, coordinator: self, restoring: screen))
         }
-        navigationController.cornerButtonMode = { [weak self] screen in
-            guard let self else { return .hidden }
-            if isFeed(screen) { return .profile }
-            if screen === savedList { return .back }
-            return .hidden
+        navigationController.sidebarSections = { [weak self] in
+            self?.sidebarSections() ?? []
         }
-        navigationController.reelColumns = { [weak self] screen in
-            self?.reelColumns(for: screen) ?? []
+        navigationController.sidebarAccent = { [weak self] in
+            self?.site == .lobsters ? Palette.lobstersAccent : Palette.accent()
         }
         navigationController.stackedButton = { [weak self] screen in
             self?.hideReadButton(for: screen)
@@ -159,14 +158,10 @@ final class AppCoordinator {
                 self.navigationController.cornerButtonOnLeft = self.settings.cornerButtonOnLeft
             }
         }
-        navigationController.onCornerButton = { [weak self] screen in
-            guard let self else { return }
-            screen === savedList ? showFrontPage() : showSavedStories()
-        }
         navigationController.setViewControllers(stack, animated: false)
         navigationController.updateCornerButton(for: stack.last, animated: false)
 
-        split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController || $0 is SearchViewController }
+        split.isList = { $0 is StoryListViewController || $0 is SavedStoriesViewController || $0 is SearchViewController || $0 is ProfileViewController }
         window.rootViewController = split
         window.makeKeyAndVisible()
         // Lay out now, so links opened at launch know whether there's room beside the list.
@@ -180,13 +175,6 @@ final class AppCoordinator {
         }
         #endif
 
-        NotificationCenter.default.addObserver(
-            forName: SavedStoriesStore.didChange, object: nil, queue: .main
-        ) { [weak self] notification in
-            let id = notification.object as? Int
-            MainActor.assumeIsolated { self?.savedStoryChanged(id) }
-        }
-
         relativeTimeTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
             NotificationCenter.default.post(name: RelativeTime.tick, object: nil)
         }
@@ -196,7 +184,7 @@ final class AppCoordinator {
     var restorationState: RestorationState {
         let stack = split.allViewControllers
         return RestorationState(
-            showsFrontPage: !stack.contains(savedList),
+            showsFrontPage: navigationController.viewControllers.first !== savedList,
             rootFeed: currentFeed.source,
             frontPageFeed: frontPage.feedSnapshot,
             frontPageAnchor: frontPage.scrollAnchor,
@@ -306,24 +294,24 @@ final class AppCoordinator {
         }
     }
 
+    /// Settings, pushed on top of what's showing (and the sidebar, from there).
     func showSettings() {
-        let settings = UINavigationController(rootViewController: SettingsViewController(coordinator: self))
-        settings.overrideUserInterfaceStyle = .dark
-        navigationController.present(settings, animated: true)
+        navigationController.pushClosingSidebar(SettingsViewController(coordinator: self))
     }
 
-    /// The profile and saved lists, pushed on top of the feed.
+    /// The saved stories and comments, at the root.
     func showSavedStories(animated: Bool = true) {
-        if navigationController.viewControllers.contains(savedList) {
-            navigationController.popToViewController(savedList, animated: animated)
-        } else {
-            navigationController.setViewControllers([currentFeed, savedList], animated: animated)
-        }
+        showPlace(savedList, animated: animated)
     }
 
-    /// The feed at the root of the stack: the front page, New or lobste.rs.
+    /// Your profile, at the root.
+    func showProfile() {
+        showPlace(profile)
+    }
+
+    /// The site's feed last at the root (or its first): the front page, New, Hottest or Newest.
     var currentFeed: StoryListViewController {
-        navigationController.viewControllers.first as? StoryListViewController ?? frontPage
+        lastFeed ?? feed(nil, on: site)
     }
 
     func isFeed(_ screen: UIViewController) -> Bool {
@@ -340,61 +328,72 @@ final class AppCoordinator {
         }
     }
 
-    /// Back to the feed showing, from wherever the app was.
+    /// Back to the site's feed, from wherever the app was.
     func showFrontPage(animated: Bool = true) {
-        navigationController.popToRootViewController(animated: animated)
+        showPlace(currentFeed, animated: animated)
     }
 
-    /// Puts `feed` at the root in place of the one showing, keeping each feed's place.
-    func showFeed(_ feed: StoryListViewController) {
-        guard feed !== currentFeed else { return showFrontPage() }
-        let swap = {
-            self.navigationController.setViewControllers([feed], animated: false)
-            self.navigationController.updateCornerButton(for: feed, animated: false)
+    /// Puts a top-level place (a feed, the saved list or search) at the root in place of what's
+    /// there, keeping each place's scroll position.
+    func showPlace(_ place: UIViewController, animated: Bool = true) {
+        if let feed = place as? StoryListViewController, isFeed(feed) {
+            lastFeed = feed
         }
-        if UIAccessibility.isReduceMotionEnabled || navigationController.view.window == nil {
+        guard navigationController.viewControllers != [place] else { return }
+        if navigationController.viewControllers.first === place {
+            navigationController.popToRootViewController(animated: animated)
+            return
+        }
+        let swap = {
+            self.navigationController.setViewControllers([place], animated: false)
+            self.navigationController.updateCornerButton(for: place, animated: false)
+        }
+        // From the sidebar, which slides away to show it, it's swapped in straight away.
+        if !animated || navigationController.isSidebarOpen || UIAccessibility.isReduceMotionEnabled || navigationController.view.window == nil {
             swap()
         } else {
             UIView.transition(with: navigationController.view, duration: 0.25, options: .transitionCrossDissolve, animations: swap)
         }
-        UIAccessibility.post(notification: .screenChanged, argument: feed.title)
+        UIAccessibility.post(notification: .screenChanged, argument: place.title)
     }
 
-    // MARK: Sites and the reel
+    // MARK: Sites and the sidebar
 
-    /// The reel on a feed: this site's places, then the other site's, which switch to it.
-    private func reelColumns(for screen: UIViewController) -> [ReelColumn] {
-        guard let feed = screen as? StoryListViewController, isFeed(feed) else { return [] }
-        return [column(for: site, on: feed), column(for: site.other, on: nil)]
+    /// The sidebar: Hacker News's places, lobste.rs's (the other site's switch to it), then the
+    /// saved list and settings, which are the same for both.
+    private func sidebarSections() -> [SidebarSection] {
+        let root = navigationController.viewControllers.first
+        let sites = Site.allCases.map { section(for: $0, current: root) }
+        let common = SidebarSection(title: nil, color: UIColor(white: 0.75, alpha: 1), items: [
+            SidebarItem(title: session.username ?? "Profile", systemImage: "person.crop.circle", isCurrent: root === profile) { [weak self] in self?.showProfile() },
+            SidebarItem(title: "Saved", systemImage: "heart", isCurrent: root === savedList) { [weak self] in self?.showSavedStories() },
+            SidebarItem(title: "Settings", systemImage: "gearshape") { [weak self] in self?.showSettings() },
+        ])
+        return sites + [common]
     }
 
-    /// - Parameter feed: The feed showing, when `site` is the one showing.
-    private func column(for site: Site, on feed: StoryListViewController?) -> ReelColumn {
+    private func section(for site: Site, current root: UIViewController?) -> SidebarSection {
         switch site {
-        case .hackerNews: hackerNewsColumn(on: feed)
-        case .lobsters: lobstersColumn(on: feed)
+        case .hackerNews: hackerNewsSection(current: root)
+        case .lobsters: lobstersSection(current: root)
         }
     }
 
-    private func hackerNewsColumn(on feed: StoryListViewController?) -> ReelColumn {
+    private func hackerNewsSection(current root: UIViewController?) -> SidebarSection {
         let go = goingTo(.hackerNews)
-        let items = [
-            ReelItem(title: "Top", color: Palette.storyBackground(at: 0), isCurrent: feed === frontPage) { go($0) { $0.showFeed($0.frontPage) } },
-            ReelItem(title: "New", color: Palette.storyBackground(at: 14), isCurrent: feed === newList) { go($0) { $0.showFeed($0.newList) } },
-            ReelItem(title: "Saved", color: Palette.savedStoryBackground(at: 0)) { go($0) { $0.showSavedStories() } },
-            ReelItem(title: "Search", color: UIColor(white: 0.6, alpha: 1)) { go($0) { $0.showSearch() } },
-        ]
-        return ReelColumn(title: Site.hackerNews.name, color: Palette.accent(), items: items)
+        return SidebarSection(title: Site.hackerNews.name, color: Palette.accent(), items: [
+            SidebarItem(title: "Top", systemImage: "chart.line.uptrend.xyaxis", isCurrent: root === frontPage) { go { $0.showPlace($0.frontPage) } },
+            SidebarItem(title: "New", systemImage: "clock", isCurrent: root === newList) { go { $0.showPlace($0.newList) } },
+            SidebarItem(title: "Search", systemImage: "magnifyingglass", isCurrent: root === search) { go { $0.showSearch() } },
+        ])
     }
 
-    private func lobstersColumn(on feed: StoryListViewController?) -> ReelColumn {
+    private func lobstersSection(current root: UIViewController?) -> SidebarSection {
         let go = goingTo(.lobsters)
-        let items = [
-            ReelItem(title: "Hottest", color: Palette.lobstersBackground(at: 0), isCurrent: feed === lobstersList) { go($0) { $0.showFeed($0.lobstersList) } },
-            ReelItem(title: "Newest", color: Palette.lobstersBackground(at: 14), isCurrent: feed === lobstersNewestList) { go($0) { $0.showFeed($0.lobstersNewestList) } },
-            ReelItem(title: "Saved", color: Palette.savedStoryBackground(at: 0)) { go($0) { $0.showSavedStories() } },
-        ]
-        return ReelColumn(title: Site.lobsters.name, color: Palette.lobstersAccent, items: items)
+        return SidebarSection(title: Site.lobsters.name, color: Palette.lobstersAccent, items: [
+            SidebarItem(title: "Hottest", systemImage: "flame", isCurrent: root === lobstersList) { go { $0.showPlace($0.lobstersList) } },
+            SidebarItem(title: "Newest", systemImage: "clock", isCurrent: root === lobstersNewestList) { go { $0.showPlace($0.lobstersNewestList) } },
+        ])
     }
 
     /// Above the corner button on a feed: hides its read stories, or once they're hidden, shows
@@ -411,67 +410,21 @@ final class AppCoordinator {
     }
 
     /// Runs a place's action, switching to `site` first when the app is about the other one.
-    private func goingTo(_ site: Site) -> (CGPoint, @escaping (AppCoordinator) -> Void) -> Void {
-        { [weak self] point, go in
+    private func goingTo(_ site: Site) -> (@escaping (AppCoordinator) -> Void) -> Void {
+        { [weak self] go in
             guard let self else { return }
-            if site == self.site {
-                go(self)
-            } else {
-                switchSite(to: site, from: point) { go($0) }
+            if site != self.site {
+                self.site = site
+                settings.site = site
+                lastFeed = feed(nil, on: site)
             }
+            go(self)
         }
     }
 
-    /// Makes the app about `newSite`, starting at `place` (its first feed by default). The new
-    /// site floods out over the old in a circle growing from `point` (window coordinates).
-    func switchSite(to newSite: Site, from point: CGPoint, place: ((AppCoordinator) -> Void)? = nil) {
-        guard newSite != site else { return }
-        let cover = window.snapshotView(afterScreenUpdates: false)
-        if let cover { window.addSubview(cover) }
-
-        site = newSite
-        settings.site = newSite
-        let root = feed(nil, on: newSite)
-        navigationController.setViewControllers([root], animated: false)
-        navigationController.updateCornerButton(for: root, animated: false)
-        place?(self)
-        UIAccessibility.post(notification: .screenChanged, argument: newSite.name)
-
-        guard let cover else { return }
-        guard !UIAccessibility.isReduceMotionEnabled else {
-            UIView.animate(withDuration: 0.3) { cover.alpha = 0 } completion: { _ in cover.removeFromSuperview() }
-            return
-        }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        let bounds = cover.bounds
-        let radius = [CGPoint(x: bounds.minX, y: bounds.minY), CGPoint(x: bounds.maxX, y: bounds.minY),
-                      CGPoint(x: bounds.minX, y: bounds.maxY), CGPoint(x: bounds.maxX, y: bounds.maxY)]
-            .map { hypot($0.x - point.x, $0.y - point.y) }.max() ?? bounds.height
-        func hole(_ r: CGFloat) -> CGPath {
-            let path = UIBezierPath(rect: bounds)
-            path.append(UIBezierPath(arcCenter: point, radius: r, startAngle: 0, endAngle: 2 * .pi, clockwise: true))
-            return path.cgPath
-        }
-        let mask = CAShapeLayer()
-        mask.fillRule = .evenOdd
-        mask.path = hole(radius + 1)
-        cover.layer.mask = mask
-
-        CATransaction.begin()
-        CATransaction.setCompletionBlock { cover.removeFromSuperview() }
-        let grow = CABasicAnimation(keyPath: "path")
-        grow.fromValue = hole(1)
-        grow.toValue = hole(radius + 1)
-        grow.duration = 0.45
-        grow.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.2, 1)
-        mask.add(grow, forKey: "flood")
-        CATransaction.commit()
-    }
-
-    /// Story search, on top of a feed or the saved list (in the list column when the window is wide).
+    /// Story search, at the root.
     func showSearch() {
-        guard let top = navigationController.topViewController, top === savedList || isFeed(top) else { return }
-        navigationController.pushViewController(search, animated: true)
+        showPlace(search)
     }
 
     /// Story search for `query`, from wherever the app was. Search is HN's, so it's about HN after.
@@ -479,13 +432,11 @@ final class AppCoordinator {
         if site != .hackerNews {
             site = .hackerNews
             settings.site = .hackerNews
-            navigationController.setViewControllers([frontPage], animated: false)
+            lastFeed = frontPage
         }
         search.loadViewIfNeeded()
         search.search(for: query)
-        if navigationController.topViewController !== search {
-            navigationController.setViewControllers([currentFeed, search], animated: navigationController.view.window != nil)
-        }
+        showPlace(search, animated: navigationController.view.window != nil)
     }
 
     func makeCommentsViewController(id: Int, story: Story?, preloaded: LoadedItem? = nil) -> UIViewController {
@@ -592,7 +543,7 @@ final class AppCoordinator {
         case nil where split.isSplit || !settings.opensLinksInSafari:
             show(ArticleViewController(url: url, story: story, coordinator: self), from: origin)
         case nil:
-            navigationController.present(makeBrowser(for: url), animated: true)
+            navigationController.presentBrowser(makeBrowser(for: url))
         }
     }
 
@@ -635,7 +586,7 @@ final class AppCoordinator {
     /// Called when the user taps a context menu preview to open it fully.
     func commitPreview(_ viewController: UIViewController) {
         if viewController is SFSafariViewController {
-            navigationController.present(viewController, animated: true)
+            navigationController.presentBrowser(viewController)
         } else {
             show(viewController, from: .list)
         }

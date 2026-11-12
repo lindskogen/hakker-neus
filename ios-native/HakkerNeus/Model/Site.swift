@@ -1,7 +1,7 @@
 import Foundation
 
 /// Which site the app is about: its feeds, colours and search. The saved list has both.
-/// Switched by dragging sideways in the corner button's reel.
+/// Switched by picking one of the other site's places in the sidebar.
 enum Site: String, Codable, CaseIterable {
     case hackerNews
     case lobsters

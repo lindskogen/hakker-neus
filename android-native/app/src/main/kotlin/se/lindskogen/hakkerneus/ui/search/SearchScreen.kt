@@ -144,7 +144,10 @@ class SearchViewModel : ViewModel() {
 
 /** A search field, Relevant / Newest tabs, and the results as quiet rows like on user pages. */
 @Composable
-fun SearchScreen(openComments: (Story) -> Unit, openLink: (String) -> Unit, signIn: () -> Unit) {
+fun SearchScreen(
+    openComments: (Story) -> Unit, openLink: (String) -> Unit, signIn: () -> Unit,
+    scrollToTop: se.lindskogen.hakkerneus.ui.ScrollToTop? = null,
+) {
     val model: SearchViewModel = viewModel()
     val state by model.state.collectAsStateWithLifecycle()
     val saved by AppContainer.saved.entries.collectAsState()
@@ -155,6 +158,7 @@ fun SearchScreen(openComments: (Story) -> Unit, openLink: (String) -> Unit, sign
     val focusManager = LocalFocusManager.current
     val focus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    se.lindskogen.hakkerneus.ui.BindScrollToTop(scrollToTop, listState)
     val actions = remember {
         StoryRowActions(
             open = { story ->
