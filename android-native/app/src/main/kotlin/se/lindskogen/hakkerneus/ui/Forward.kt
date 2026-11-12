@@ -167,6 +167,7 @@ fun ForwardSwipeLayout(enabled: Boolean, onForward: () -> Unit, content: @Compos
     val density = LocalDensity.current
     val edgePx = with(density) { EdgeWidth.toPx() }
     val thresholdPx = with(density) { Threshold.toPx() }
+    val fling = rememberFling()
     var pulled by remember { mutableFloatStateOf(0f) }
     Box(
         Modifier.fillMaxSize().then(
@@ -177,7 +178,8 @@ fun ForwardSwipeLayout(enabled: Boolean, onForward: () -> Unit, content: @Compos
                     onDrag = { distance -> pulled = distance.coerceAtLeast(0f) },
                     onEnd = { velocity ->
                         // Velocity is along the swipe (towards the left), in pixels a second.
-                        if (pulled >= thresholdPx || (velocity > 1500f && pulled > edgePx)) onForward()
+                        // Go if it would coast past the threshold.
+                        if (fling.project(pulled, velocity) >= thresholdPx) onForward()
                         pulled = 0f
                     },
                 )

@@ -423,7 +423,8 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         case .ended:
             guard sidebar != nil else { return }
             let velocity = gesture.velocity(in: view).x
-            let open = velocity > 500 || (velocity > -500 && sidebarProgress > 0.5)
+            // Open if it would coast past halfway.
+            let open = projectedPosition(sidebarProgress * sidebarWidth, velocity: velocity) > sidebarWidth / 2
             settleSidebar(open: open, animated: true, velocity: velocity)
         default:
             settleSidebar(open: !opening, animated: true)
@@ -534,8 +535,9 @@ final class NavigationController: UINavigationController, UIGestureRecognizerDel
         case .changed:
             interactivePush?.update(progress)
         case .ended:
-            let velocity = gesture.velocity(in: view).x
-            if progress > 0.4 || velocity < -500 {
+            // Go if it would coast past halfway.
+            let velocity = -gesture.velocity(in: view).x
+            if projectedPosition(progress * width, velocity: velocity) > width / 2 {
                 interactivePush?.finish()
             } else {
                 cancelForwardPush()

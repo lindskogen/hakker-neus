@@ -282,8 +282,9 @@ final class StoryCell: UICollectionViewListCell {
                 if armedAction != nil { haptics.impactOccurred() }
             }
         case .ended:
-            switch swipe.armedAction {
+            switch swipe.releasedAction(velocity: pan.velocity(in: self).x) {
             case .comments:
+                if armedAction == nil { haptics.impactOccurred() }
                 onOpenComments?()
                 settle()
             case .save:

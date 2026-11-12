@@ -1,6 +1,9 @@
 package se.lindskogen.hakkerneus.ui.frontpage
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import se.lindskogen.hakkerneus.AppContainer
+import se.lindskogen.hakkerneus.ui.rememberFling
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import se.lindskogen.hakkerneus.ui.UserMenuItem
@@ -95,6 +98,7 @@ fun StoryRow(
     val density = LocalDensity.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()
+    val fling = rememberFling()
     val offset = remember { Animatable(0f) } // dp, after resistance
     var translation by remember { mutableStateOf(0f) }
     var armed by remember { mutableStateOf<StorySwipe.Action?>(null) }
@@ -152,10 +156,12 @@ fun StoryRow(
                 .sharedStory("card-${story.id}")
                 .background(background)
                 .pointerInput(story.id) {
+                    val velocity = VelocityTracker()
                     detectHorizontalDragGestures(
                         onDragStart = {
                             AppContainer.prefetchComments(story.id)
                             translation = 0f
+                            velocity.resetTracking()
                             armed = null
                             savedAtSwipeStart = isSaved
                             upvotedAtSwipeStart = isUpvoted
@@ -163,6 +169,8 @@ fun StoryRow(
                         onHorizontalDrag = { change, dx ->
                             change.consume()
                             translation += dx / density.density
+                            // Tracked on the finger's travel (in pixels), not its position in the moving row.
+                            velocity.addPosition(change.uptimeMillis, Offset(translation * density.density, 0f))
                             val next = StorySwipe.forTranslation(translation, canUpvote = AppContainer.session.isSignedIn)
                             scope.launch { offset.snapTo(next.offset) }
                             val action = next.armedAction(canUpvote = AppContainer.session.isSignedIn)
@@ -176,8 +184,15 @@ fun StoryRow(
                             }
                         },
                         onDragEnd = {
-                            when (armed) {
-                                StorySwipe.Action.Comments -> { actions.openComments(story); settle() }
+                            val lifted = StorySwipe.forTranslation(translation, canUpvote = AppContainer.session.isSignedIn)
+                            val projected = fling.project(lifted.offset * density.density, velocity.calculateVelocity().x) / density.density
+                            val released = lifted.releasedAction(canUpvote = AppContainer.session.isSignedIn, projected = projected)
+                            when (released) {
+                                StorySwipe.Action.Comments -> {
+                                    if (armed == null) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                                    actions.openComments(story)
+                                    settle()
+                                }
                                 StorySwipe.Action.Save -> { actions.toggleSaved(story); settle(after = 100) }
                                 StorySwipe.Action.Upvote -> { actions.toggleUpvote(story); settle(after = 100) }
                                 null -> settle()

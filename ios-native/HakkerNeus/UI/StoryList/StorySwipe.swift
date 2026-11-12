@@ -1,4 +1,4 @@
-import CoreGraphics
+import UIKit
 
 /// Geometry of the story row swipe actions, ported from the `Swipeable` setup in `ListItem.tsx`.
 /// Positive offsets drag the row right, negative offsets drag it left (comments).
@@ -15,7 +15,7 @@ struct StorySwipe: Equatable {
     /// Drag right this far to upvote instead.
     static let upvoteThreshold: CGFloat = 160
     /// Drag left this far to open the comments.
-    static let commentsThreshold: CGFloat = 100
+    static let commentsThreshold: CGFloat = 80
 
     /// How far the row has moved, after resistance.
     let offset: CGFloat
@@ -37,6 +37,17 @@ struct StorySwipe: Equatable {
         if canUpvote, offset >= Self.upvoteThreshold { return .upvote }
         if offset >= Self.saveThreshold { return .save }
         if offset <= -Self.commentsThreshold { return .comments }
+        return nil
+    }
+
+    /// The action that fires when the finger lifts moving at `velocity` (points per second,
+    /// signed like offsets): the armed one, or the comments for a flick left that would coast
+    /// past the threshold. The row's travel is short, so it coasts like a `.fast` scroll view.
+    func releasedAction(velocity: CGFloat) -> Action? {
+        if let armedAction { return armedAction }
+        if projectedPosition(offset, velocity: velocity, rate: .fast) <= -Self.commentsThreshold {
+            return .comments
+        }
         return nil
     }
 

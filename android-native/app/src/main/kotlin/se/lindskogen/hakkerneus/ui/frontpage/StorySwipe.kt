@@ -13,7 +13,7 @@ data class StorySwipe(val offset: Float) {
     companion object {
         const val SAVE_THRESHOLD = 80f
         const val UPVOTE_THRESHOLD = 160f
-        const val COMMENTS_THRESHOLD = 100f
+        const val COMMENTS_THRESHOLD = 80f
 
         /** The row follows the finger up to the last threshold, then at a quarter of the speed. */
         fun forTranslation(translation: Float, canUpvote: Boolean): StorySwipe {
@@ -34,6 +34,13 @@ data class StorySwipe(val offset: Float) {
         offset <= -COMMENTS_THRESHOLD -> Action.Comments
         else -> null
     }
+
+    /**
+     * The action that fires when the finger lifts: the armed one, or the comments for a flick left
+     * that would coast past the threshold, to [projected] (where it would come to rest).
+     */
+    fun releasedAction(canUpvote: Boolean, projected: Float): Action? = armedAction(canUpvote)
+        ?: if (projected <= -COMMENTS_THRESHOLD) Action.Comments else null
 
     /** Heart behind the left edge: slides in from -80 to 0 and fades in after the first 10. */
     val heartTranslation: Float get() = (offset - SAVE_THRESHOLD).coerceIn(-SAVE_THRESHOLD, 0f)

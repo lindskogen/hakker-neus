@@ -141,10 +141,9 @@ class SidebarState {
     suspend fun open() = progress.animateTo(1f, spring(stiffness = 600f))
     suspend fun close() = progress.animateTo(0f, spring(stiffness = 600f))
 
-    /** After a drag: open or closed, by where it was let go and how fast it was moving (in widths a second). */
-    internal suspend fun settle(velocity: Float) {
-        val open = velocity > 1f || (velocity > -1f && progress.value > 0.5f)
-        if (open) open() else close()
+    /** After a drag: open if it would coast past halfway when let go at [velocity] (pixels a second). */
+    internal suspend fun settle(velocity: Float, width: Float, fling: Fling) {
+        if (fling.project(progress.value * width, velocity) > width / 2) open() else close()
     }
 }
 
@@ -172,6 +171,7 @@ fun SidebarLayout(
 ) {
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val fling = rememberFling()
     BoxWithConstraints(
         Modifier.fillMaxSize().background(Color(0xFF26292E)),
     ) {
@@ -189,7 +189,7 @@ fun SidebarLayout(
                             inEdge = { x -> x <= edgePx && !state.isOpen },
                             direction = 1f,
                             onDrag = { dx -> scope.launch { state.progress.snapTo((dx / widthPx).coerceIn(0f, 1f)) } },
-                            onEnd = { velocity -> scope.launch { state.settle(velocity / widthPx) } },
+                            onEnd = { velocity -> scope.launch { state.settle(velocity, widthPx, fling) } },
                         )
                     } else Modifier,
                 )
@@ -198,7 +198,7 @@ fun SidebarLayout(
                         edge = { state.progress.value * widthPx },
                         isOpen = { state.isOpen },
                         onDrag = { dx -> scope.launch { state.progress.snapTo((state.progress.value + dx / widthPx).coerceIn(0f, 1f)) } },
-                        onEnd = { velocity -> scope.launch { state.settle(velocity / widthPx) } },
+                        onEnd = { velocity -> scope.launch { state.settle(velocity, widthPx, fling) } },
                         onTap = { scope.launch { state.close() } },
                     )
                 },
