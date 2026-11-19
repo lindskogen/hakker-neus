@@ -93,6 +93,82 @@ struct CommentBodyTests {
         #expect(CommentBody(html: "</i></a>text").blocks == [.paragraph([Run(text: "text")])])
     }
 
+    // MARK: Markdown tables (same cases as the Android CommentBodyTest)
+
+    private typealias Table = CommentBody.Table
+
+    private func cells(_ texts: String...) -> [[Run]] {
+        texts.map { $0.isEmpty ? [] : [Run(text: $0)] }
+    }
+
+    @Test func tableOnSingleNewlines() {
+        let html = "Benchmarks:\n| Name | Time |\n|:-----|-----:|\n| foo  | 1.2s |\n| bar  | 10s  |\nSo foo wins.<p>Next"
+
+        #expect(CommentBody(html: html).blocks == [
+            .paragraph([Run(text: "Benchmarks:")]),
+            .table(Table(alignments: [.leading, .trailing], header: cells("Name", "Time"), rows: [cells("foo", "1.2s"), cells("bar", "10s")])),
+            .paragraph([Run(text: "So foo wins.")]),
+            .paragraph([Run(text: "Next")]),
+        ])
+    }
+
+    @Test func tableWithRowsInSeparateParagraphs() {
+        let html = "Intro<p>a | b | c<p>--- | :-: | ---<p>1 | 2<p>4 | 5 | 6 | 7<p>Outro"
+
+        #expect(CommentBody(html: html).blocks == [
+            .paragraph([Run(text: "Intro")]),
+            .table(Table(
+                alignments: [.leading, .center, .leading],
+                header: cells("a", "b", "c"),
+                rows: [cells("1", "2", ""), cells("4", "5", "6")]
+            )),
+            .paragraph([Run(text: "Outro")]),
+        ])
+    }
+
+    @Test func tableCellsKeepLinksItalicsAndEscapedPipes() {
+        let html = #"| Site | Note |\n| --- | --- |\n| <a href="https://example.com">example</a> | <i>a \| b</i> |"#
+            .replacingOccurrences(of: "\\n", with: "\n")
+        guard case .table(let table) = CommentBody(html: html).blocks.first else {
+            Issue.record("Expected a table")
+            return
+        }
+        #expect(table.rows == [[
+            [Run(text: "example", link: URL(string: "https://example.com")!)],
+            [Run(text: "a | b", isItalic: true)],
+        ]])
+    }
+
+    @Test func tableInCodeBlock() {
+        let html = "<pre><code>  | x | y |\n  |---|---|\n  | 1 | 2 |\n</code></pre>"
+        #expect(CommentBody(html: html).blocks == [
+            .table(Table(alignments: [.leading, .leading], header: cells("x", "y"), rows: [cells("1", "2")])),
+        ])
+        // Code that only contains a table somewhere stays code.
+        #expect(CommentBody(html: "<pre><code>let a = 1\n| x |\n|---|</code></pre>").blocks == [.code("let a = 1\n| x |\n|---|")])
+    }
+
+    @Test(arguments: ["a | b\nc | d", "a | b<p>---", "a | b\n--- | --- | ---", "| a |\n|:-:-|", "x || y"])
+    func notTables(html: String) {
+        #expect(!CommentBody(html: html).blocks.contains { if case .table = $0 { true } else { false } })
+    }
+
+    @Test func pipesWithoutTableStayText() {
+        #expect(CommentBody(html: "a | b\nc | d").blocks == [.paragraph([Run(text: "a | b c | d")])])
+    }
+
+    @Test func tablePlainTextIsAlignedMarkdown() {
+        let html = "Sizes<p>|Name|Size|Mid|\n|-|-:|:-:|\n|Alpha|12|x|\n|B|1234|yes|"
+        #expect(CommentBody(html: html).plainText == """
+        Sizes
+
+        | Name  | Size | Mid |
+        | ----- | ---: | :-: |
+        | Alpha |   12 |  x  |
+        | B     | 1234 | yes |
+        """)
+    }
+
     @Test func plainTextForCopying() {
         let body = CommentBody(html: "One <i>two</i><p><pre><code>    let x = 1</code></pre>")
         #expect(body.plainText == "One two\n\nlet x = 1")

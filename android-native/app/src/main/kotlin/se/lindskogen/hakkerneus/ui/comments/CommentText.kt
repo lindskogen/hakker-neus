@@ -27,8 +27,8 @@ import se.lindskogen.hakkerneus.html.CommentBody
 import se.lindskogen.hakkerneus.ui.theme.HN
 
 /**
- * Renders a parsed comment: paragraphs with italics and tappable links, and code blocks that
- * scroll sideways (or wrap), at the text size from Settings. Taps outside links fall through to the comment (to collapse it).
+ * Renders a parsed comment: paragraphs with italics and tappable links, code blocks that
+ * scroll sideways (or wrap), and tables, at the text size from Settings. Taps outside links fall through to the comment (to collapse it).
  */
 @Composable
 fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier = Modifier) {
@@ -53,6 +53,7 @@ fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier 
                             .padding(HN.padding),
                     )
                 }
+                is CommentBody.Block.Table -> TableBlock(block.table, onLink)
             }
         }
     }
@@ -60,7 +61,7 @@ fun CommentText(body: CommentBody, onLink: (String) -> Unit, modifier: Modifier 
 
 private val linkStyles = TextLinkStyles(SpanStyle(color = Color.White, textDecoration = TextDecoration.Underline))
 
-private fun paragraph(runs: List<CommentBody.Run>, onLink: (String) -> Unit): AnnotatedString = buildAnnotatedString {
+internal fun paragraph(runs: List<CommentBody.Run>, onLink: (String) -> Unit): AnnotatedString = buildAnnotatedString {
     for (run in runs) {
         val style = if (run.isItalic) SpanStyle(fontStyle = FontStyle.Italic) else SpanStyle()
         val link = run.link
