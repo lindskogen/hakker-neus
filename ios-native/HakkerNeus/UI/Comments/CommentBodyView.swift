@@ -1,7 +1,7 @@
 import UIKit
 
 /// Renders a `CommentBody`: text paragraphs in one link-aware text view per run of paragraphs,
-/// and code blocks as horizontally scrolling monospaced views.
+/// code blocks as horizontally scrolling monospaced views, and tables as scrolling grids.
 final class CommentBodyView: UIStackView {
     /// Called when a link is tapped.
     var onLinkTap: ((URL) -> Void)?
@@ -39,6 +39,12 @@ final class CommentBodyView: UIStackView {
             case .code(let code):
                 flushText()
                 addArrangedSubview(CodeBlockView(code: code))
+            case .table(let table):
+                flushText()
+                let view = TableBlockView(table: table)
+                view.onLinkTap = { [weak self] in self?.onLinkTap?($0) }
+                view.linkMenu = { [weak self] url, source in self?.linkMenu?(url, source) }
+                addArrangedSubview(view)
             }
         }
         flushText()

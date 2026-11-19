@@ -1,10 +1,16 @@
 package se.lindskogen.hakkerneus.html
 
-/** A parsed HN comment: paragraphs of styled runs and preformatted code blocks. */
+/** A parsed HN comment: paragraphs of styled runs, preformatted code blocks and Markdown tables. */
 data class CommentBody(val blocks: List<Block>) {
     sealed interface Block {
         data class Paragraph(val runs: List<Run>) : Block
         data class Code(val text: String) : Block
+        data class Table(val table: CommentBody.Table) : Block
+    }
+
+    /** A Markdown pipe table written in a comment. Every row has one cell per column. */
+    data class Table(val alignments: List<Alignment>, val header: List<List<Run>>, val rows: List<List<List<Run>>>) {
+        enum class Alignment { Leading, Center, Trailing }
     }
 
     data class Run(val text: String, val isItalic: Boolean = false, val link: String? = null)
@@ -15,6 +21,7 @@ data class CommentBody(val blocks: List<Block>) {
             when (block) {
                 is Block.Paragraph -> block.runs.joinToString("") { it.text }
                 is Block.Code -> block.text
+                is Block.Table -> block.table.markdown
             }
         }
 
@@ -22,6 +29,7 @@ data class CommentBody(val blocks: List<Block>) {
         /**
          * Parses the HTML subset HN emits: `<p>`, `<i>`, `<a href>`, `<pre><code>` and entities.
          * Same rules as the iOS parser, so both apps render comments the same way.
+         * Markdown pipe tables, in the text or in a code block, become [Block.Table]s.
          */
         fun parse(html: String): CommentBody {
             val parser = Parser()
@@ -42,7 +50,7 @@ data class CommentBody(val blocks: List<Block>) {
                 parser.tag(rest.substring(open + 1, close))
                 rest = rest.substring(close + 1)
             }
-            return CommentBody(parser.finish())
+            return CommentBody(MarkdownTables.extract(parser.finish()))
         }
     }
 }
@@ -60,12 +68,12 @@ private class Parser {
             it.append(decoded)
             return
         }
-        // Outside <pre>, newlines are whitespace, as in a browser.
-        val text = decoded.replace('\n', ' ')
-        val run = CommentBody.Run(text, italicDepth > 0, link)
+        // Outside <pre>, newlines are whitespace, as in a browser. They're kept until
+        // MarkdownTables has looked for table rows, which turns them into spaces.
+        val run = CommentBody.Run(decoded, italicDepth > 0, link)
         val last = runs.lastOrNull()
         if (last != null && last.isItalic == run.isItalic && last.link == run.link) {
-            runs[runs.lastIndex] = last.copy(text = last.text + text)
+            runs[runs.lastIndex] = last.copy(text = last.text + decoded)
         } else {
             runs += run
         }

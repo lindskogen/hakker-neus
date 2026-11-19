@@ -1,11 +1,23 @@
 import Foundation
 
-/// A parsed HN comment: paragraphs of styled text and preformatted code blocks.
+/// A parsed HN comment: paragraphs of styled text, preformatted code blocks and Markdown tables.
 /// Pure value type so it can be built off the main thread and unit tested.
 struct CommentBody: Hashable, Sendable {
     enum Block: Hashable, Sendable {
         case paragraph([Run])
         case code(String)
+        case table(Table)
+    }
+
+    /// A Markdown pipe table written in a comment. Every row has one cell per column.
+    struct Table: Hashable, Sendable {
+        enum Alignment: Hashable, Sendable {
+            case leading, center, trailing
+        }
+
+        var alignments: [Alignment]
+        var header: [[Run]]
+        var rows: [[[Run]]]
     }
 
     struct Run: Hashable, Sendable {
@@ -22,6 +34,7 @@ struct CommentBody: Hashable, Sendable {
             switch block {
             case .paragraph(let runs): runs.map(\.text).joined()
             case .code(let code): code
+            case .table(let table): table.markdown
             }
         }
         .joined(separator: "\n\n")
@@ -31,6 +44,7 @@ struct CommentBody: Hashable, Sendable {
 extension CommentBody {
     /// Parses the HTML subset HN emits: `<p>`, `<i>`, `<a href>`, `<pre><code>` and entities.
     /// Paragraphs are separated by bare `<p>` tags; unknown tags are dropped but their text kept.
+    /// Markdown pipe tables, in the text or in a code block, become `.table` blocks.
     init(html: String) {
         var parser = Parser()
         var rest = html[...]
@@ -52,7 +66,7 @@ extension CommentBody {
             rest = rest[rest.index(after: close)...]
         }
 
-        self.blocks = parser.finish()
+        self.blocks = MarkdownTables.extract(from: parser.finish())
     }
 }
 
@@ -69,11 +83,11 @@ private struct Parser {
             code! += decoded
             return
         }
-        // Outside <pre>, newlines are whitespace, as in a browser.
-        let text = decoded.replacingOccurrences(of: "\n", with: " ")
-        let run = CommentBody.Run(text: text, isItalic: italicDepth > 0, link: link)
+        // Outside <pre>, newlines are whitespace, as in a browser. They're kept until
+        // `MarkdownTables` has looked for table rows, which turns them into spaces.
+        let run = CommentBody.Run(text: decoded, isItalic: italicDepth > 0, link: link)
         if let last = runs.last, last.isItalic == run.isItalic, last.link == run.link {
-            runs[runs.count - 1].text += text
+            runs[runs.count - 1].text += decoded
         } else {
             runs.append(run)
         }
