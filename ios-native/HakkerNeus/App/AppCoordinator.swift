@@ -369,7 +369,15 @@ final class AppCoordinator {
             SidebarItem(title: "Saved", systemImage: "heart", isCurrent: root === savedList) { [weak self] in self?.showSavedStories() },
             SidebarItem(title: "Settings", systemImage: "gearshape") { [weak self] in self?.showSettings() },
         ])
+        #if DEBUG
+        // A comment with an ASCII table, for checking table rendering.
+        let debug = SidebarSection(title: "Debug", color: UIColor(white: 0.75, alpha: 1), items: [
+            SidebarItem(title: "Table Test", systemImage: "tablecells") { [weak self] in self?.showComments(id: 50556084) },
+        ])
+        return sites + [common, debug]
+        #else
         return sites + [common]
+        #endif
     }
 
     private func section(for site: Site, current root: UIViewController?) -> SidebarSection {
