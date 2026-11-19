@@ -169,6 +169,75 @@ struct CommentBodyTests {
         """)
     }
 
+    // MARK: ASCII grid tables (same cases as the Android CommentBodyTest)
+
+    /// A comment from the wild: a psql-style grid indented into a code block.
+    private let modelsTable = """
+      +-------------------------------+--------------+--------+--------+----------+-------+
+      |              Lab              |      XL      |   L    |   M+   |    M     | S/XS  |
+      +-------------------------------+--------------+--------+--------+----------+-------+
+      | Google (Gemini 4 Family #1)   |              | Argon  |        |          |       |
+      | Google (Gemini 4 Family #2)   |              | Carbon | Neon   | Hydrogen |       |
+      | Anthropic (Claude 5.2 Family) | Fable/Mythos |        |        |          |       |
+      | Anthropic (Claude 5.5 Family) |              | Opus   |        | Sonnet   | Haiku |
+      | OpenAI (GPT 6.2 Family)       | Astra        | Sol    |        |          |       |
+      | OpenAI (GPT 6.1 Family)       |              |        |        | Terra    |       |
+      | OpenAI (GPT 6 Family)         |              |        |        |          | Luna  |
+      +-------------------------------+--------------+--------+--------+----------+-------+
+    """
+
+    @Test func gridTableInCodeBlock() throws {
+        let html = "Edited: For formatting and from feedback<p>So if I am getting this right?<p><pre><code>\(modelsTable)\n</code></pre>"
+        let blocks = CommentBody(html: html).blocks
+        #expect(blocks.count == 3)
+        #expect(blocks[1] == .paragraph([Run(text: "So if I am getting this right?")]))
+        guard case .table(let table) = try #require(blocks.last) else {
+            Issue.record("Expected a table")
+            return
+        }
+        #expect(table.header == cells("Lab", "XL", "L", "M+", "M", "S/XS"))
+        #expect(table.alignments == Array(repeating: .leading, count: 6))
+        #expect(table.rows.count == 7)
+        #expect(table.rows[3] == cells("Anthropic (Claude 5.5 Family)", "", "Opus", "", "Sonnet", "Haiku"))
+        #expect(table.rows[6] == cells("OpenAI (GPT 6 Family)", "", "", "", "", "Luna"))
+    }
+
+    @Test func gridTableWithWrappedRowsAndRuleAlignment() {
+        // Pandoc: a rule under every row, so rows wrap; colons in the header rule align.
+        let grid = """
+        +-------+-----------+------:+
+        | Name  | Notes     | Size  |
+        +=======+:=========:+======:+
+        | Alpha | the first | 12    |
+        |       | one       |       |
+        +-------+-----------+-------+
+        | B     | a | pipe  | 1234  |
+        +-------+-----------+-------+
+        """
+        #expect(CommentBody(html: "<pre><code>\(grid)</code></pre>").blocks == [
+            .table(Table(
+                alignments: [.leading, .center, .trailing],
+                header: cells("Name", "Notes", "Size"),
+                rows: [cells("Alpha", "the first one", "12"), cells("B", "a | pipe", "1234")]
+            )),
+        ])
+    }
+
+    @Test func gridTableInTextInfersRightAlignment() {
+        // Typed straight into the comment, one line per row; numbers pushed right.
+        let html = "Results:\n+------+-------+\n| Name | Count |\n+------+-------+\n| foo  |     1 |\n| bar  |   200 |\n+------+-------+\nThanks"
+        #expect(CommentBody(html: html).blocks == [
+            .paragraph([Run(text: "Results:")]),
+            .table(Table(alignments: [.leading, .trailing], header: cells("Name", "Count"), rows: [cells("foo", "1"), cells("bar", "200")])),
+            .paragraph([Run(text: "Thanks")]),
+        ])
+    }
+
+    @Test(arguments: ["+---+", "<pre><code>+--+--+\nnot a row\n+--+--+</code></pre>", "a +-+ b", "+++\n| a |"])
+    func notGridTables(html: String) {
+        #expect(!CommentBody(html: html).blocks.contains { if case .table = $0 { true } else { false } })
+    }
+
     @Test func plainTextForCopying() {
         let body = CommentBody(html: "One <i>two</i><p><pre><code>    let x = 1</code></pre>")
         #expect(body.plainText == "One two\n\nlet x = 1")
