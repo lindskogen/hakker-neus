@@ -1,18 +1,77 @@
 import UIKit
 
 /// A Markdown table: a grid with a bold header row, hairline rules and the code block's
-/// border. It scrolls sideways when it's wider than the comment, or, with Wrap Code Lines and
-/// Tables on in Settings, fits the comment's width and wraps its cells. Cells keep italics and links.
+/// border. It scrolls sideways when it's wider than the comment; a button in its corner,
+/// shown only then, fits it to the comment's width instead, wrapping its cells. Cells keep
+/// italics and links.
 final class TableBlockView: UIView {
     var onLinkTap: ((URL) -> Void)?
     var linkMenu: ((URL, UIView) -> UIMenu?)?
 
+    /// Tables fitted to the width with the corner button, remembered while the app runs so
+    /// they stay fitted when their comment scrolls away and back.
+    private static var fittedTables: Set<CommentBody.Table> = []
+
+    private let table: CommentBody.Table
+    private let style: CommentTextStyle
+    private let fitButton = UIButton(type: .system)
+    private var content: (UIView & NaturalWidth)?
+
     init(table: CommentBody.Table, style: CommentTextStyle = .current) {
+        self.table = table
+        self.style = style
         super.init(frame: .zero)
 
         let hairline = 1 / max(traitCollection.displayScale, 1)
         layer.borderWidth = hairline
         layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+
+        var configuration = UIButton.Configuration.plain()
+        configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 11, weight: .semibold)
+        configuration.baseForegroundColor = UIColor.white.withAlphaComponent(0.8)
+        configuration.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
+        configuration.background.backgroundColor = Theme.Color.backgroundDark.withAlphaComponent(0.9)
+        configuration.background.strokeColor = UIColor.white.withAlphaComponent(0.25)
+        configuration.background.strokeWidth = hairline
+        configuration.background.cornerRadius = 5
+        fitButton.configuration = configuration
+        fitButton.isHidden = true
+        fitButton.translatesAutoresizingMaskIntoConstraints = false
+        fitButton.addAction(UIAction { [weak self] _ in self?.toggleFit() }, for: .primaryActionTriggered)
+
+        showContent(fitted: Self.fittedTables.contains(table))
+        addSubview(fitButton)
+        NSLayoutConstraint.activate([
+            fitButton.topAnchor.constraint(equalTo: topAnchor, constant: 3),
+            fitButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // The button floats over the table, so showing it doesn't change the comment's height.
+        fitButton.isHidden = (content?.naturalWidth ?? 0) <= bounds.width
+    }
+
+    private var isFitted: Bool { content is FittedTableView }
+
+    private func toggleFit() {
+        let fitted = !isFitted
+        if fitted { Self.fittedTables.insert(table) } else { Self.fittedTables.remove(table) }
+        showContent(fitted: fitted)
+        bringSubviewToFront(fitButton)
+        // The table's height changes: have the list resize the comment's cell.
+        var view = superview
+        while let current = view, !(current is UICollectionViewCell) { view = current.superview }
+        view?.invalidateIntrinsicContentSize()
+        UIAccessibility.post(notification: .layoutChanged, argument: fitButton)
+    }
+
+    private func showContent(fitted: Bool) {
+        content?.removeFromSuperview()
 
         let texts = ([table.header] + table.rows).enumerated().map { index, row in
             row.map { Self.attributedString(for: $0, isHeader: index == 0, style: style) }
@@ -27,24 +86,25 @@ final class TableBlockView: UIView {
             }
         }
 
-        let content: UIView
-        if style.wrapsLines {
-            content = FittedTableView(rows: rows, texts: texts, alignments: table.alignments)
-        } else {
-            content = ScrollingTableView(rows: rows.map { $0.map { $0 as UIView } }, alignments: table.alignments)
-        }
+        let content: UIView & NaturalWidth = fitted
+            ? FittedTableView(rows: rows, texts: texts, alignments: table.alignments)
+            : ScrollingTableView(rows: rows.map { $0.map { $0 as UIView } }, alignments: table.alignments)
         content.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(content)
+        insertSubview(content, at: 0)
         NSLayoutConstraint.activate([
             content.topAnchor.constraint(equalTo: topAnchor),
             content.bottomAnchor.constraint(equalTo: bottomAnchor),
             content.leadingAnchor.constraint(equalTo: leadingAnchor),
             content.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
-    }
+        self.content = content
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+        var configuration = fitButton.configuration
+        configuration?.image = UIImage(systemName: fitted ? "arrow.left.and.right" : "arrow.down.right.and.arrow.up.left")
+        fitButton.configuration = configuration
+        fitButton.accessibilityLabel = fitted ? "Scroll Table Sideways" : "Fit Table to Width"
+        setNeedsLayout()
+    }
 
     private static func attributedString(for runs: [CommentBody.Run], isHeader: Bool, style: CommentTextStyle) -> NSAttributedString {
         let text = NSMutableAttributedString(attributedString: CommentBodyView.attributedString(for: [runs], style: style))
@@ -60,12 +120,21 @@ final class TableBlockView: UIView {
     }
 }
 
+/// How wide a table would like to be, to tell whether it needs the fit button.
+private protocol NaturalWidth {
+    var naturalWidth: CGFloat { get }
+}
+
 /// The table at its natural width in a scroll view, spread out when narrower than the comment.
-private final class ScrollingTableView: UIView {
+private final class ScrollingTableView: UIView, NaturalWidth {
+    private let grid: TableGridView
+
+    var naturalWidth: CGFloat { grid.intrinsicContentSize.width }
+
     init(rows: [[UIView]], alignments: [CommentBody.Table.Alignment]) {
+        grid = TableGridView(rows: rows, alignments: alignments)
         super.init(frame: .zero)
         let scrollView = UIScrollView()
-        let grid = TableGridView(rows: rows, alignments: alignments)
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.alwaysBounceHorizontal = false
         scrollView.scrollsToTop = false
@@ -203,16 +272,19 @@ private final class TableGridView: UIView {
 /// gets at least its longest word, and the room left goes to the columns with the most text.
 /// Comments are self-sized with Auto Layout, so the columns are fractions of the table's width,
 /// worked out for a typical phone-width comment, and Auto Layout wraps the cells to fit.
-private final class FittedTableView: UIStackView {
+private final class FittedTableView: UIStackView, NaturalWidth {
     private static let typicalWidth: CGFloat = 340
 
-    init(rows: [[LinkTextView]], texts: [[NSAttributedString]], alignments: [CommentBody.Table.Alignment]) {
-        super.init(frame: .zero)
-        axis = .vertical
+    let naturalWidth: CGFloat
 
+    init(rows: [[LinkTextView]], texts: [[NSAttributedString]], alignments: [CommentBody.Table.Alignment]) {
         let padding = 2 * TableGridView.horizontalPadding
         let natural = alignments.indices.map { column in texts.map { Self.width(of: $0[column]) }.max()! + padding }
         let minimum = alignments.indices.map { column in texts.map { Self.longestWord(in: $0[column]) }.max()! + padding }
+        naturalWidth = natural.reduce(0, +)
+        super.init(frame: .zero)
+        axis = .vertical
+
         let fractions = Self.fractions(natural: natural, minimum: minimum, width: Self.typicalWidth)
         let hairline = 1 / max(traitCollection.displayScale, 1)
         let ruleColor = UIColor.white.withAlphaComponent(0.25)
