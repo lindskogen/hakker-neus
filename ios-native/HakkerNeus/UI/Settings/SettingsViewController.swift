@@ -46,7 +46,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             Section(title: "Appearance", footer: "The colours of the front page.", rows: ColorTheme.allCases.map(Row.theme)),
             Section(title: "Corner Button", footer: "Puts the button in the lower-left corner instead of the lower-right.", rows: [.leftHanded]),
             Section(title: "New Stories", footer: "Hides stories in the New list with fewer points than this.", rows: [.newMinimumScore]),
-            Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code and tables scroll sideways.", rows: [.codeSize, .codeWrap]),
+            Section(title: "Comments", footer: "Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.", rows: [.codeSize, .codeWrap]),
             coordinator.settings.opensLinksInSafari
                 ? Section(
                     title: "Links",
@@ -203,7 +203,7 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
             content.imageProperties.tintColor = Palette.accent(theme: theme)
             cell.accessoryType = theme == coordinator.settings.colorTheme ? .checkmark : .none
         case .codeWrap:
-            content.text = "Wrap Code Lines and Tables"
+            content.text = "Wrap Code Lines"
             let toggle = UISwitch()
             toggle.isOn = coordinator.settings.commentTextStyle.wrapsLines
             toggle.addAction(UIAction { [weak self, weak toggle] _ in

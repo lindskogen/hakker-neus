@@ -133,7 +133,7 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                     .padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
-                Text("Wrap code lines and tables", style = HN.body, modifier = Modifier.weight(1f))
+                Text("Wrap code lines", style = HN.body, modifier = Modifier.weight(1f))
                 Switch(checked = CommentTextStyle.wrapsLines, onCheckedChange = null)
             }
             androidx.compose.foundation.layout.Row(
@@ -153,7 +153,7 @@ fun SettingsScreen(back: () -> Unit, account: @Composable () -> Unit) {
                     }
                 }
             }
-            Footer("Text size applies to comments and post text, code included. Unwrapped code and tables scroll sideways.")
+            Footer("Text size applies to comments and post text, code included. Unwrapped code scrolls sideways.")
             XLinksSection()
         }
     }
