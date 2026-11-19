@@ -26,7 +26,9 @@ extension AppCoordinator {
             score: session.displayedScore(for: story),
             isVisited: visitedStories.isVisited(story.id),
             isActive: split.activeStoryID == story.id,
-            canUpvote: session.isSignedIn,
+            // In the saved list a swipe right only unsaves, and takes the whole length.
+            canUpvote: session.isSignedIn && !inSavedList,
+            saveDistance: inSavedList ? StorySwipe.unsaveThreshold : StorySwipe.saveThreshold,
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
             compact: compact,

@@ -1,14 +1,18 @@
 import UIKit
 
-/// Placeholder rows shown while the front page loads: the same orange ramp as the real rows,
-/// with faint bars where the title and domain will be, and a highlight sweeping across.
+/// Placeholder rows shown while a front page loads: the same colours as its real rows (the
+/// theme's ramp, or lobste.rs's reds), with faint bars where the title and domain will be, and a
+/// highlight sweeping across.
 final class SkeletonListView: UIView {
     private let shimmer = CAGradientLayer()
     private let stack = UIStackView()
     private var stackTop: NSLayoutConstraint!
+    /// The colour of row `index`, as in the list it stands in for.
+    private let rowBackground: (Int) -> UIColor
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(rowBackground: @escaping (Int) -> UIColor) {
+        self.rowBackground = rowBackground
+        super.init(frame: .zero)
         backgroundColor = Theme.Color.backgroundDark
         isAccessibilityElement = true
         accessibilityLabel = "Loading stories"
@@ -27,7 +31,7 @@ final class SkeletonListView: UIView {
         ])
         // Enough rows to fill any screen; the rest is clipped.
         for index in 0..<10 {
-            stack.addArrangedSubview(Self.row(index: index))
+            stack.addArrangedSubview(Self.row(index: index, color: rowBackground(index)))
         }
         clipsToBounds = true
 
@@ -41,9 +45,16 @@ final class SkeletonListView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    private static func row(index: Int) -> UIView {
+    /// Recolours the rows, after the colour theme changes.
+    func updateColors() {
+        for (index, row) in stack.arrangedSubviews.enumerated() {
+            row.backgroundColor = rowBackground(index)
+        }
+    }
+
+    private static func row(index: Int, color: UIColor) -> UIView {
         let row = UIView()
-        row.backgroundColor = Palette.storyBackground(at: index)
+        row.backgroundColor = color
 
         // Two title lines of slightly varying length, then the domain.
         let widths: [CGFloat] = [0.85, 0.55 + CGFloat(index % 3) * 0.1]

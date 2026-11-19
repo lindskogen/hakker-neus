@@ -12,6 +12,8 @@ struct StorySwipe: Equatable {
 
     /// Drag right this far to toggle saved.
     static let saveThreshold: CGFloat = 80
+    /// In the saved list, where a swipe right only unsaves: this far, so it's never by accident.
+    static let unsaveThreshold: CGFloat = 160
     /// Drag right this far to upvote instead.
     static let upvoteThreshold: CGFloat = 160
     /// Drag left this far to open the comments.
@@ -21,12 +23,15 @@ struct StorySwipe: Equatable {
     let offset: CGFloat
     /// Signed out, there's no upvote stage: any long enough swipe right saves, without asking to sign in.
     let canUpvote: Bool
+    /// How far right toggles saved: `saveThreshold`, or `unsaveThreshold` in the saved list.
+    let saveDistance: CGFloat
 
     /// The row follows the finger up to the last threshold, then moves at a quarter of the speed,
     /// so it's clear the action is armed without letting the row fly off screen.
-    init(translation: CGFloat, canUpvote: Bool = true) {
+    init(translation: CGFloat, canUpvote: Bool = true, saveDistance: CGFloat = Self.saveThreshold) {
         self.canUpvote = canUpvote
-        let threshold = translation > 0 ? (canUpvote ? Self.upvoteThreshold : Self.saveThreshold) : Self.commentsThreshold
+        self.saveDistance = saveDistance
+        let threshold = translation > 0 ? (canUpvote ? Self.upvoteThreshold : saveDistance) : Self.commentsThreshold
         let magnitude = abs(translation)
         let resisted = magnitude <= threshold ? magnitude : threshold + (magnitude - threshold) / 4
         offset = translation < 0 ? -resisted : resisted
@@ -35,7 +40,7 @@ struct StorySwipe: Equatable {
     /// The action that fires if the finger lifts now.
     var armedAction: Action? {
         if canUpvote, offset >= Self.upvoteThreshold { return .upvote }
-        if offset >= Self.saveThreshold { return .save }
+        if offset >= saveDistance { return .save }
         if offset <= -Self.commentsThreshold { return .comments }
         return nil
     }
@@ -51,13 +56,14 @@ struct StorySwipe: Equatable {
         return nil
     }
 
-    /// Heart behind the left edge: slides in from -80 to 0 and fades in after the first 10 points.
+    /// Heart behind the left edge: slides in from -80 to 0 over the last 80 points before saving,
+    /// and fades in from the first 10.
     var heartTranslation: CGFloat {
-        clamp(offset - Self.saveThreshold, -Self.saveThreshold, 0)
+        clamp(offset - saveDistance, -Self.saveThreshold, 0)
     }
 
     var heartAlpha: CGFloat {
-        clamp((offset - 10) / (Self.saveThreshold - 10), 0, 1)
+        clamp((offset - 10) / (saveDistance - 10), 0, 1)
     }
 
     /// Comment count behind the right edge: grows from nothing to full size over the first 80 points.

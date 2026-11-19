@@ -13,7 +13,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
     private var dataSource: UICollectionViewDiffableDataSource<Section, Story.ID>!
     private var stories: [Story.ID: Story] = [:]
     private let stateView = FullPageStateView()
-    private let skeleton = SkeletonListView()
+    private lazy var skeleton = SkeletonListView(rowBackground: rowBackground)
     private let refreshControl = RefreshControl()
     private let topFill = TopFillView()
     private let offlineBanner = OfflineBanner()
@@ -242,6 +242,7 @@ final class StoryListViewController: UIViewController, UICollectionViewDelegate,
 
     @objc private func colorThemeChanged() {
         topFill.color = rowBackground(0)
+        skeleton.updateColors()
         var snapshot = dataSource.snapshot()
         snapshot.reconfigureItems(snapshot.itemIdentifiers)
         dataSource.apply(snapshot, animatingDifferences: false)

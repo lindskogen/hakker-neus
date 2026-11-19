@@ -81,7 +81,10 @@ fun LobstersStoryRow(
     /** A quieter row for lists inside other screens (a user's stories): a smaller title and one
      * dim line with the domain, points, comments and age, and no big score. */
     compact: Boolean = false,
+    /** In the saved list: unsaving takes a whole-length swipe right. */
+    inSavedList: Boolean = false,
 ) {
+    val saveDistance = if (inSavedList) StorySwipe.UNSAVE_THRESHOLD else StorySwipe.SAVE_THRESHOLD
     val context = LocalContext.current
     val density = LocalDensity.current
     val view = LocalView.current
@@ -92,7 +95,7 @@ fun LobstersStoryRow(
     var armed by remember { mutableStateOf<StorySwipe.Action?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
     var savedAtSwipeStart by remember { mutableStateOf(isSaved) }
-    val swipe = StorySwipe(offset.value)
+    val swipe = StorySwipe(offset.value, saveDistance)
 
     fun settle(after: Long = 0) = scope.launch {
         delay(after)
@@ -136,7 +139,7 @@ fun LobstersStoryRow(
                 .heightIn(min = if (compact) 0.dp else 100.dp)
                 .sharedStory("card-${story.id}")
                 .background(background)
-                .pointerInput(story.id) {
+                .pointerInput(story.id, saveDistance) {
                     val velocity = VelocityTracker()
                     detectHorizontalDragGestures(
                         onDragStart = {
@@ -151,7 +154,7 @@ fun LobstersStoryRow(
                             translation += dx / density.density
                             // Tracked on the finger's travel (in pixels), not its position in the moving row.
                             velocity.addPosition(change.uptimeMillis, Offset(translation * density.density, 0f))
-                            val next = StorySwipe.forTranslation(translation, canUpvote = false)
+                            val next = StorySwipe.forTranslation(translation, canUpvote = false, saveDistance = saveDistance)
                             scope.launch { offset.snapTo(next.offset) }
                             val action = next.armedAction(canUpvote = false)
                             if (action != armed) {
@@ -164,7 +167,7 @@ fun LobstersStoryRow(
                             }
                         },
                         onDragEnd = {
-                            val lifted = StorySwipe.forTranslation(translation, canUpvote = false)
+                            val lifted = StorySwipe.forTranslation(translation, canUpvote = false, saveDistance = saveDistance)
                             val projected = fling.project(lifted.offset * density.density, velocity.calculateVelocity().x) / density.density
                             val released = lifted.releasedAction(canUpvote = false, projected = projected)
                             when (released) {

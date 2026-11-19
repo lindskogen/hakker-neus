@@ -92,7 +92,11 @@ fun StoryRow(
     /** A quieter row for lists inside other screens (a user's stories): a smaller title and one
      * dim line with the domain, points, comments and age, and no big score. */
     compact: Boolean = false,
+    /** In the saved list: a swipe right only unsaves, and takes the whole length. */
+    inSavedList: Boolean = false,
 ) {
+    val canUpvote = AppContainer.session.isSignedIn && !inSavedList
+    val saveDistance = if (inSavedList) StorySwipe.UNSAVE_THRESHOLD else StorySwipe.SAVE_THRESHOLD
     val context = LocalContext.current
     val openUser = LocalOpenUser.current
     val density = LocalDensity.current
@@ -105,8 +109,8 @@ fun StoryRow(
     var menuOpen by remember { mutableStateOf(false) }
     var savedAtSwipeStart by remember { mutableStateOf(isSaved) }
     var upvotedAtSwipeStart by remember { mutableStateOf(isUpvoted) }
-    val swipe = StorySwipe(offset.value)
-    val upvoteStage = swipe.armedAction(canUpvote = AppContainer.session.isSignedIn) == StorySwipe.Action.Upvote
+    val swipe = StorySwipe(offset.value, saveDistance)
+    val upvoteStage = swipe.armedAction(canUpvote) == StorySwipe.Action.Upvote
 
     fun settle(after: Long = 0) = scope.launch {
         delay(after)
@@ -155,7 +159,7 @@ fun StoryRow(
                 .heightIn(min = if (compact) 0.dp else 100.dp)
                 .sharedStory("card-${story.id}")
                 .background(background)
-                .pointerInput(story.id) {
+                .pointerInput(story.id, canUpvote, saveDistance) {
                     val velocity = VelocityTracker()
                     detectHorizontalDragGestures(
                         onDragStart = {
@@ -171,9 +175,9 @@ fun StoryRow(
                             translation += dx / density.density
                             // Tracked on the finger's travel (in pixels), not its position in the moving row.
                             velocity.addPosition(change.uptimeMillis, Offset(translation * density.density, 0f))
-                            val next = StorySwipe.forTranslation(translation, canUpvote = AppContainer.session.isSignedIn)
+                            val next = StorySwipe.forTranslation(translation, canUpvote, saveDistance)
                             scope.launch { offset.snapTo(next.offset) }
-                            val action = next.armedAction(canUpvote = AppContainer.session.isSignedIn)
+                            val action = next.armedAction(canUpvote)
                             if (action != armed) {
                                 armed = action
                                 if (action != null) {
@@ -184,9 +188,9 @@ fun StoryRow(
                             }
                         },
                         onDragEnd = {
-                            val lifted = StorySwipe.forTranslation(translation, canUpvote = AppContainer.session.isSignedIn)
+                            val lifted = StorySwipe.forTranslation(translation, canUpvote, saveDistance)
                             val projected = fling.project(lifted.offset * density.density, velocity.calculateVelocity().x) / density.density
-                            val released = lifted.releasedAction(canUpvote = AppContainer.session.isSignedIn, projected = projected)
+                            val released = lifted.releasedAction(canUpvote, projected = projected)
                             when (released) {
                                 StorySwipe.Action.Comments -> {
                                     if (armed == null) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)

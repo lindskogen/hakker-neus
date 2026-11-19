@@ -142,11 +142,13 @@ fun SavedScreen(
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,
                     compact = true,
+                    inSavedList = true,
                 ) else StoryRow(
                     entry.story, HN.backgroundDark, isSaved = true, actions = actions,
                     isVisited = AppContainer.visited.isVisited(entry.story.id),
                     showsSavedBadge = false,
                     compact = true,
+                    inSavedList = true,
                     isUpvoted = entry.story.id in upvoted,
                     score = AppContainer.session.displayedScore(entry.story.id, entry.story.score),
                 )

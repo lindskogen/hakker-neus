@@ -147,6 +147,7 @@ final class StoryCell: UICollectionViewListCell {
     /// - Parameters:
     ///   - showsSavedBadge: Whether a saved story shows the faded heart in its corner.
     ///     Off in the saved list, where every row is saved.
+    ///   - saveDistance: How far a swipe right goes to toggle saved; further in the saved list.
     ///   - compact: A quieter row for lists inside other screens (a user's stories): a smaller
     ///     title and one dim line with the domain, points, comments and age, and no big score.
     ///   - extraAccessibilityActions: Screen-level actions VoiceOver should offer on every row.
@@ -160,6 +161,7 @@ final class StoryCell: UICollectionViewListCell {
         isVisited: Bool = false,
         isActive: Bool = false,
         canUpvote: Bool = true,
+        saveDistance: CGFloat = StorySwipe.saveThreshold,
         newComments: Int? = nil,
         showsSavedBadge: Bool = true,
         compact: Bool = false,
@@ -170,6 +172,7 @@ final class StoryCell: UICollectionViewListCell {
         self.isSaved = isSaved
         self.isUpvoted = isUpvoted
         self.canUpvote = canUpvote
+        self.saveDistance = saveDistance
 
         // The story open beside the list (iPad) turns black.
         let backgroundColor = isActive ? Palette.activeStoryBackground : backgroundColor
@@ -263,7 +266,7 @@ final class StoryCell: UICollectionViewListCell {
     // MARK: Swiping
 
     @objc private func handlePan(_ pan: UIPanGestureRecognizer) {
-        let swipe = StorySwipe(translation: pan.translation(in: self).x, canUpvote: canUpvote)
+        let swipe = StorySwipe(translation: pan.translation(in: self).x, canUpvote: canUpvote, saveDistance: saveDistance)
 
         switch pan.state {
         case .began:
@@ -304,6 +307,7 @@ final class StoryCell: UICollectionViewListCell {
     }
 
     private var canUpvote = true
+    private var saveDistance = StorySwipe.saveThreshold
     private var swipeStartedSaved = false
     private var swipeStartedUpvoted = false
 

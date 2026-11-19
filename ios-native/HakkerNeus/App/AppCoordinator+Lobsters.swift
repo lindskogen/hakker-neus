@@ -23,6 +23,8 @@ extension AppCoordinator {
             isVisited: visitedStories.isVisited(story.id),
             isActive: split.activeStoryID == story.id,
             canUpvote: false,
+            // In the saved list unsaving takes a whole-length swipe.
+            saveDistance: inSavedList ? StorySwipe.unsaveThreshold : StorySwipe.saveThreshold,
             newComments: visitedStories.newCommentCount(for: story),
             showsSavedBadge: !inSavedList,
             compact: compact,
