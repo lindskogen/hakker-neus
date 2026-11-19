@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -55,8 +56,11 @@ internal fun TableBlock(table: CommentBody.Table, onLink: (String) -> Unit) {
     val fits = fittedTables[table] == true
     val scroll = rememberScrollState()
 
-    BoxWithConstraints(Modifier.fillMaxWidth().border(0.5.dp, ruleColor)) {
-        val viewportWidth = constraints.maxWidth
+    // The comment's width, read before the sideways scroll lifts the limit. Not BoxWithConstraints:
+    // comment rows ask for intrinsic heights, which subcomposing layouts can't answer.
+    val viewport = remember { Viewport() }
+
+    Box(Modifier.fillMaxWidth().border(0.5.dp, ruleColor)) {
         val headerBackground: @Composable () -> Unit = { Box(Modifier.background(Color.White.copy(alpha = 0.08f))) }
         val cellTexts: @Composable () -> Unit = {
             rows.forEachIndexed { index, row ->
@@ -97,8 +101,15 @@ internal fun TableBlock(table: CommentBody.Table, onLink: (String) -> Unit) {
 
         Layout(
             contents = listOf(headerBackground, cellTexts, ruleLines, fitButton),
-            modifier = if (fits) Modifier else Modifier.horizontalScroll(scroll),
+            modifier = Modifier
+                .layout { measurable, constraints ->
+                    viewport.width = constraints.maxWidth
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                }
+                .then(if (fits) Modifier else Modifier.horizontalScroll(scroll)),
         ) { (background, cells, rules, button), _ ->
+            val viewportWidth = viewport.width
             val padH = HN.padding.roundToPx()
             val padV = (HN.padding / 2).roundToPx()
             fun index(row: Int, column: Int) = row * columns + column
@@ -167,6 +178,10 @@ internal fun TableBlock(table: CommentBody.Table, onLink: (String) -> Unit) {
             }
         }
     }
+}
+
+private class Viewport {
+    var width = 0
 }
 
 private val CommentBody.Table.Alignment.textAlign

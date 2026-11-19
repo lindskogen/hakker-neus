@@ -121,6 +121,7 @@ final class TableBlockView: UIView {
 }
 
 /// How wide a table would like to be, to tell whether it needs the fit button.
+@MainActor
 private protocol NaturalWidth {
     var naturalWidth: CGFloat { get }
 }
@@ -380,7 +381,7 @@ private final class FittedTableView: UIStackView, NaturalWidth {
     }
 
     private static func width(of text: NSAttributedString) -> CGFloat {
-        ceil(text.boundingRect(with: CGSize(width: .greatestFiniteMagnitude, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin], context: nil).width)
+        ceil(text.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude), options: [.usesLineFragmentOrigin], context: nil).width)
     }
 
     /// The widest run of text between spaces, the narrowest a cell can wrap to without breaking words.
